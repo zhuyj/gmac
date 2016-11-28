@@ -61,12 +61,8 @@
 #include <linux/prefetch.h>
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#define dev_printk(A,B,fmt,args...) printk(A fmt,##args)
-#else
 #include <linux/dma-mapping.h>
 #include <linux/moduleparam.h>
-#endif
 
 #include <asm/io.h>
 #include <asm/irq.h>
@@ -406,78 +402,12 @@ static int rtl8168_set_speed(struct net_device *dev, u8 autoneg,  u16 speed, u8 
 static int rtl8168_poll(napi_ptr napi, napi_budget budget);
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#undef ethtool_ops
-#define ethtool_ops _kc_ethtool_ops
-
-struct _kc_ethtool_ops {
-        int  (*get_settings)(struct net_device *, struct ethtool_cmd *);
-        int  (*set_settings)(struct net_device *, struct ethtool_cmd *);
-        void (*get_drvinfo)(struct net_device *, struct ethtool_drvinfo *);
-        int  (*get_regs_len)(struct net_device *);
-        void (*get_regs)(struct net_device *, struct ethtool_regs *, void *);
-        void (*get_wol)(struct net_device *, struct ethtool_wolinfo *);
-        int  (*set_wol)(struct net_device *, struct ethtool_wolinfo *);
-        u32  (*get_msglevel)(struct net_device *);
-        void (*set_msglevel)(struct net_device *, u32);
-        int  (*nway_reset)(struct net_device *);
-        u32  (*get_link)(struct net_device *);
-        int  (*get_eeprom_len)(struct net_device *);
-        int  (*get_eeprom)(struct net_device *, struct ethtool_eeprom *, u8 *);
-        int  (*set_eeprom)(struct net_device *, struct ethtool_eeprom *, u8 *);
-        int  (*get_coalesce)(struct net_device *, struct ethtool_coalesce *);
-        int  (*set_coalesce)(struct net_device *, struct ethtool_coalesce *);
-        void (*get_ringparam)(struct net_device *, struct ethtool_ringparam *);
-        int  (*set_ringparam)(struct net_device *, struct ethtool_ringparam *);
-        void (*get_pauseparam)(struct net_device *,
-                               struct ethtool_pauseparam*);
-        int  (*set_pauseparam)(struct net_device *,
-                               struct ethtool_pauseparam*);
-        u32  (*get_rx_csum)(struct net_device *);
-        int  (*set_rx_csum)(struct net_device *, u32);
-        u32  (*get_tx_csum)(struct net_device *);
-        int  (*set_tx_csum)(struct net_device *, u32);
-        u32  (*get_sg)(struct net_device *);
-        int  (*set_sg)(struct net_device *, u32);
-        u32  (*get_tso)(struct net_device *);
-        int  (*set_tso)(struct net_device *, u32);
-        int  (*self_test_count)(struct net_device *);
-        void (*self_test)(struct net_device *, struct ethtool_test *, u64 *);
-        void (*get_strings)(struct net_device *, u32 stringset, u8 *);
-        int  (*phys_id)(struct net_device *, u32);
-        int  (*get_stats_count)(struct net_device *);
-        void (*get_ethtool_stats)(struct net_device *, struct ethtool_stats *,
-                                  u64 *);
-} *ethtool_ops = NULL;
-
-#undef SET_ETHTOOL_OPS
-#define SET_ETHTOOL_OPS(netdev, ops) (ethtool_ops = (ops))
-
-#endif //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
 #ifndef SET_ETHTOOL_OPS
 #define SET_ETHTOOL_OPS(netdev,ops) \
          ( (netdev)->ethtool_ops = (ops) )
 #endif //SET_ETHTOOL_OPS
 #endif //LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)
-
-//#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,5)
-#ifndef netif_msg_init
-#define netif_msg_init _kc_netif_msg_init
-/* copied from linux kernel 2.6.20 include/linux/netdevice.h */
-static inline u32 netif_msg_init(int debug_value, int default_msg_enable_bits)
-{
-        /* use default */
-        if (debug_value < 0 || debug_value >= (sizeof(u32) * 8))
-                return default_msg_enable_bits;
-        if (debug_value == 0)   /* no output */
-                return 0;
-        /* set low N bits */
-        return (1 << debug_value) - 1;
-}
-
-#endif //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,5)
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,22)
 static inline void eth_copy_and_sum (struct sk_buff *dest,
@@ -487,142 +417,6 @@ static inline void eth_copy_and_sum (struct sk_buff *dest,
         memcpy (dest->data, src, len);
 }
 #endif //LINUX_VERSION_CODE > KERNEL_VERSION(2,6,22)
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,7)
-/* copied from linux kernel 2.6.20 /include/linux/time.h */
-/* Parameters used to convert the timespec values: */
-#define MSEC_PER_SEC    1000L
-
-/* copied from linux kernel 2.6.20 /include/linux/jiffies.h */
-/*
- * Change timeval to jiffies, trying to avoid the
- * most obvious overflows..
- *
- * And some not so obvious.
- *
- * Note that we don't want to return MAX_LONG, because
- * for various timeout reasons we often end up having
- * to wait "jiffies+1" in order to guarantee that we wait
- * at _least_ "jiffies" - so "jiffies+1" had better still
- * be positive.
- */
-#define MAX_JIFFY_OFFSET ((~0UL >> 1)-1)
-
-/*
- * Convert jiffies to milliseconds and back.
- *
- * Avoid unnecessary multiplications/divisions in the
- * two most common HZ cases:
- */
-static inline unsigned int _kc_jiffies_to_msecs(const unsigned long j)
-{
-#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
-        return (MSEC_PER_SEC / HZ) * j;
-#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
-        return (j + (HZ / MSEC_PER_SEC) - 1)/(HZ / MSEC_PER_SEC);
-#else
-        return (j * MSEC_PER_SEC) / HZ;
-#endif
-}
-
-static inline unsigned long _kc_msecs_to_jiffies(const unsigned int m)
-{
-        if (m > _kc_jiffies_to_msecs(MAX_JIFFY_OFFSET))
-                return MAX_JIFFY_OFFSET;
-#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
-        return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
-#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
-        return m * (HZ / MSEC_PER_SEC);
-#else
-        return (m * HZ + MSEC_PER_SEC - 1) / MSEC_PER_SEC;
-#endif
-}
-#endif  //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,7)
-
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,11)
-
-/* copied from linux kernel 2.6.12.6 /include/linux/pm.h */
-typedef int __bitwise pci_power_t;
-
-/* copied from linux kernel 2.6.12.6 /include/linux/pci.h */
-typedef u32 __bitwise pm_message_t;
-
-#define PCI_D0  ((pci_power_t __force) 0)
-#define PCI_D1  ((pci_power_t __force) 1)
-#define PCI_D2  ((pci_power_t __force) 2)
-#define PCI_D3hot   ((pci_power_t __force) 3)
-#define PCI_D3cold  ((pci_power_t __force) 4)
-#define PCI_POWER_ERROR ((pci_power_t __force) -1)
-
-/* copied from linux kernel 2.6.12.6 /drivers/pci/pci.c */
-/**
- * pci_choose_state - Choose the power state of a PCI device
- * @dev: PCI device to be suspended
- * @state: target sleep state for the whole system. This is the value
- *  that is passed to suspend() function.
- *
- * Returns PCI power state suitable for given device and given system
- * message.
- */
-
-pci_power_t pci_choose_state(struct pci_dev *dev, pm_message_t state)
-{
-        if (!pci_find_capability(dev, PCI_CAP_ID_PM))
-                return PCI_D0;
-
-        switch (state) {
-        case 0:
-                return PCI_D0;
-        case 3:
-                return PCI_D3hot;
-        default:
-                printk("They asked me for state %d\n", state);
-//      BUG();
-        }
-        return PCI_D0;
-}
-#endif  //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,11)
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
-/**
- * msleep_interruptible - sleep waiting for waitqueue interruptions
- * @msecs: Time in milliseconds to sleep for
- */
-#define msleep_interruptible _kc_msleep_interruptible
-unsigned long _kc_msleep_interruptible(unsigned int msecs)
-{
-        unsigned long timeout = _kc_msecs_to_jiffies(msecs);
-
-        while (timeout && !signal_pending(current)) {
-                set_current_state(TASK_INTERRUPTIBLE);
-                timeout = schedule_timeout(timeout);
-        }
-        return _kc_jiffies_to_msecs(timeout);
-}
-#endif  //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,7)
-/* copied from linux kernel 2.6.20 include/linux/sched.h */
-#ifndef __sched
-#define __sched     __attribute__((__section__(".sched.text")))
-#endif
-
-/* copied from linux kernel 2.6.20 kernel/timer.c */
-signed long __sched schedule_timeout_uninterruptible(signed long timeout)
-{
-        __set_current_state(TASK_UNINTERRUPTIBLE);
-        return schedule_timeout(timeout);
-}
-
-/* copied from linux kernel 2.6.20 include/linux/mii.h */
-#undef if_mii
-#define if_mii _kc_if_mii
-static inline struct mii_ioctl_data *if_mii(struct ifreq *rq)
-{
-        return (struct mii_ioctl_data *) &rq->ifr_ifru;
-}
-#endif  //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,7)
 
 static const char rtl8168_gstrings[][ETH_GSTRING_LEN] = {
         "tx_packets",
@@ -4260,25 +4054,6 @@ rtl8168_vlan_rx_register(struct net_device *dev,
 
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
-static void
-rtl8168_vlan_rx_kill_vid(struct net_device *dev,
-                         unsigned short vid)
-{
-        struct rtl8168_private *tp = netdev_priv(dev);
-        unsigned long flags;
-
-        spin_lock_irqsave(&tp->lock, flags);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,21)
-        if (tp->vlgrp)
-                tp->vlgrp->vlan_devices[vid] = NULL;
-#else
-        vlan_group_set_device(tp->vlgrp, vid, NULL);
-#endif //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,21)
-        spin_unlock_irqrestore(&tp->lock, flags);
-}
-#endif //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
-
 static int
 rtl8168_rx_vlan_skb(struct rtl8168_private *tp,
                     struct RxDesc *desc,
@@ -4525,12 +4300,6 @@ rtl8168_set_msglevel(struct net_device *dev,
         tp->msg_enable = value;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,33)
-static int rtl8168_get_stats_count(struct net_device *dev)
-{
-        return ARRAY_SIZE(rtl8168_gstrings);
-}
-#else
 static int rtl8168_get_sset_count(struct net_device *dev, int sset)
 {
         switch (sset) {
@@ -4540,7 +4309,7 @@ static int rtl8168_get_sset_count(struct net_device *dev, int sset)
                 return -EOPNOTSUPP;
         }
 }
-#endif
+
 static void
 rtl8168_get_ethtool_stats(struct net_device *dev,
                           struct ethtool_stats *stats,
@@ -4747,17 +4516,8 @@ static const struct ethtool_ops rtl8168_ethtool_ops = {
         .get_wol        = rtl8168_get_wol,
         .set_wol        = rtl8168_set_wol,
         .get_strings        = rtl8168_get_strings,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,33)
-        .get_stats_count    = rtl8168_get_stats_count,
-#else
         .get_sset_count     = rtl8168_get_sset_count,
-#endif
         .get_ethtool_stats  = rtl8168_get_ethtool_stats,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,23)
-#ifdef ETHTOOL_GPERMADDR
-        .get_perm_addr      = ethtool_op_get_perm_addr,
-#endif
-#endif //LINUX_VERSION_CODE < KERNEL_VERSION(2,6,23)
         .get_eeprom     = rtl_get_eeprom,
         .get_eeprom_len     = rtl_get_eeprom_len,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
@@ -23194,19 +22954,6 @@ rtl8168_hw_set_rx_packet_filter(struct net_device *dev)
                 rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
                 mc_filter[1] = mc_filter[0] = 0xffffffff;
         } else {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
-                struct dev_mc_list *mclist;
-                unsigned int i;
-
-                rx_mode = AcceptBroadcast | AcceptMyPhys;
-                mc_filter[1] = mc_filter[0] = 0;
-                for (i = 0, mclist = dev->mc_list; mclist && i < dev->mc_count;
-                     i++, mclist = mclist->next) {
-                        int bit_nr = ether_crc(ETH_ALEN, mclist->dmi_addr) >> 26;
-                        mc_filter[bit_nr >> 5] |= 1 << (bit_nr & 31);
-                        rx_mode |= AcceptMulticast;
-                }
-#else
                 struct netdev_hw_addr *ha;
 
                 rx_mode = AcceptBroadcast | AcceptMyPhys;
@@ -23216,7 +22963,6 @@ rtl8168_hw_set_rx_packet_filter(struct net_device *dev)
                         mc_filter[bit_nr >> 5] |= 1 << (bit_nr & 31);
                         rx_mode |= AcceptMulticast;
                 }
-#endif
         }
 
         if (dev->features & NETIF_F_RXALL)
@@ -24636,13 +24382,8 @@ rtl8168_xmit_frags(struct rtl8168_private *tp,
                 entry = (entry + 1) % NUM_TX_DESC;
 
                 txd = tp->TxDescArray + entry;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0)
-                len = frag->size;
-                addr = ((void *) page_address(frag->page)) + frag->page_offset;
-#else
                 len = skb_frag_size(frag);
                 addr = skb_frag_address(frag);
-#endif
                 mapping = pci_map_single(tp->pci_dev, addr, len, PCI_DMA_TODEVICE);
 
                 if (unlikely(dma_mapping_error(&tp->pci_dev->dev, mapping))) {
