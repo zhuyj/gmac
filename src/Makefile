@@ -1,6 +1,6 @@
 ################################################################################
 #
-# r8168 is the Linux device driver released for Realtek Gigabit Ethernet
+# txwh is the Linux device driver released for Realtek Gigabit Ethernet
 # controllers with PCI-Express interface.
 #
 # Copyright(c) 2014 Realtek Semiconductor Corp. All rights reserved.
@@ -35,16 +35,17 @@ CONFIG_DOWN_SPEED_100 = n
 CONFIG_ASPM = y
 ENABLE_S5WOL = y
 ENABLE_EEE = n
-
+CONFIG_MODULE_SIG=n
+CONFIG_MODULE_SIG_ALL=n
 ifneq ($(KERNELRELEASE),)
-	obj-m := r8168.o
-	r8168-objs := r8168_n.o r8168_asf.o rtl_eeprom.o rtltool.o
+	obj-m := txwh.o
+	txwh-objs := txwh_n.o txwh_asf.o rtl_eeprom.o rtltool.o
 	ifeq ($(ENABLE_REALWOW_SUPPORT), y)
-	    r8168-objs += r8168_realwow.o
+	    txwh-objs += txwh_realwow.o
 		EXTRA_CFLAGS += -DENABLE_REALWOW_SUPPORT
 	endif
 	ifeq ($(ENABLE_DASH_SUPPORT), y)
-	    r8168-objs += r8168_dash.o
+	    txwh-objs += txwh_dash.o
 		EXTRA_CFLAGS += -DENABLE_DASH_SUPPORT
 	endif
 	EXTRA_CFLAGS += -DCONFIG_R8168_NAPI

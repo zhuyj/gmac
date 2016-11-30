@@ -1,7 +1,7 @@
 /*
 ################################################################################
 #
-# r8168 is the Linux device driver released for Realtek Gigabit Ethernet
+# txwh is the Linux device driver released for Realtek Gigabit Ethernet
 # controllers with PCI-Express interface.
 #
 # Copyright(c) 2016 Realtek Semiconductor Corp. All rights reserved.
