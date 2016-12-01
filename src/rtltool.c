@@ -5,7 +5,7 @@
 #include <linux/delay.h>
 #include <linux/in.h>
 #include <linux/ethtool.h>
-#include "txwh.h"
+#include "r8168.h"
 #include "rtl_eeprom.h"
 #include "rtltool.h"
 

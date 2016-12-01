@@ -18,10 +18,10 @@ if [ "$check" != "" ]; then
         /sbin/rmmod r8169
 fi
 
-check=`lsmod | grep txwh`
+check=`lsmod | grep r8168`
 if [ "$check" != "" ]; then
-        echo "rmmod txwh"
-        /sbin/rmmod txwh
+        echo "rmmod r8168"
+        /sbin/rmmod r8168
 fi
 
 echo "Build the module and install"
