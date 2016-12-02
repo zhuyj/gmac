@@ -22281,6 +22281,7 @@ rtl8168_init_one(struct pci_dev *pdev,
         tp->link_ok = rtl8168_xmii_link_ok;
 
         tp->features |= rtl8168_try_msi(pdev, tp);
+	tp->ifstatus = 0; /*now interface down*/
 
         RTL_NET_DEVICE_OPS(rtl8168_netdev_ops);
 
@@ -22469,6 +22470,8 @@ static int rtl8168_open(struct net_device *dev)
 
 	struct rx_desc rdesc;
 	memset(&rdesc, 0x0, sizeof(struct rx_desc));
+
+	tp->ifstatus = 1;
 
 	/*soft reset*/
 	RTL_W8(0x000, 0x1);
@@ -23996,7 +23999,8 @@ static void rtl8168_rx_task(struct work_struct *work)
 		
 	}
 
-        rtl8168_schedule_work(dev, rtl8168_rx_task);
+	if (tp->ifstatus == 1)
+        	rtl8168_schedule_work(dev, rtl8168_rx_task);
 }
 #if 0
 static void rtl8168_reinit_task(struct work_struct *work)
@@ -25081,6 +25085,8 @@ static int rtl8168_close(struct net_device *dev)
         struct pci_dev *pdev = tp->pci_dev;
 
         if (tp->TxDescArray!=NULL && tp->RxDescArray!=NULL) {
+		tp->ifstatus = 0;
+
                 rtl8168_cancel_schedule_work(dev);
 
                 rtl8168_down(dev);

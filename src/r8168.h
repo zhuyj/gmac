@@ -1266,6 +1266,7 @@ struct pci_resource {
 };
 
 struct rtl8168_private {
+	int ifstatus; /*0: down, 1: up*/
         void __iomem *mmio_addr, *bar1_addr, *bar2_addr;    /* memory map physical address */
         struct pci_dev *pci_dev;    /* Index of PCI device */
         struct net_device *dev;
