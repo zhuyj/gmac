@@ -42,5 +42,3 @@ clean:
 install:
 	$(MAKE) -C src/ install
 
-
-
