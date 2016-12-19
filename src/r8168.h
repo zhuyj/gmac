@@ -1266,7 +1266,7 @@ struct pci_resource {
 };
 
 struct rtl8168_private {
-	int ifstatus; /*0: down, 1: up*/
+	int ifstatus;
         void __iomem *mmio_addr, *bar1_addr, *bar2_addr;    /* memory map physical address */
         struct pci_dev *pci_dev;    /* Index of PCI device */
         struct net_device *dev;
@@ -1537,25 +1537,24 @@ enum mcfg {
 //hwoptimize
 #define HW_PATCH_SOC_LAN (BIT_0)
 #define HW_PATCH_SAMSUNG_LAN_DONGLE (BIT_2)
-
 enum {
-	csr0 = 0x000,
-	csr1 = 0x008,
-	csr2 = 0x010,
-	csr3 = 0x018,
-	csr4 = 0x020,
-	csr5 = 0x028,
-	csr6 = 0x030,
-	csr7 = 0x038,
-	csr8 = 0x040,
-	csr9 = 0x048,
-	csr10 = 0x050,
-	csr11 = 0x058,
-	csr16 = 0x080,
-	csr17 = 0x088,
-	csr18 = 0x090,
-	csr19 = 0x098,
-	csr20 = 0x0a0,
+        csr0 = 0x000,
+        csr1 = 0x008,
+        csr2 = 0x010,
+        csr3 = 0x018,
+        csr4 = 0x020,
+        csr5 = 0x028,
+        csr6 = 0x030,
+        csr7 = 0x038,
+        csr8 = 0x040,
+        csr9 = 0x048,
+        csr10 = 0x050,
+        csr11 = 0x058,
+        csr16 = 0x080,
+        csr17 = 0x088,
+        csr18 = 0x090,
+        csr19 = 0x098,
+        csr20 = 0x0a0,
 };
 
 void mdio_write(struct rtl8168_private *tp, u32 RegAddr, u32 value);

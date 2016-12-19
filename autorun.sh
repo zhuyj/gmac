@@ -12,11 +12,16 @@ if [ "$TARGET_PATH" = "" ]; then
 fi
 echo
 echo "Check old driver and unload it."
+#check=`lsmod | grep r8169`
+#if [ "$check" != "" ]; then
+#        echo "rmmod r8169"
+#        /sbin/rmmod r8169
+#fi
 
-check=`lsmod | grep txwh`
+check=`lsmod | grep r8168`
 if [ "$check" != "" ]; then
-        echo "rmmod txwh"
-        /sbin/rmmod txwh
+        echo "rmmod r8168"
+        /sbin/rmmod r8168
 fi
 
 echo "Build the module and install"
@@ -30,6 +35,22 @@ module=${module%.ko}
 if [ "$module" = "" ]; then
 	echo "No driver exists!!!"
 	exit 1
+elif [ "$module" != "r8169" ]; then
+#	if test -e $TARGET_PATH/r8169.ko ; then
+		echo "Backup r8169.ko"
+#		if test -e $TARGET_PATH/r8169.bak ; then
+#			i=0
+#			while test -e $TARGET_PATH/r8169.bak$i
+#			do
+#				i=$(($i+1))
+#			done
+#			echo "rename r8169.ko to r8169.bak$i"
+#			mv $TARGET_PATH/r8169.ko $TARGET_PATH/r8169.bak$i
+#		else
+#			echo "rename r8169.ko to r8169.bak"
+#			mv $TARGET_PATH/r8169.ko $TARGET_PATH/r8169.bak
+#		fi
+#	fi
 fi
 
 echo "DEPMOD $(uname -r)"
@@ -60,12 +81,13 @@ if [ "$is_update_initramfs" = "y" ]; then
 	fi
 fi
 
-sleep 3
-sh ./test.sh
-sleep 2
-arp -s 1.2.3.5 50:7B:9D:4E:53:28
+ifconfig enp1s0 2.3.4.5/24 up
 sleep 1
-ping -c 2 -I 1.2.3.4 1.2.3.5 
+ifconfig enp1s0 down && ifconfig enp1s0 2.3.4.5/24 up && arp -s 2.3.4.6 50:7B:9D:4E:53:28
+sleep 1
+arp -s 2.3.4.6 50:7B:9D:4E:53:28
+sleep 1
+ping -c 2 -I 2.3.4.5 2.3.4.6
 echo "Completed."
 exit 0
 
