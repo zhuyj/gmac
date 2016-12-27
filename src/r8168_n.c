@@ -23098,7 +23098,7 @@ static int rtl8168_open(struct net_device *dev)
 
 //        rtl8168_request_link_timer(dev);
 	netif_carrier_on(dev);
-
+//	netif_start_queue(dev);
 out:
 
         return retval;
@@ -24577,15 +24577,25 @@ static void rtl8168_rx_task(struct work_struct *work)
 
                 printk("func:%s, line:%d, packet arrives\n", __FUNCTION__, __LINE__);
                 skb = alloc_skb(1024, GFP_ATOMIC);
+		if (!skb) {
+			if (printk_ratelimit()) {
+				printk("low on mem - dropped!\n");
+			}
+			goto next_check;
+		}
                 skb_put(skb, pkt_size);
+		//memcpy(skb, pkg--data, pkg_size);
+		skb->dev = dev;
                 skb->protocol = eth_type_trans(skb, dev);
-
+		skb->ip_summed = CHECKSUM_UNNECESSARY;
+		
                 netif_rx(skb);
         }
 
-//        if (likely(tp->ifstatus == 1)) {
+next_check:
+        if (likely(tp->ifstatus == 1)) {
                 rtl8168_schedule_work(dev, rtl8168_rx_task);
-//        }
+        }
 }
 
 #if 0
