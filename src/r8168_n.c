@@ -25008,6 +25008,7 @@ rtl8168_start_xmit(struct sk_buff *skb,
         wmb();
         //printk("func:%s, line:%d, status: 0x%lx\n", __FUNCTION__, __LINE__, RTL_R32(csr5));
         spin_unlock_irqrestore(&tp->lock, flags);
+	dev_kfree_skb_any(skb);
         return ret;
 #if 0
         if (unlikely(TX_BUFFS_AVAIL(tp) < skb_shinfo(skb)->nr_frags)) {
