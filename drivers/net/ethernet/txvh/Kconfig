@@ -1,0 +1,16 @@
+#
+# Txvh device configuration
+#
+config TXVH_GMAC 
+	tristate "Txvh gmac gigabit ethernet support"
+	default m
+	depends on PCI
+	select FW_LOADER
+	select CRC32
+	select MII
+	---help---
+	  Say Y here if you have a Txvh gmac PCIe Gigabit Ethernet adapter.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called Txvh_gmac.  This is recommended.
+
