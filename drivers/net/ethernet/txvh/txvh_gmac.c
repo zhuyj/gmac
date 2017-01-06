@@ -2346,7 +2346,7 @@ static bool rtl8169_init_counter_offsets(struct net_device *dev)
 	bool ret = false;
 
 	/*
-	 * rtl8169_init_counter_offsets is called from rtl_open.  On chip
+	 * rtl8169_init_counter_offsets is called from txvh_open.  On chip
 	 * versions prior to RTL_GIGA_MAC_VER_19 the tally counters are only
 	 * reset by a power cycle, while the counter values collected by the
 	 * driver are reset at every driver unload/load cycle.
@@ -7800,7 +7800,7 @@ static void rtl8169_netpoll(struct net_device *dev)
 }
 #endif
 
-static int rtl_open(struct net_device *dev)
+static int txvh_open(struct net_device *dev)
 {
 	struct txvh_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -7832,21 +7832,47 @@ static int rtl_open(struct net_device *dev)
 	tp->txvh_txdescArray[0].tdesc0 = 0x1 << 31;
         writel(tp->txvh_txdescArray[0].tdesc0, tp->bar1_addr);
         tp->txvh_txdescArray[0].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->txvh_txdescArray[0].data_len, tp->bar1_addr+0x4);
+        writel(tp->txvh_txdescArray[0].data_len, tp->bar1_addr + 0x4);
         tp->txvh_txdescArray[0].bar2_addr = 0x00040000; //data in bar2 address
-        writel(tp->txvh_txdescArray[0].bar2_addr, tp->bar1_addr+0x8);
-        tp->txvh_txdescArray[0].next_desc = 0x00010000 + sizeof(struct txvh_txdesc);  //bar1 address
-        writel(tp->txvh_txdescArray[0].next_desc, tp->bar1_addr+0xc);
+        writel(tp->txvh_txdescArray[0].bar2_addr, tp->bar1_addr + 0x4 * 2);
+        tp->txvh_txdescArray[0].next_desc = 0x00010000 + sizeof(struct txvh_txdesc);  //next desc addr in bar1 address
+        writel(tp->txvh_txdescArray[0].next_desc, tp->bar1_addr + 0x4 * 3);
 
 	tp->txvh_txdescArray[1].tdesc0 = 0x1 << 31;
-        writel(tp->txvh_txdescArray[1].tdesc0, tp->bar1_addr);
+        writel(tp->txvh_txdescArray[1].tdesc0, tp->bar1_addr + 0x4 * 4);
         tp->txvh_txdescArray[1].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->txvh_txdescArray[1].data_len, tp->bar1_addr+0x4);
+        writel(tp->txvh_txdescArray[1].data_len, tp->bar1_addr + 0x4 * 5);
         tp->txvh_txdescArray[1].bar2_addr = 0x00040000 + 0x5F2; //data in bar2 address
-        writel(tp->txvh_txdescArray[1].bar2_addr, tp->bar1_addr+0x8);
-        tp->txvh_txdescArray[1].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 2;  //bar1 address
-        writel(tp->txvh_txdescArray[1].next_desc, tp->bar1_addr+0xc);
+        writel(tp->txvh_txdescArray[1].bar2_addr, tp->bar1_addr + 0x4 * 6);
+        tp->txvh_txdescArray[1].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 2;  //next desc addr in bar1 address
+        writel(tp->txvh_txdescArray[1].next_desc, tp->bar1_addr + 0x4 * 7);
 
+	tp->txvh_txdescArray[2].tdesc0 = 0x1 << 31;
+        writel(tp->txvh_txdescArray[2].tdesc0, tp->bar1_addr + 0x4 * 8);
+        tp->txvh_txdescArray[2].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->txvh_txdescArray[2].data_len, tp->bar1_addr + 0x4 * 9);
+        tp->txvh_txdescArray[2].bar2_addr = 0x00040000 + 0x5F2 * 2; //data in bar2 address
+        writel(tp->txvh_txdescArray[2].bar2_addr, tp->bar1_addr + 0x4 * 10);
+        tp->txvh_txdescArray[2].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 3;  //next desc addr in bar1 address
+        writel(tp->txvh_txdescArray[2].next_desc, tp->bar1_addr + 0x4 * 11);
+
+	tp->txvh_txdescArray[3].tdesc0 = 0x1 << 31;
+        writel(tp->txvh_txdescArray[3].tdesc0, tp->bar1_addr + 0x4 * 12);
+        tp->txvh_txdescArray[3].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->txvh_txdescArray[3].data_len, tp->bar1_addr + 0x4 * 13);
+        tp->txvh_txdescArray[3].bar2_addr = 0x00040000 + 0x5F2 * 3; //data in bar2 address
+        writel(tp->txvh_txdescArray[3].bar2_addr, tp->bar1_addr + 0x4 * 14);
+        tp->txvh_txdescArray[3].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 4;  //next desc addr in bar1 address
+        writel(tp->txvh_txdescArray[3].next_desc, tp->bar1_addr + 0x4 * 15);
+
+	tp->txvh_txdescArray[4].tdesc0 = 0x1 << 31;
+        writel(tp->txvh_txdescArray[4].tdesc0, tp->bar1_addr + 0x4 * 16);
+        tp->txvh_txdescArray[4].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->txvh_txdescArray[4].data_len, tp->bar1_addr + 0x4 * 17);
+        tp->txvh_txdescArray[4].bar2_addr = 0x00040000 + 0x5F2 * 4; //data in bar2 address
+        writel(tp->txvh_txdescArray[4].bar2_addr, tp->bar1_addr + 0x4 * 18);
+        tp->txvh_txdescArray[4].next_desc = 0x00010000;  //next desc addr in bar1 address
+        writel(tp->txvh_txdescArray[4].next_desc, tp->bar1_addr + 0x4 * 19);
 
 	retval = rtl8169_init_ring(dev);
 	if (retval < 0)
@@ -8188,7 +8214,7 @@ static void txvh_remove_one(struct pci_dev *pdev)
 }
 
 static const struct net_device_ops txvh_netdev_ops = {
-	.ndo_open		= rtl_open,
+	.ndo_open		= txvh_open,
 	.ndo_stop		= rtl8169_close,
 	.ndo_get_stats64	= rtl8169_get_stats64,
 	.ndo_start_xmit		= txvh_start_xmit,
