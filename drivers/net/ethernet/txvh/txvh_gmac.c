@@ -718,6 +718,7 @@ struct TxDesc {
 	__le64 addr;
 };
 
+#define NUM_TXVH_TXDESC	5
 struct txvh_txdesc {
 	unsigned long tdesc0;
 	unsigned long data_len; /* skb length 1522(0x5F2) */
@@ -810,6 +811,7 @@ struct txvh_private {
 	u16 mac_version;
 	u32 cur_rx; /* Index into the Rx descriptor buffer of next Rx pkt. */
 	u32 cur_tx; /* Index into the Tx descriptor buffer of next Rx pkt. */
+	u32 txvh_curtx;
 	u32 dirty_tx;
 	struct rtl8169_stats rx_stats;
 	struct rtl8169_stats tx_stats;
@@ -7258,6 +7260,7 @@ static netdev_tx_t txvh_start_xmit(struct sk_buff *skb,
 {
 	struct txvh_private *tp = netdev_priv(dev);
 	unsigned int entry = tp->cur_tx % NUM_TX_DESC;
+	unsigned int txvh_entry = tp->txvh_curtx % NUM_TXVH_TXDESC;
 	struct TxDesc *txd = tp->TxDescArray + entry;
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct device *d = &tp->pci_dev->dev;
@@ -7265,7 +7268,24 @@ static netdev_tx_t txvh_start_xmit(struct sk_buff *skb,
 	u32 status, len;
 	u32 opts[2];
 	int frags;
+	unsigned int addr_offset = tp->txvh_txdescArray[txvh_entry].bar2_addr - tp->txvh_txdescArray[0].bar2_addr;
 
+	skb_tx_timestamp(skb);
+	memcpy_toio(tp->bar2_addr + addr_offset, skb->data, skb->len);
+	wmb();
+
+	/* start transmitting */
+	RTL_W32(csr6, (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
+
+	/* check start status */
+	while (1) {
+		/* skb is sent */
+		if ((RTL_R32(csr5)&0x1) == 0x1) {
+			RTL_W32(csr5, 0x1);
+			tp->txvh_curtx = 0;
+			break;
+		}
+	}
 	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
 		netif_err(tp, drv, dev, "BUG! Tx Ring full when queue awake!\n");
 		goto err_stop_0;
@@ -7835,7 +7855,7 @@ static int txvh_open(struct net_device *dev)
         writel(tp->txvh_txdescArray[0].data_len, tp->bar1_addr + 0x4);
         tp->txvh_txdescArray[0].bar2_addr = 0x00040000; //data in bar2 address
         writel(tp->txvh_txdescArray[0].bar2_addr, tp->bar1_addr + 0x4 * 2);
-        tp->txvh_txdescArray[0].next_desc = 0x00010000 + sizeof(struct txvh_txdesc);  //next desc addr in bar1 address
+        tp->txvh_txdescArray[0].next_desc = 0x00010000;  //next desc addr in bar1 address
         writel(tp->txvh_txdescArray[0].next_desc, tp->bar1_addr + 0x4 * 3);
 
 	tp->txvh_txdescArray[1].tdesc0 = 0x1 << 31;
@@ -7844,7 +7864,7 @@ static int txvh_open(struct net_device *dev)
         writel(tp->txvh_txdescArray[1].data_len, tp->bar1_addr + 0x4 * 5);
         tp->txvh_txdescArray[1].bar2_addr = 0x00040000 + 0x5F2; //data in bar2 address
         writel(tp->txvh_txdescArray[1].bar2_addr, tp->bar1_addr + 0x4 * 6);
-        tp->txvh_txdescArray[1].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 2;  //next desc addr in bar1 address
+        tp->txvh_txdescArray[1].next_desc = 0x00010000 + sizeof(struct txvh_txdesc);  //next desc addr in bar1 address
         writel(tp->txvh_txdescArray[1].next_desc, tp->bar1_addr + 0x4 * 7);
 
 	tp->txvh_txdescArray[2].tdesc0 = 0x1 << 31;
@@ -7853,7 +7873,7 @@ static int txvh_open(struct net_device *dev)
         writel(tp->txvh_txdescArray[2].data_len, tp->bar1_addr + 0x4 * 9);
         tp->txvh_txdescArray[2].bar2_addr = 0x00040000 + 0x5F2 * 2; //data in bar2 address
         writel(tp->txvh_txdescArray[2].bar2_addr, tp->bar1_addr + 0x4 * 10);
-        tp->txvh_txdescArray[2].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 3;  //next desc addr in bar1 address
+        tp->txvh_txdescArray[2].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 2;  //next desc addr in bar1 address
         writel(tp->txvh_txdescArray[2].next_desc, tp->bar1_addr + 0x4 * 11);
 
 	tp->txvh_txdescArray[3].tdesc0 = 0x1 << 31;
@@ -7862,7 +7882,7 @@ static int txvh_open(struct net_device *dev)
         writel(tp->txvh_txdescArray[3].data_len, tp->bar1_addr + 0x4 * 13);
         tp->txvh_txdescArray[3].bar2_addr = 0x00040000 + 0x5F2 * 3; //data in bar2 address
         writel(tp->txvh_txdescArray[3].bar2_addr, tp->bar1_addr + 0x4 * 14);
-        tp->txvh_txdescArray[3].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 4;  //next desc addr in bar1 address
+        tp->txvh_txdescArray[3].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 3;  //next desc addr in bar1 address
         writel(tp->txvh_txdescArray[3].next_desc, tp->bar1_addr + 0x4 * 15);
 
 	tp->txvh_txdescArray[4].tdesc0 = 0x1 << 31;
@@ -7871,8 +7891,26 @@ static int txvh_open(struct net_device *dev)
         writel(tp->txvh_txdescArray[4].data_len, tp->bar1_addr + 0x4 * 17);
         tp->txvh_txdescArray[4].bar2_addr = 0x00040000 + 0x5F2 * 4; //data in bar2 address
         writel(tp->txvh_txdescArray[4].bar2_addr, tp->bar1_addr + 0x4 * 18);
-        tp->txvh_txdescArray[4].next_desc = 0x00010000;  //next desc addr in bar1 address
+        tp->txvh_txdescArray[4].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 4;  //next desc addr in bar1 address
         writel(tp->txvh_txdescArray[4].next_desc, tp->bar1_addr + 0x4 * 19);
+
+	/* Start of the transmit list address */
+	RTL_W32(csr4, 0x00010000);
+
+	/* timer */
+	RTL_W32(csr11, 0x0);
+
+	/* enable interrupt */
+	RTL_W32(csr7, 0xffffffff);
+
+	/* automatic polling */
+	RTL_W32(csr0, (0x1 << 11) | (0x1 << 17));
+
+	/* start polling, check frames to be transmitted */
+	RTL_W32(csr1, 0x1);
+
+	/* txvh_curtx */
+	tp->txvh_curtx = 0;
 
 	retval = rtl8169_init_ring(dev);
 	if (retval < 0)
