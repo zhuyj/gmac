@@ -780,7 +780,7 @@ struct rtl8169_stats {
 	struct u64_stats_sync	syncp;
 };
 
-enum registers {
+enum txvh_registers {
         csr0 = 0x000,
         csr1 = 0x008,
         csr2 = 0x010,
@@ -886,8 +886,8 @@ struct txvh_private {
 	u32 ocp_base;
 };
 
-MODULE_AUTHOR("Realtek and the Linux r8169 crew <netdev@vger.kernel.org>");
-MODULE_DESCRIPTION("RealTek RTL-8169 Gigabit Ethernet driver");
+MODULE_AUTHOR("TXVH gmac crew <netdev@vger.kernel.org>");
+MODULE_DESCRIPTION("TXVH gmac Gigabit Ethernet driver");
 module_param(use_dac, int, 0);
 MODULE_PARM_DESC(use_dac, "Enable PCI DAC. Unsafe on 32 bit PCI slot.");
 module_param_named(debug, debug.msg_enable, int, 0);
