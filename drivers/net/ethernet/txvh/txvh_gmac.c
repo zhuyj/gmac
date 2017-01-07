@@ -7278,17 +7278,16 @@ static netdev_tx_t txvh_start_xmit(struct sk_buff *skb,
 	u32 status, len;
 	u32 opts[2];
 	int frags;
-	unsigned long flags;
 	unsigned int addr_offset = tp->txvh_txdescArray[txvh_entry].bar2_addr - tp->txvh_txdescArray[0].bar2_addr;
 
 	skb_tx_timestamp(skb);
 	memcpy_toio(tp->bar2_addr + addr_offset, skb->data, skb->len);
 	wmb();
 
-	spin_lock_irqsave(&tp->lock, flags);
+	spin_lock(&tp->lock);
 	/* start transmitting */
 	RTL_W32(csr6, (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
-	spin_unlock_irqrestore(&tp->lock, flags);
+	spin_unlock(&tp->lock);
 
 	/* check start status */
 	while (1) {
@@ -7724,7 +7723,7 @@ static int txvh_poll(struct napi_struct *napi, int budget)
 	u16 enable_mask = RTL_EVENT_NAPI | tp->event_slow;
 	int work_done= 0;
 	u16 status;
-	unsigned long flags, status_csr5;
+	unsigned long status_csr5;
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	if (printk_ratelimit()) {
@@ -7761,10 +7760,10 @@ static int txvh_poll(struct napi_struct *napi, int budget)
 
 	wmb();
 #endif
-	spin_lock_irqsave(&tp->lock, flags);
+	spin_lock(&tp->lock);
 	/*start receiving*/
 	RTL_W32(csr6, 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
-	spin_unlock_irqrestore(&tp->lock, flags);
+	spin_unlock(&tp->lock);
 	
 	/*check csr5*/
 	status_csr5 = RTL_R32(csr5);
