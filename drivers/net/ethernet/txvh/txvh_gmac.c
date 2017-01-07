@@ -7987,43 +7987,43 @@ static int txvh_open(struct net_device *dev)
 	writel(tp->txvh_rxdescArray[0].rdesc0, tp->bar3_addr);
 	tp->txvh_rxdescArray[0].data_len = 0x1 << 24 | 0x5F2; /*allocated frame length: 1522 bytes*/
 	writel(tp->txvh_rxdescArray[0].data_len, tp->bar3_addr + 0x4);
-	tp->txvh_rxdescArray[0].bar2_addr = 0x00040000 + 8 * 0x5F2; /* received buffer in bar2 address */
+	tp->txvh_rxdescArray[0].bar2_addr = 0x00040000 + 8 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[0].bar2_addr, tp->bar3_addr + 0x4 * 2);
 	tp->txvh_rxdescArray[0].next_desc = 0x00070000; /* bar3 address */
 	writel(tp->txvh_rxdescArray[0].next_desc, tp->bar3_addr + 0x4 * 3);
 
 	tp->txvh_rxdescArray[1].rdesc0 = 0x1 << 31;
 	writel(tp->txvh_rxdescArray[1].rdesc0, tp->bar3_addr + 0x4 * 4);
-	tp->txvh_rxdescArray[1].data_len = 0x1 << 24 | 0x5F2; /*allocated frame length: 1522 bytes*/
+	tp->txvh_rxdescArray[1].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
 	writel(tp->txvh_rxdescArray[1].data_len, tp->bar3_addr + 0x4 * 5);
-	tp->txvh_rxdescArray[1].bar2_addr = 0x00040000 + 9 * 0x5F2; /* received buffer in bar2 address */
+	tp->txvh_rxdescArray[1].bar2_addr = 0x00040000 + 9 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[1].bar2_addr, tp->bar3_addr + 0x4 * 6);
 	tp->txvh_rxdescArray[1].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc); /* bar3 address */
 	writel(tp->txvh_rxdescArray[1].next_desc, tp->bar3_addr + 0x4 * 7);
 
 	tp->txvh_rxdescArray[2].rdesc0 = 0x1 << 31;
 	writel(tp->txvh_rxdescArray[2].rdesc0, tp->bar3_addr + 0x4 * 8);
-	tp->txvh_rxdescArray[2].data_len = 0x1 << 24 | 0x5F2; /*allocated frame length: 1522 bytes*/
+	tp->txvh_rxdescArray[2].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
 	writel(tp->txvh_rxdescArray[2].data_len, tp->bar3_addr + 0x4 * 9);
-	tp->txvh_rxdescArray[2].bar2_addr = 0x00040000 + 10 * 0x5F2; /* received buffer in bar2 address */
+	tp->txvh_rxdescArray[2].bar2_addr = 0x00040000 + 10 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[2].bar2_addr, tp->bar3_addr + 0x4 * 10);
 	tp->txvh_rxdescArray[2].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 2; /* bar3 address */
 	writel(tp->txvh_rxdescArray[2].next_desc, tp->bar3_addr + 0x4 * 11);
 
 	tp->txvh_rxdescArray[3].rdesc0 = 0x1 << 31;
 	writel(tp->txvh_rxdescArray[3].rdesc0, tp->bar3_addr + 0x4 * 12);
-	tp->txvh_rxdescArray[3].data_len = 0x1 << 24 | 0x5F2; /*allocated frame length: 1522 bytes*/
+	tp->txvh_rxdescArray[3].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
 	writel(tp->txvh_rxdescArray[3].data_len, tp->bar3_addr + 0x4 * 13);
-	tp->txvh_rxdescArray[3].bar2_addr = 0x00040000 + 11 * 0x5F2; /* received buffer in bar2 address */
+	tp->txvh_rxdescArray[3].bar2_addr = 0x00040000 + 11 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[3].bar2_addr, tp->bar3_addr + 0x4 * 14);
 	tp->txvh_rxdescArray[3].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 3; /* bar3 address */
 	writel(tp->txvh_rxdescArray[3].next_desc, tp->bar3_addr + 0x4 * 15);
 
 	tp->txvh_rxdescArray[4].rdesc0 = 0x1 << 31;
 	writel(tp->txvh_rxdescArray[4].rdesc0, tp->bar3_addr + 0x4 * 16);
-	tp->txvh_rxdescArray[4].data_len = 0x1 << 24 | 0x5F2; /*allocated frame length: 1522 bytes*/
+	tp->txvh_rxdescArray[4].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
 	writel(tp->txvh_rxdescArray[4].data_len, tp->bar3_addr + 0x4 * 17);
-	tp->txvh_rxdescArray[4].bar2_addr = 0x00040000 + 12 * 0x5F2; /* received buffer in bar2 address */
+	tp->txvh_rxdescArray[4].bar2_addr = 0x00040000 + 12 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[4].bar2_addr, tp->bar3_addr + 0x4 * 18);
 	tp->txvh_rxdescArray[4].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 4; /* bar3 address */
 	writel(tp->txvh_rxdescArray[4].next_desc, tp->bar3_addr + 0x4 * 19);
