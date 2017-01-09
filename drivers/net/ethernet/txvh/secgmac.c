@@ -1,7 +1,5 @@
 /*
- * txvh_gmac.c: TXVH ethernet driver.
- *
- * Copyright (c) a lot of people too. Please respect their work.
+ * gmac.c: TXVH gmac ethernet driver.
  *
  */
 
@@ -7292,12 +7290,13 @@ static netdev_tx_t txvh_start_xmit(struct sk_buff *skb,
 	/* check start status */
 	while (1) {
 		/* skb is sent */
-		if ((RTL_R32(csr5)&0x1) == 0x1) {
+		if ((RTL_R32(csr5) & 0x1) == 0x1) {
 			RTL_W32(csr5, 0x1);
 			tp->txvh_curtx = 0;
 			break;
 		}
 	}
+
 	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
 		netif_err(tp, drv, dev, "BUG! Tx Ring full when queue awake!\n");
 		goto err_stop_0;
