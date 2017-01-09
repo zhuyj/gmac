@@ -5,5 +5,5 @@ if [ -f config-txvh ]; then
 		make oldconfig
 	fi
 fi
-make drivers/net/ethernet/txvh/txvh_gmac.ko
+make drivers/net/ethernet/txvh/secgmac.ko
 #rmmod txvh_gmac
