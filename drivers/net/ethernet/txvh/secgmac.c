@@ -7083,7 +7083,7 @@ static bool rtl_test_hw_pad_bug(struct txvh_private *tp, struct sk_buff *skb)
 }
 #endif
 
-static netdev_tx_t txvh_start_xmit(struct sk_buff *skb,
+static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev);
 /* r8169_csum_workaround()
  * The hw limites the value the transport offset. When the offset is out of the
@@ -7105,7 +7105,7 @@ static void r8169_csum_workaround(struct txvh_private *tp,
 			nskb = segs;
 			segs = segs->next;
 			nskb->next = NULL;
-			txvh_start_xmit(nskb, tp->dev);
+			secgmac_start_xmit(nskb, tp->dev);
 		} while (segs);
 
 		dev_consume_skb_any(skb);
@@ -7113,7 +7113,7 @@ static void r8169_csum_workaround(struct txvh_private *tp,
 		if (skb_checksum_help(skb) < 0)
 			goto drop;
 
-		txvh_start_xmit(skb, tp->dev);
+		secgmac_start_xmit(skb, tp->dev);
 	} else {
 		struct net_device_stats *stats;
 
@@ -7263,7 +7263,7 @@ static bool rtl8169_tso_csum_v2(struct txvh_private *tp,
 }
 #endif
 
-static netdev_tx_t txvh_start_xmit(struct sk_buff *skb,
+static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
 	struct txvh_private *tp = netdev_priv(dev);
@@ -7473,7 +7473,7 @@ static void rtl_tx(struct net_device *dev, struct txvh_private *tp)
 
 	if (tp->dirty_tx != dirty_tx) {
 		tp->dirty_tx = dirty_tx;
-		/* Sync with txvh_start_xmit:
+		/* Sync with secgmac_start_xmit:
 		 * - publish dirty_tx ring index (write barrier)
 		 * - refresh cur_tx ring index and queue status (read barrier)
 		 * May the current thread miss the stopped queue condition,
@@ -7715,12 +7715,12 @@ out_unlock:
 	rtl_unlock_work(tp);
 }
 
-static int txvh_poll(struct napi_struct *napi, int budget)
+static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct txvh_private *tp = container_of(napi, struct txvh_private, napi);
 	struct net_device *dev = tp->dev;
 	u16 enable_mask = RTL_EVENT_NAPI | tp->event_slow;
-	int work_done= 0;
+	int work_done= 0, i;
 	u16 status;
 	unsigned long status_csr5;
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -7763,7 +7763,17 @@ static int txvh_poll(struct napi_struct *napi, int budget)
 	/*start receiving*/
 	RTL_W32(csr6, 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
 	spin_unlock(&tp->lock);
-	
+
+	for (i=0; i<5; i++) {
+		unsigned long tmp_rdesc = readl(tp->bar3_addr + 0x4 * 4 * i);
+
+		/*This desc is filled with the received skb, handle the skb */
+		if ((tmp_rdesc & (0x1 << 31)) == 0) {
+			/* receive the skb, and reset rdesc0 */
+			writel(0x1 << 31, tp->bar3_addr + 0x4 * 4 * i);	
+		}
+	}
+
 	/*check csr5*/
 	status_csr5 = RTL_R32(csr5);
 	printk("txvh func:%s, line:%d, csr5 status:0x%lx\n", __FUNCTION__, __LINE__, status_csr5);
@@ -7845,7 +7855,7 @@ static void rtl8169_down(struct net_device *dev)
 	rtl_pll_power_down(tp);
 }
 
-static int txvh_close(struct net_device *dev)
+static int secgmac_close(struct net_device *dev)
 {
 	struct txvh_private *tp = netdev_priv(dev);
 	struct pci_dev *pdev = tp->pci_dev;
@@ -7892,7 +7902,7 @@ static void rtl8169_netpoll(struct net_device *dev)
 }
 #endif
 
-static int txvh_open(struct net_device *dev)
+static int secgmac_open(struct net_device *dev)
 {
 	struct txvh_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -7988,7 +7998,7 @@ static int txvh_open(struct net_device *dev)
 	writel(tp->txvh_rxdescArray[0].data_len, tp->bar3_addr + 0x4);
 	tp->txvh_rxdescArray[0].bar2_addr = 0x00040000 + 8 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[0].bar2_addr, tp->bar3_addr + 0x4 * 2);
-	tp->txvh_rxdescArray[0].next_desc = 0x00070000; /* bar3 address */
+	tp->txvh_rxdescArray[0].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc); /* bar3 address */
 	writel(tp->txvh_rxdescArray[0].next_desc, tp->bar3_addr + 0x4 * 3);
 
 	tp->txvh_rxdescArray[1].rdesc0 = 0x1 << 31;
@@ -7997,7 +8007,7 @@ static int txvh_open(struct net_device *dev)
 	writel(tp->txvh_rxdescArray[1].data_len, tp->bar3_addr + 0x4 * 5);
 	tp->txvh_rxdescArray[1].bar2_addr = 0x00040000 + 9 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[1].bar2_addr, tp->bar3_addr + 0x4 * 6);
-	tp->txvh_rxdescArray[1].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc); /* bar3 address */
+	tp->txvh_rxdescArray[1].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 2; /* bar3 address */
 	writel(tp->txvh_rxdescArray[1].next_desc, tp->bar3_addr + 0x4 * 7);
 
 	tp->txvh_rxdescArray[2].rdesc0 = 0x1 << 31;
@@ -8006,7 +8016,7 @@ static int txvh_open(struct net_device *dev)
 	writel(tp->txvh_rxdescArray[2].data_len, tp->bar3_addr + 0x4 * 9);
 	tp->txvh_rxdescArray[2].bar2_addr = 0x00040000 + 10 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[2].bar2_addr, tp->bar3_addr + 0x4 * 10);
-	tp->txvh_rxdescArray[2].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 2; /* bar3 address */
+	tp->txvh_rxdescArray[2].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 3; /* bar3 address */
 	writel(tp->txvh_rxdescArray[2].next_desc, tp->bar3_addr + 0x4 * 11);
 
 	tp->txvh_rxdescArray[3].rdesc0 = 0x1 << 31;
@@ -8015,7 +8025,7 @@ static int txvh_open(struct net_device *dev)
 	writel(tp->txvh_rxdescArray[3].data_len, tp->bar3_addr + 0x4 * 13);
 	tp->txvh_rxdescArray[3].bar2_addr = 0x00040000 + 11 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[3].bar2_addr, tp->bar3_addr + 0x4 * 14);
-	tp->txvh_rxdescArray[3].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 3; /* bar3 address */
+	tp->txvh_rxdescArray[3].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 4; /* bar3 address */
 	writel(tp->txvh_rxdescArray[3].next_desc, tp->bar3_addr + 0x4 * 15);
 
 	tp->txvh_rxdescArray[4].rdesc0 = 0x1 << 31;
@@ -8024,7 +8034,7 @@ static int txvh_open(struct net_device *dev)
 	writel(tp->txvh_rxdescArray[4].data_len, tp->bar3_addr + 0x4 * 17);
 	tp->txvh_rxdescArray[4].bar2_addr = 0x00040000 + 12 * 0x5F4; /* received buffer in bar2 address */
 	writel(tp->txvh_rxdescArray[4].bar2_addr, tp->bar3_addr + 0x4 * 18);
-	tp->txvh_rxdescArray[4].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 4; /* bar3 address */
+	tp->txvh_rxdescArray[4].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc); /* bar3 address */
 	writel(tp->txvh_rxdescArray[4].next_desc, tp->bar3_addr + 0x4 * 19);
 
 	/* receive addr bar3 */
@@ -8389,10 +8399,10 @@ static void txvh_remove_one(struct pci_dev *pdev)
 }
 
 static const struct net_device_ops txvh_netdev_ops = {
-	.ndo_open		= txvh_open,
-	.ndo_stop		= txvh_close,
+	.ndo_open		= secgmac_open,
+	.ndo_stop		= secgmac_close,
 	.ndo_get_stats64	= rtl8169_get_stats64,
-	.ndo_start_xmit		= txvh_start_xmit,
+	.ndo_start_xmit		= secgmac_start_xmit,
 	.ndo_tx_timeout		= rtl8169_tx_timeout,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_change_mtu		= rtl8169_change_mtu,
@@ -8810,7 +8820,7 @@ static int txvh_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	dev->ethtool_ops = &txvh_ethtool_ops;
 	dev->watchdog_timeo = RTL8169_TX_TIMEOUT;
 
-	netif_napi_add(dev, &tp->napi, txvh_poll, R8169_NAPI_WEIGHT);
+	netif_napi_add(dev, &tp->napi, secgmac_poll, R8169_NAPI_WEIGHT);
 
 	/* don't enable SG, IP_CSUM and TSO by default - it might not work
 	 * properly for all devices */
