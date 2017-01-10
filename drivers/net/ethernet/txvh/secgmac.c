@@ -1,5 +1,5 @@
 /*
- * gmac.c: TXVH gmac ethernet driver.
+ * secgmac.c: TXVH gmac ethernet driver.
  *
  */
 
@@ -29,7 +29,7 @@
 #include <asm/irq.h>
 
 #define TXVH_VERSION "0.1"
-#define MODULENAME "txvh_gmac"
+#define MODULENAME "txvh_secgmac"
 #define PFX MODULENAME ": "
 #if 0
 #define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-1.fw"
@@ -319,7 +319,7 @@ enum cfg_version {
 	RTL_CFG_2
 };
 
-static const struct pci_device_id txvh_pci_tbl[] = {
+static const struct pci_device_id secgmac_pci_tbl[] = {
 #if 0
 	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	0x8129), 0, 0, RTL_CFG_0 },
 	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	0x8136), 0, 0, RTL_CFG_2 },
@@ -342,7 +342,7 @@ static const struct pci_device_id txvh_pci_tbl[] = {
 	{0,},
 };
 
-MODULE_DEVICE_TABLE(pci, txvh_pci_tbl);
+MODULE_DEVICE_TABLE(pci, secgmac_pci_tbl);
 
 static int rx_buf_sz = 16383;
 static int use_dac = -1;
@@ -716,16 +716,16 @@ struct TxDesc {
 	__le64 addr;
 };
 
-#define NUM_TXVH_TXDESC	5
-struct txvh_txdesc {
+#define NUM_SECGMAC_TXDESC	5
+struct secgmac_txdesc {
 	unsigned long tdesc0;
 	unsigned long data_len;  /* skb length 1522(0x5F2) bytes */
 	unsigned long bar2_addr; /* data sent addr */ 
 	unsigned long next_desc; /* next desc addr */
 };
 
-#define NUM_TXVH_RXDESC 5
-struct txvh_rxdesc {
+#define NUM_SECGMAC_RXDESC 5
+struct secgmac_rxdesc {
         unsigned long rdesc0;
         unsigned long data_len;    /* frame length 1522(0x5F2) bytes */
         unsigned long bar2_addr;   /* data received addr, offset 8K bytes */
@@ -787,7 +787,7 @@ struct rtl8169_stats {
 	struct u64_stats_sync	syncp;
 };
 
-enum txvh_registers {
+enum secgmac_registers {
         csr0 = 0x000,
         csr1 = 0x008,
         csr2 = 0x010,
@@ -807,7 +807,7 @@ enum txvh_registers {
         csr20 = 0x0a0,
 };
 
-struct txvh_private {
+struct secgmac_private {
 	void __iomem *mmio_addr, *bar1_addr, *bar2_addr, *bar3_addr;	/* memory map physical address */
 	spinlock_t lock;
 	struct pci_dev *pci_dev;
@@ -818,14 +818,14 @@ struct txvh_private {
 	u16 mac_version;
 	u32 cur_rx; /* Index into the Rx descriptor buffer of next Rx pkt. */
 	u32 cur_tx; /* Index into the Tx descriptor buffer of next Rx pkt. */
-	u32 txvh_curtx;
+	u32 secgmac_curtx;
 	u32 dirty_tx;
 	struct rtl8169_stats rx_stats;
 	struct rtl8169_stats tx_stats;
 	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
 	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
-	struct txvh_txdesc *txvh_txdescArray;	/* TXVH TX description now 5 */
-	struct txvh_rxdesc *txvh_rxdescArray;	/* TXVH RX description now 5 */
+	struct secgmac_txdesc *secgmac_txdescArray;	/* TXVH TX description now 5 */
+	struct secgmac_rxdesc *secgmac_rxdescArray;	/* TXVH RX description now 5 */
 	dma_addr_t TxPhyAddr;
 	dma_addr_t RxPhyAddr;
 	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
@@ -836,33 +836,33 @@ struct txvh_private {
 	u16 event_slow;
 
 	struct mdio_ops {
-		void (*write)(struct txvh_private *, int, int);
-		int (*read)(struct txvh_private *, int);
+		void (*write)(struct secgmac_private *, int, int);
+		int (*read)(struct secgmac_private *, int);
 	} mdio_ops;
 
 	struct pll_power_ops {
-		void (*down)(struct txvh_private *);
-		void (*up)(struct txvh_private *);
+		void (*down)(struct secgmac_private *);
+		void (*up)(struct secgmac_private *);
 	} pll_power_ops;
 
 	struct jumbo_ops {
-		void (*enable)(struct txvh_private *);
-		void (*disable)(struct txvh_private *);
+		void (*enable)(struct secgmac_private *);
+		void (*disable)(struct secgmac_private *);
 	} jumbo_ops;
 
 	struct csi_ops {
-		void (*write)(struct txvh_private *, int, int);
-		u32 (*read)(struct txvh_private *, int);
+		void (*write)(struct secgmac_private *, int, int);
+		u32 (*read)(struct secgmac_private *, int);
 	} csi_ops;
 
 	int (*set_speed)(struct net_device *, u8 aneg, u16 sp, u8 dpx, u32 adv);
 	int (*get_settings)(struct net_device *, struct ethtool_cmd *);
-	void (*phy_reset_enable)(struct txvh_private *tp);
+	void (*phy_reset_enable)(struct secgmac_private *tp);
 	void (*hw_start)(struct net_device *);
-	unsigned int (*phy_reset_pending)(struct txvh_private *tp);
+	unsigned int (*phy_reset_pending)(struct secgmac_private *tp);
 	unsigned int (*link_ok)(void __iomem *);
-	int (*do_ioctl)(struct txvh_private *tp, struct mii_ioctl_data *data, int cmd);
-	bool (*tso_csum)(struct txvh_private *, struct sk_buff *, u32 *);
+	int (*do_ioctl)(struct secgmac_private *tp, struct mii_ioctl_data *data, int cmd);
+	bool (*tso_csum)(struct secgmac_private *, struct sk_buff *, u32 *);
 
 	struct {
 		DECLARE_BITMAP(flags, RTL_FLAG_MAX);
@@ -925,12 +925,12 @@ MODULE_FIRMWARE(FIRMWARE_8168H_2);
 MODULE_FIRMWARE(FIRMWARE_8107E_1);
 MODULE_FIRMWARE(FIRMWARE_8107E_2);
 #endif
-static void rtl_lock_work(struct txvh_private *tp)
+static void rtl_lock_work(struct secgmac_private *tp)
 {
 	mutex_lock(&tp->wk.mutex);
 }
 
-static void rtl_unlock_work(struct txvh_private *tp)
+static void rtl_unlock_work(struct secgmac_private *tp)
 {
 	mutex_unlock(&tp->wk.mutex);
 }
@@ -944,7 +944,7 @@ static void rtl_tx_performance_tweak(struct pci_dev *pdev, u16 force)
 #endif
 
 struct rtl_cond {
-	bool (*check)(struct txvh_private *);
+	bool (*check)(struct secgmac_private *);
 	const char *msg;
 };
 
@@ -953,7 +953,7 @@ static void rtl_udelay(unsigned int d)
 	udelay(d);
 }
 
-static bool rtl_loop_wait(struct txvh_private *tp, const struct rtl_cond *c,
+static bool rtl_loop_wait(struct secgmac_private *tp, const struct rtl_cond *c,
 			  void (*delay)(unsigned int), unsigned int d, int n,
 			  bool high)
 {
@@ -970,7 +970,7 @@ static bool rtl_loop_wait(struct txvh_private *tp, const struct rtl_cond *c,
 }
 
 #if 0
-static bool rtl_udelay_loop_wait_high(struct txvh_private *tp,
+static bool rtl_udelay_loop_wait_high(struct secgmac_private *tp,
 				      const struct rtl_cond *c,
 				      unsigned int d, int n)
 {
@@ -978,7 +978,7 @@ static bool rtl_udelay_loop_wait_high(struct txvh_private *tp,
 }
 #endif
 
-static bool rtl_udelay_loop_wait_low(struct txvh_private *tp,
+static bool rtl_udelay_loop_wait_low(struct secgmac_private *tp,
 				     const struct rtl_cond *c,
 				     unsigned int d, int n)
 {
@@ -986,7 +986,7 @@ static bool rtl_udelay_loop_wait_low(struct txvh_private *tp,
 }
 
 #if 0
-static bool rtl_msleep_loop_wait_high(struct txvh_private *tp,
+static bool rtl_msleep_loop_wait_high(struct secgmac_private *tp,
 				      const struct rtl_cond *c,
 				      unsigned int d, int n)
 {
@@ -994,7 +994,7 @@ static bool rtl_msleep_loop_wait_high(struct txvh_private *tp,
 }
 #endif
 
-static bool rtl_msleep_loop_wait_low(struct txvh_private *tp,
+static bool rtl_msleep_loop_wait_low(struct secgmac_private *tp,
 				     const struct rtl_cond *c,
 				     unsigned int d, int n)
 {
@@ -1002,17 +1002,17 @@ static bool rtl_msleep_loop_wait_low(struct txvh_private *tp,
 }
 
 #define DECLARE_RTL_COND(name)				\
-static bool name ## _check(struct txvh_private *);	\
+static bool name ## _check(struct secgmac_private *);	\
 							\
 static const struct rtl_cond name = {			\
 	.check	= name ## _check,			\
 	.msg	= #name					\
 };							\
 							\
-static bool name ## _check(struct txvh_private *tp)
+static bool name ## _check(struct secgmac_private *tp)
 
 #if 0
-static bool rtl_ocp_reg_failure(struct txvh_private *tp, u32 reg)
+static bool rtl_ocp_reg_failure(struct secgmac_private *tp, u32 reg)
 {
 	if (reg & 0xffff0001) {
 		netif_err(tp, drv, tp->dev, "Invalid ocp reg %x!\n", reg);
@@ -1030,7 +1030,7 @@ DECLARE_RTL_COND(rtl_ocp_gphy_cond)
 }
 
 #if 0
-static void r8168_phy_ocp_write(struct txvh_private *tp, u32 reg, u32 data)
+static void r8168_phy_ocp_write(struct secgmac_private *tp, u32 reg, u32 data)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1042,7 +1042,7 @@ static void r8168_phy_ocp_write(struct txvh_private *tp, u32 reg, u32 data)
 	rtl_udelay_loop_wait_low(tp, &rtl_ocp_gphy_cond, 25, 10);
 }
 
-static u16 r8168_phy_ocp_read(struct txvh_private *tp, u32 reg)
+static u16 r8168_phy_ocp_read(struct secgmac_private *tp, u32 reg)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1055,7 +1055,7 @@ static u16 r8168_phy_ocp_read(struct txvh_private *tp, u32 reg)
 		(RTL_R32(GPHY_OCP) & 0xffff) : ~0;
 }
 
-static void r8168_mac_ocp_write(struct txvh_private *tp, u32 reg, u32 data)
+static void r8168_mac_ocp_write(struct secgmac_private *tp, u32 reg, u32 data)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1065,7 +1065,7 @@ static void r8168_mac_ocp_write(struct txvh_private *tp, u32 reg, u32 data)
 	RTL_W32(OCPDR, OCPAR_FLAG | (reg << 15) | data);
 }
 
-static u16 r8168_mac_ocp_read(struct txvh_private *tp, u32 reg)
+static u16 r8168_mac_ocp_read(struct secgmac_private *tp, u32 reg)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1081,7 +1081,7 @@ static u16 r8168_mac_ocp_read(struct txvh_private *tp, u32 reg)
 #define OCP_STD_PHY_BASE	0xa400
 
 #if 0
-static void r8168g_mdio_write(struct txvh_private *tp, int reg, int value)
+static void r8168g_mdio_write(struct secgmac_private *tp, int reg, int value)
 {
 	if (reg == 0x1f) {
 		tp->ocp_base = value ? value << 4 : OCP_STD_PHY_BASE;
@@ -1094,7 +1094,7 @@ static void r8168g_mdio_write(struct txvh_private *tp, int reg, int value)
 	r8168_phy_ocp_write(tp, tp->ocp_base + reg * 2, value);
 }
 
-static int r8168g_mdio_read(struct txvh_private *tp, int reg)
+static int r8168g_mdio_read(struct secgmac_private *tp, int reg)
 {
 	if (tp->ocp_base != OCP_STD_PHY_BASE)
 		reg -= 0x10;
@@ -1102,7 +1102,7 @@ static int r8168g_mdio_read(struct txvh_private *tp, int reg)
 	return r8168_phy_ocp_read(tp, tp->ocp_base + reg * 2);
 }
 
-static void mac_mcu_write(struct txvh_private *tp, int reg, int value)
+static void mac_mcu_write(struct secgmac_private *tp, int reg, int value)
 {
 	if (reg == 0x1f) {
 		tp->ocp_base = value << 4;
@@ -1112,7 +1112,7 @@ static void mac_mcu_write(struct txvh_private *tp, int reg, int value)
 	r8168_mac_ocp_write(tp, tp->ocp_base + reg, value);
 }
 
-static int mac_mcu_read(struct txvh_private *tp, int reg)
+static int mac_mcu_read(struct secgmac_private *tp, int reg)
 {
 	return r8168_mac_ocp_read(tp, tp->ocp_base + reg);
 }
@@ -1126,7 +1126,7 @@ DECLARE_RTL_COND(rtl_phyar_cond)
 }
 
 #if 0
-static void r8169_mdio_write(struct txvh_private *tp, int reg, int value)
+static void r8169_mdio_write(struct secgmac_private *tp, int reg, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1140,7 +1140,7 @@ static void r8169_mdio_write(struct txvh_private *tp, int reg, int value)
 	udelay(20);
 }
 
-static int r8169_mdio_read(struct txvh_private *tp, int reg)
+static int r8169_mdio_read(struct secgmac_private *tp, int reg)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	int value;
@@ -1168,7 +1168,7 @@ DECLARE_RTL_COND(rtl_ocpar_cond)
 }
 
 #if 0
-static void r8168dp_1_mdio_access(struct txvh_private *tp, int reg, u32 data)
+static void r8168dp_1_mdio_access(struct secgmac_private *tp, int reg, u32 data)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1179,13 +1179,13 @@ static void r8168dp_1_mdio_access(struct txvh_private *tp, int reg, u32 data)
 	rtl_udelay_loop_wait_low(tp, &rtl_ocpar_cond, 1000, 100);
 }
 
-static void r8168dp_1_mdio_write(struct txvh_private *tp, int reg, int value)
+static void r8168dp_1_mdio_write(struct secgmac_private *tp, int reg, int value)
 {
 	r8168dp_1_mdio_access(tp, reg,
 			      OCPDR_WRITE_CMD | (value & OCPDR_DATA_MASK));
 }
 
-static int r8168dp_1_mdio_read(struct txvh_private *tp, int reg)
+static int r8168dp_1_mdio_read(struct secgmac_private *tp, int reg)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1213,7 +1213,7 @@ static void r8168dp_2_mdio_stop(void __iomem *ioaddr)
 	RTL_W32(0xd0, RTL_R32(0xd0) | R8168DP_1_MDIO_ACCESS_BIT);
 }
 
-static void r8168dp_2_mdio_write(struct txvh_private *tp, int reg, int value)
+static void r8168dp_2_mdio_write(struct secgmac_private *tp, int reg, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1224,7 +1224,7 @@ static void r8168dp_2_mdio_write(struct txvh_private *tp, int reg, int value)
 	r8168dp_2_mdio_stop(ioaddr);
 }
 
-static int r8168dp_2_mdio_read(struct txvh_private *tp, int reg)
+static int r8168dp_2_mdio_read(struct secgmac_private *tp, int reg)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	int value;
@@ -1239,23 +1239,23 @@ static int r8168dp_2_mdio_read(struct txvh_private *tp, int reg)
 }
 #endif
 
-static void rtl_writephy(struct txvh_private *tp, int location, u32 val)
+static void rtl_writephy(struct secgmac_private *tp, int location, u32 val)
 {
 	tp->mdio_ops.write(tp, location, val);
 }
 
-static int rtl_readphy(struct txvh_private *tp, int location)
+static int rtl_readphy(struct secgmac_private *tp, int location)
 {
 	return tp->mdio_ops.read(tp, location);
 }
 
 #if 0
-static void rtl_patchphy(struct txvh_private *tp, int reg_addr, int value)
+static void rtl_patchphy(struct secgmac_private *tp, int reg_addr, int value)
 {
 	rtl_writephy(tp, reg_addr, rtl_readphy(tp, reg_addr) | value);
 }
 
-static void rtl_w0w1_phy(struct txvh_private *tp, int reg_addr, int p, int m)
+static void rtl_w0w1_phy(struct secgmac_private *tp, int reg_addr, int p, int m)
 {
 	int val;
 
@@ -1267,14 +1267,14 @@ static void rtl_w0w1_phy(struct txvh_private *tp, int reg_addr, int p, int m)
 static void rtl_mdio_write(struct net_device *dev, int phy_id, int location,
 			   int val)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl_writephy(tp, location, val);
 }
 
 static int rtl_mdio_read(struct net_device *dev, int phy_id, int location)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	return rtl_readphy(tp, location);
 }
@@ -1287,7 +1287,7 @@ DECLARE_RTL_COND(rtl_ephyar_cond)
 }
 
 #if 0
-static void rtl_ephy_write(struct txvh_private *tp, int reg_addr, int value)
+static void rtl_ephy_write(struct secgmac_private *tp, int reg_addr, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1299,7 +1299,7 @@ static void rtl_ephy_write(struct txvh_private *tp, int reg_addr, int value)
 	udelay(10);
 }
 
-static u16 rtl_ephy_read(struct txvh_private *tp, int reg_addr)
+static u16 rtl_ephy_read(struct secgmac_private *tp, int reg_addr)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1318,7 +1318,7 @@ DECLARE_RTL_COND(rtl_eriar_cond)
 }
 
 #if 0
-static void rtl_eri_write(struct txvh_private *tp, int addr, u32 mask,
+static void rtl_eri_write(struct secgmac_private *tp, int addr, u32 mask,
 			  u32 val, int type)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1330,7 +1330,7 @@ static void rtl_eri_write(struct txvh_private *tp, int addr, u32 mask,
 	rtl_udelay_loop_wait_low(tp, &rtl_eriar_cond, 100, 100);
 }
 
-static u32 rtl_eri_read(struct txvh_private *tp, int addr, int type)
+static u32 rtl_eri_read(struct secgmac_private *tp, int addr, int type)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1340,7 +1340,7 @@ static u32 rtl_eri_read(struct txvh_private *tp, int addr, int type)
 		RTL_R32(ERIDR) : ~0;
 }
 
-static void rtl_w0w1_eri(struct txvh_private *tp, int addr, u32 mask, u32 p,
+static void rtl_w0w1_eri(struct secgmac_private *tp, int addr, u32 mask, u32 p,
 			 u32 m, int type)
 {
 	u32 val;
@@ -1349,7 +1349,7 @@ static void rtl_w0w1_eri(struct txvh_private *tp, int addr, u32 mask, u32 p,
 	rtl_eri_write(tp, addr, mask, (val & ~m) | p, type);
 }
 
-static u32 r8168dp_ocp_read(struct txvh_private *tp, u8 mask, u16 reg)
+static u32 r8168dp_ocp_read(struct secgmac_private *tp, u8 mask, u16 reg)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1358,13 +1358,13 @@ static u32 r8168dp_ocp_read(struct txvh_private *tp, u8 mask, u16 reg)
 		RTL_R32(OCPDR) : ~0;
 }
 
-static u32 r8168ep_ocp_read(struct txvh_private *tp, u8 mask, u16 reg)
+static u32 r8168ep_ocp_read(struct secgmac_private *tp, u8 mask, u16 reg)
 {
 	return rtl_eri_read(tp, reg, ERIAR_OOB);
 }
 #endif
 
-static u32 ocp_read(struct txvh_private *tp, u8 mask, u16 reg)
+static u32 ocp_read(struct secgmac_private *tp, u8 mask, u16 reg)
 {
 #if 0
 	switch (tp->mac_version) {
@@ -1385,7 +1385,7 @@ static u32 ocp_read(struct txvh_private *tp, u8 mask, u16 reg)
 }
 
 #if 0
-static void r8168dp_ocp_write(struct txvh_private *tp, u8 mask, u16 reg,
+static void r8168dp_ocp_write(struct secgmac_private *tp, u8 mask, u16 reg,
 			      u32 data)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1395,14 +1395,14 @@ static void r8168dp_ocp_write(struct txvh_private *tp, u8 mask, u16 reg,
 	rtl_udelay_loop_wait_low(tp, &rtl_ocpar_cond, 100, 20);
 }
 
-static void r8168ep_ocp_write(struct txvh_private *tp, u8 mask, u16 reg,
+static void r8168ep_ocp_write(struct secgmac_private *tp, u8 mask, u16 reg,
 			      u32 data)
 {
 	rtl_eri_write(tp, reg, ((u32)mask & 0x0f) << ERIAR_MASK_SHIFT,
 		      data, ERIAR_OOB);
 }
 
-static void ocp_write(struct txvh_private *tp, u8 mask, u16 reg, u32 data)
+static void ocp_write(struct secgmac_private *tp, u8 mask, u16 reg, u32 data)
 {
 	switch (tp->mac_version) {
 	case RTL_GIGA_MAC_VER_27:
@@ -1421,7 +1421,7 @@ static void ocp_write(struct txvh_private *tp, u8 mask, u16 reg, u32 data)
 	}
 }
 
-static void rtl8168_oob_notify(struct txvh_private *tp, u8 cmd)
+static void rtl8168_oob_notify(struct secgmac_private *tp, u8 cmd)
 {
 	rtl_eri_write(tp, 0xe8, ERIAR_MASK_0001, cmd, ERIAR_EXGMAC);
 
@@ -1433,7 +1433,7 @@ static void rtl8168_oob_notify(struct txvh_private *tp, u8 cmd)
 #define OOB_CMD_DRIVER_START	0x05
 #define OOB_CMD_DRIVER_STOP	0x06
 
-static u16 rtl8168_get_ocp_reg(struct txvh_private *tp)
+static u16 rtl8168_get_ocp_reg(struct secgmac_private *tp)
 {
 	//return (tp->mac_version == RTL_GIGA_MAC_VER_31) ? 0xb8 : 0x10;
 	return 1;
@@ -1461,7 +1461,7 @@ DECLARE_RTL_COND(rtl_ocp_tx_cond)
 }
 
 #if 0
-static void rtl8168ep_stop_cmac(struct txvh_private *tp)
+static void rtl8168ep_stop_cmac(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1471,20 +1471,20 @@ static void rtl8168ep_stop_cmac(struct txvh_private *tp)
 	RTL_W8(IBCR0, RTL_R8(IBCR0) & ~0x01);
 }
 
-static void rtl8168dp_driver_start(struct txvh_private *tp)
+static void rtl8168dp_driver_start(struct secgmac_private *tp)
 {
 	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_START);
 	rtl_msleep_loop_wait_high(tp, &rtl_ocp_read_cond, 10, 10);
 }
 
-static void rtl8168ep_driver_start(struct txvh_private *tp)
+static void rtl8168ep_driver_start(struct secgmac_private *tp)
 {
 	ocp_write(tp, 0x01, 0x180, OOB_CMD_DRIVER_START);
 	ocp_write(tp, 0x01, 0x30, ocp_read(tp, 0x01, 0x30) | 0x01);
 	rtl_msleep_loop_wait_high(tp, &rtl_ep_ocp_read_cond, 10, 10);
 }
 
-static void rtl8168_driver_start(struct txvh_private *tp)
+static void rtl8168_driver_start(struct secgmac_private *tp)
 {
 	switch (tp->mac_version) {
 	case RTL_GIGA_MAC_VER_27:
@@ -1503,13 +1503,13 @@ static void rtl8168_driver_start(struct txvh_private *tp)
 	}
 }
 
-static void rtl8168dp_driver_stop(struct txvh_private *tp)
+static void rtl8168dp_driver_stop(struct secgmac_private *tp)
 {
 	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_STOP);
 	rtl_msleep_loop_wait_low(tp, &rtl_ocp_read_cond, 10, 10);
 }
 
-static void rtl8168ep_driver_stop(struct txvh_private *tp)
+static void rtl8168ep_driver_stop(struct secgmac_private *tp)
 {
 	rtl8168ep_stop_cmac(tp);
 	ocp_write(tp, 0x01, 0x180, OOB_CMD_DRIVER_STOP);
@@ -1517,7 +1517,7 @@ static void rtl8168ep_driver_stop(struct txvh_private *tp)
 	rtl_msleep_loop_wait_low(tp, &rtl_ep_ocp_read_cond, 10, 10);
 }
 
-static void rtl8168_driver_stop(struct txvh_private *tp)
+static void rtl8168_driver_stop(struct secgmac_private *tp)
 {
 	switch (tp->mac_version) {
 	case RTL_GIGA_MAC_VER_27:
@@ -1536,19 +1536,19 @@ static void rtl8168_driver_stop(struct txvh_private *tp)
 	}
 }
 
-static int r8168dp_check_dash(struct txvh_private *tp)
+static int r8168dp_check_dash(struct secgmac_private *tp)
 {
 	u16 reg = rtl8168_get_ocp_reg(tp);
 
 	return (ocp_read(tp, 0x0f, reg) & 0x00008000) ? 1 : 0;
 }
 
-static int r8168ep_check_dash(struct txvh_private *tp)
+static int r8168ep_check_dash(struct secgmac_private *tp)
 {
 	return (ocp_read(tp, 0x0f, 0x128) & 0x00000001) ? 1 : 0;
 }
 
-static int r8168_check_dash(struct txvh_private *tp)
+static int r8168_check_dash(struct secgmac_private *tp)
 {
 	switch (tp->mac_version) {
 	case RTL_GIGA_MAC_VER_27:
@@ -1572,7 +1572,7 @@ struct exgmac_reg {
 };
 
 #if 0
-static void rtl_write_exgmac_batch(struct txvh_private *tp,
+static void rtl_write_exgmac_batch(struct secgmac_private *tp,
 				   const struct exgmac_reg *r, int len)
 {
 	while (len-- > 0) {
@@ -1590,7 +1590,7 @@ DECLARE_RTL_COND(rtl_efusear_cond)
 }
 
 #if 0
-static u8 rtl8168d_efuse_read(struct txvh_private *tp, int reg_addr)
+static u8 rtl8168d_efuse_read(struct secgmac_private *tp, int reg_addr)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1601,14 +1601,14 @@ static u8 rtl8168d_efuse_read(struct txvh_private *tp, int reg_addr)
 }
 #endif
 
-static u16 rtl_get_events(struct txvh_private *tp)
+static u16 rtl_get_events(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	return RTL_R16(IntrStatus);
 }
 
-static void rtl_ack_events(struct txvh_private *tp, u16 bits)
+static void rtl_ack_events(struct secgmac_private *tp, u16 bits)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1616,7 +1616,7 @@ static void rtl_ack_events(struct txvh_private *tp, u16 bits)
 	mmiowb();
 }
 
-static void rtl_irq_disable(struct txvh_private *tp)
+static void rtl_irq_disable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1624,7 +1624,7 @@ static void rtl_irq_disable(struct txvh_private *tp)
 	mmiowb();
 }
 
-static void rtl_irq_enable(struct txvh_private *tp, u16 bits)
+static void rtl_irq_enable(struct secgmac_private *tp, u16 bits)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1635,13 +1635,13 @@ static void rtl_irq_enable(struct txvh_private *tp, u16 bits)
 #define RTL_EVENT_NAPI_TX	(TxOK | TxErr)
 #define RTL_EVENT_NAPI		(RTL_EVENT_NAPI_RX | RTL_EVENT_NAPI_TX)
 
-static void rtl_irq_enable_all(struct txvh_private *tp)
+static void rtl_irq_enable_all(struct secgmac_private *tp)
 {
 	rtl_irq_enable(tp, RTL_EVENT_NAPI | tp->event_slow);
 }
 
 #if 0
-static void rtl8169_irq_mask_and_ack(struct txvh_private *tp)
+static void rtl8169_irq_mask_and_ack(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -1651,14 +1651,14 @@ static void rtl8169_irq_mask_and_ack(struct txvh_private *tp)
 }
 #endif
 
-static unsigned int rtl8169_tbi_reset_pending(struct txvh_private *tp)
+static unsigned int rtl8169_tbi_reset_pending(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	return RTL_R32(TBICSR) & TBIReset;
 }
 
-static unsigned int rtl8169_xmii_reset_pending(struct txvh_private *tp)
+static unsigned int rtl8169_xmii_reset_pending(struct secgmac_private *tp)
 {
 	return rtl_readphy(tp, MII_BMCR) & BMCR_RESET;
 }
@@ -1673,14 +1673,14 @@ static unsigned int rtl8169_xmii_link_ok(void __iomem *ioaddr)
 	return RTL_R8(PHYstatus) & LinkStatus;
 }
 
-static void rtl8169_tbi_reset_enable(struct txvh_private *tp)
+static void rtl8169_tbi_reset_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	RTL_W32(TBICSR, RTL_R32(TBICSR) | TBIReset);
 }
 
-static void rtl8169_xmii_reset_enable(struct txvh_private *tp)
+static void rtl8169_xmii_reset_enable(struct secgmac_private *tp)
 {
 	unsigned int val;
 
@@ -1688,7 +1688,7 @@ static void rtl8169_xmii_reset_enable(struct txvh_private *tp)
 	rtl_writephy(tp, MII_BMCR, val & 0xffff);
 }
 
-static void rtl_link_chg_patch(struct txvh_private *tp)
+static void rtl_link_chg_patch(struct secgmac_private *tp)
 {
 #if 0
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1748,7 +1748,7 @@ static void rtl_link_chg_patch(struct txvh_private *tp)
 }
 
 static void __rtl8169_check_link_status(struct net_device *dev,
-					struct txvh_private *tp,
+					struct secgmac_private *tp,
 					void __iomem *ioaddr, bool pm)
 {
 	if (tp->link_ok(ioaddr)) {
@@ -1768,7 +1768,7 @@ static void __rtl8169_check_link_status(struct net_device *dev,
 }
 
 static void rtl8169_check_link_status(struct net_device *dev,
-				      struct txvh_private *tp,
+				      struct secgmac_private *tp,
 				      void __iomem *ioaddr)
 {
 	__rtl8169_check_link_status(dev, tp, ioaddr, false);
@@ -1776,7 +1776,7 @@ static void rtl8169_check_link_status(struct net_device *dev,
 
 #define WAKE_ANY (WAKE_PHY | WAKE_MAGIC | WAKE_UCAST | WAKE_BCAST | WAKE_MCAST)
 
-static u32 __rtl8169_get_wol(struct txvh_private *tp)
+static u32 __rtl8169_get_wol(struct secgmac_private *tp)
 {
 //	void __iomem *ioaddr = tp->mmio_addr;
 //	u8 options;
@@ -1829,7 +1829,7 @@ static u32 __rtl8169_get_wol(struct txvh_private *tp)
 
 static void rtl8169_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct device *d = &tp->pci_dev->dev;
 
 	pm_runtime_get_noresume(d);
@@ -1847,7 +1847,7 @@ static void rtl8169_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 	pm_runtime_put_noidle(d);
 }
 
-static void __rtl8169_set_wol(struct txvh_private *tp, u32 wolopts)
+static void __rtl8169_set_wol(struct secgmac_private *tp, u32 wolopts)
 {
 #if 0
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1935,7 +1935,7 @@ static void __rtl8169_set_wol(struct txvh_private *tp, u32 wolopts)
 
 static int rtl8169_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct device *d = &tp->pci_dev->dev;
 
 	pm_runtime_get_noresume(d);
@@ -1960,7 +1960,7 @@ static int rtl8169_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 	return 0;
 }
 
-static const char *rtl_lookup_firmware_name(struct txvh_private *tp)
+static const char *rtl_lookup_firmware_name(struct secgmac_private *tp)
 {
 	//return rtl_chip_infos[tp->mac_version].fw_name;
 	return "Txvh_gmac";
@@ -1969,7 +1969,7 @@ static const char *rtl_lookup_firmware_name(struct txvh_private *tp)
 static void rtl8169_get_drvinfo(struct net_device *dev,
 				struct ethtool_drvinfo *info)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct rtl_fw *rtl_fw = tp->rtl_fw;
 
 	strlcpy(info->driver, MODULENAME, sizeof(info->driver));
@@ -1989,7 +1989,7 @@ static int rtl8169_get_regs_len(struct net_device *dev)
 static int rtl8169_set_speed_tbi(struct net_device *dev,
 				 u8 autoneg, u16 speed, u8 duplex, u32 ignored)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	int ret = 0;
 	u32 reg;
@@ -2012,7 +2012,7 @@ static int rtl8169_set_speed_tbi(struct net_device *dev,
 static int rtl8169_set_speed_xmii(struct net_device *dev,
 				  u8 autoneg, u16 speed, u8 duplex, u32 adv)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	int giga_ctrl, bmcr;
 	int rc = -EINVAL;
 
@@ -2091,7 +2091,7 @@ out:
 static int rtl8169_set_speed(struct net_device *dev,
 			     u8 autoneg, u16 speed, u8 duplex, u32 advertising)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	int ret;
 
 	ret = tp->set_speed(dev, autoneg, speed, duplex, advertising);
@@ -2109,7 +2109,7 @@ out:
 
 static int rtl8169_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	int ret;
 
 	del_timer_sync(&tp->timer);
@@ -2125,7 +2125,7 @@ static int rtl8169_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 static netdev_features_t rtl8169_fix_features(struct net_device *dev,
 	netdev_features_t features)
 {
-//	struct txvh_private *tp = netdev_priv(dev);
+//	struct secgmac_private *tp = netdev_priv(dev);
 
 	if (dev->mtu > TD_MSS_MAX)
 		features &= ~NETIF_F_ALL_TSO;
@@ -2140,7 +2140,7 @@ static netdev_features_t rtl8169_fix_features(struct net_device *dev,
 static void __rtl8169_set_features(struct net_device *dev,
 				   netdev_features_t features)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	u32 rx_config;
 
@@ -2171,7 +2171,7 @@ static void __rtl8169_set_features(struct net_device *dev,
 static int rtl8169_set_features(struct net_device *dev,
 				netdev_features_t features)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	features &= NETIF_F_RXALL | NETIF_F_RXCSUM | NETIF_F_HW_VLAN_CTAG_RX;
 
@@ -2200,7 +2200,7 @@ static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 
 static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	u32 status;
 
@@ -2221,14 +2221,14 @@ static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
 
 static int rtl8169_gset_xmii(struct net_device *dev, struct ethtool_cmd *cmd)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	return mii_ethtool_gset(&tp->mii, cmd);
 }
 
 static int rtl8169_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	int rc;
 
 	rtl_lock_work(tp);
@@ -2241,7 +2241,7 @@ static int rtl8169_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 static void rtl8169_get_regs(struct net_device *dev, struct ethtool_regs *regs,
 			     void *p)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	u32 __iomem *data = tp->mmio_addr;
 	u32 *dw = p;
 	int i;
@@ -2254,14 +2254,14 @@ static void rtl8169_get_regs(struct net_device *dev, struct ethtool_regs *regs,
 
 static u32 rtl8169_get_msglevel(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	return tp->msg_enable;
 }
 
 static void rtl8169_set_msglevel(struct net_device *dev, u32 value)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	tp->msg_enable = value;
 }
@@ -2301,7 +2301,7 @@ DECLARE_RTL_COND(rtl_counters_cond)
 
 static bool rtl8169_do_counters(struct net_device *dev, u32 counter_cmd)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	dma_addr_t paddr = tp->counters_phys_addr;
 	u32 cmd;
@@ -2322,7 +2322,7 @@ static bool rtl8169_do_counters(struct net_device *dev, u32 counter_cmd)
 
 static bool rtl8169_reset_counters(struct net_device *dev)
 {
-	//struct txvh_private *tp = netdev_priv(dev);
+	//struct secgmac_private *tp = netdev_priv(dev);
 
 	/*
 	 * Versions prior to RTL_GIGA_MAC_VER_19 don't support resetting the
@@ -2336,7 +2336,7 @@ static bool rtl8169_reset_counters(struct net_device *dev)
 
 static bool rtl8169_update_counters(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	/*
@@ -2351,12 +2351,12 @@ static bool rtl8169_update_counters(struct net_device *dev)
 
 static bool rtl8169_init_counter_offsets(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct rtl8169_counters *counters = tp->counters;
 	bool ret = false;
 
 	/*
-	 * rtl8169_init_counter_offsets is called from txvh_open.  On chip
+	 * rtl8169_init_counter_offsets is called from secgmac_open.  On chip
 	 * versions prior to RTL_GIGA_MAC_VER_19 the tally counters are only
 	 * reset by a power cycle, while the counter values collected by the
 	 * driver are reset at every driver unload/load cycle.
@@ -2391,7 +2391,7 @@ static bool rtl8169_init_counter_offsets(struct net_device *dev)
 static void rtl8169_get_ethtool_stats(struct net_device *dev,
 				      struct ethtool_stats *stats, u64 *data)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct device *d = &tp->pci_dev->dev;
 	struct rtl8169_counters *counters = tp->counters;
 
@@ -2428,7 +2428,7 @@ static void rtl8169_get_strings(struct net_device *dev, u32 stringset, u8 *data)
 	}
 }
 
-static const struct ethtool_ops txvh_ethtool_ops = {
+static const struct ethtool_ops secgmac_ethtool_ops = {
 	.get_drvinfo		= rtl8169_get_drvinfo,
 	.get_regs_len		= rtl8169_get_regs_len,
 	.get_link		= ethtool_op_get_link,
@@ -2446,7 +2446,7 @@ static const struct ethtool_ops txvh_ethtool_ops = {
 };
 
 #if 0
-static void rtl8169_get_mac_version(struct txvh_private *tp,
+static void rtl8169_get_mac_version(struct secgmac_private *tp,
 				    struct net_device *dev, u8 default_version)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -2582,7 +2582,7 @@ static void rtl8169_get_mac_version(struct txvh_private *tp,
 }
 #endif
 
-static void rtl8169_print_mac_version(struct txvh_private *tp)
+static void rtl8169_print_mac_version(struct secgmac_private *tp)
 {
 	dprintk("mac_version = 0x%02x\n", tp->mac_version);
 }
@@ -2593,7 +2593,7 @@ struct phy_reg {
 };
 
 #if 0
-static void rtl_writephy_batch(struct txvh_private *tp,
+static void rtl_writephy_batch(struct secgmac_private *tp,
 			       const struct phy_reg *regs, int len)
 {
 	while (len-- > 0) {
@@ -2627,7 +2627,7 @@ struct fw_info {
 
 #define FW_OPCODE_SIZE	sizeof(typeof(*((struct rtl_fw_phy_action *)0)->code))
 
-static bool rtl_fw_format_ok(struct txvh_private *tp, struct rtl_fw *rtl_fw)
+static bool rtl_fw_format_ok(struct secgmac_private *tp, struct rtl_fw *rtl_fw)
 {
 	const struct firmware *fw = rtl_fw->fw;
 	struct fw_info *fw_info = (struct fw_info *)fw->data;
@@ -2678,7 +2678,7 @@ out:
 	return rc;
 }
 
-static bool rtl_fw_data_ok(struct txvh_private *tp, struct net_device *dev,
+static bool rtl_fw_data_ok(struct secgmac_private *tp, struct net_device *dev,
 			   struct rtl_fw_phy_action *pa)
 {
 	bool rc = false;
@@ -2734,7 +2734,7 @@ out:
 	return rc;
 }
 
-static int rtl_check_firmware(struct txvh_private *tp, struct rtl_fw *rtl_fw)
+static int rtl_check_firmware(struct secgmac_private *tp, struct rtl_fw *rtl_fw)
 {
 	struct net_device *dev = tp->dev;
 	int rc = -EINVAL;
@@ -2751,7 +2751,7 @@ out:
 }
 
 #if 0
-static void rtl_phy_write_fw(struct txvh_private *tp, struct rtl_fw *rtl_fw)
+static void rtl_phy_write_fw(struct secgmac_private *tp, struct rtl_fw *rtl_fw)
 {
 	struct rtl_fw_phy_action *pa = &rtl_fw->phy_action;
 	struct mdio_ops org, *ops = &tp->mdio_ops;
@@ -2841,7 +2841,7 @@ static void rtl_phy_write_fw(struct txvh_private *tp, struct rtl_fw *rtl_fw)
 }
 #endif
 
-static void rtl_release_firmware(struct txvh_private *tp)
+static void rtl_release_firmware(struct secgmac_private *tp)
 {
 	if (!IS_ERR_OR_NULL(tp->rtl_fw)) {
 		release_firmware(tp->rtl_fw->fw);
@@ -2851,7 +2851,7 @@ static void rtl_release_firmware(struct txvh_private *tp)
 }
 
 #if 0
-static void rtl_apply_firmware(struct txvh_private *tp)
+static void rtl_apply_firmware(struct secgmac_private *tp)
 {
 	struct rtl_fw *rtl_fw = tp->rtl_fw;
 
@@ -2860,7 +2860,7 @@ static void rtl_apply_firmware(struct txvh_private *tp)
 		rtl_phy_write_fw(tp, rtl_fw);
 }
 
-static void rtl_apply_firmware_cond(struct txvh_private *tp, u8 reg, u16 val)
+static void rtl_apply_firmware_cond(struct secgmac_private *tp, u8 reg, u16 val)
 {
 	if (rtl_readphy(tp, reg) != val)
 		netif_warn(tp, hw, tp->dev, "chipset not ready for firmware\n");
@@ -2868,7 +2868,7 @@ static void rtl_apply_firmware_cond(struct txvh_private *tp, u8 reg, u16 val)
 		rtl_apply_firmware(tp);
 }
 
-static void rtl8169s_hw_phy_config(struct txvh_private *tp)
+static void rtl8169s_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -2935,7 +2935,7 @@ static void rtl8169s_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8169sb_hw_phy_config(struct txvh_private *tp)
+static void rtl8169sb_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0002 },
@@ -2946,7 +2946,7 @@ static void rtl8169sb_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8169scd_hw_phy_config_quirk(struct txvh_private *tp)
+static void rtl8169scd_hw_phy_config_quirk(struct secgmac_private *tp)
 {
 	struct pci_dev *pdev = tp->pci_dev;
 
@@ -2959,7 +2959,7 @@ static void rtl8169scd_hw_phy_config_quirk(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8169scd_hw_phy_config(struct txvh_private *tp)
+static void rtl8169scd_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3006,7 +3006,7 @@ static void rtl8169scd_hw_phy_config(struct txvh_private *tp)
 	rtl8169scd_hw_phy_config_quirk(tp);
 }
 
-static void rtl8169sce_hw_phy_config(struct txvh_private *tp)
+static void rtl8169sce_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3059,7 +3059,7 @@ static void rtl8169sce_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8168bb_hw_phy_config(struct txvh_private *tp)
+static void rtl8168bb_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x10, 0xf41b },
@@ -3072,7 +3072,7 @@ static void rtl8168bb_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8168bef_hw_phy_config(struct txvh_private *tp)
+static void rtl8168bef_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3083,7 +3083,7 @@ static void rtl8168bef_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8168cp_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168cp_1_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0000 },
@@ -3096,7 +3096,7 @@ static void rtl8168cp_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8168cp_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168cp_2_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3111,7 +3111,7 @@ static void rtl8168cp_2_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8168c_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168c_1_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3140,7 +3140,7 @@ static void rtl8168c_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168c_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168c_2_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3168,7 +3168,7 @@ static void rtl8168c_2_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168c_3_hw_phy_config(struct txvh_private *tp)
+static void rtl8168c_3_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3190,12 +3190,12 @@ static void rtl8168c_3_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168c_4_hw_phy_config(struct txvh_private *tp)
+static void rtl8168c_4_hw_phy_config(struct secgmac_private *tp)
 {
 	rtl8168c_3_hw_phy_config(tp);
 }
 
-static void rtl8168d_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168d_1_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init_0[] = {
 		/* Channel Estimation */
@@ -3306,7 +3306,7 @@ static void rtl8168d_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168d_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168d_2_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init_0[] = {
 		/* Channel Estimation */
@@ -3408,7 +3408,7 @@ static void rtl8168d_2_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168d_3_hw_phy_config(struct txvh_private *tp)
+static void rtl8168d_3_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0002 },
@@ -3469,7 +3469,7 @@ static void rtl8168d_3_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8168d_4_hw_phy_config(struct txvh_private *tp)
+static void rtl8168d_4_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0001 },
@@ -3485,7 +3485,7 @@ static void rtl8168d_4_hw_phy_config(struct txvh_private *tp)
 	rtl_patchphy(tp, 0x0d, 1 << 5);
 }
 
-static void rtl8168e_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168e_1_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		/* Enable Delay cap */
@@ -3558,7 +3558,7 @@ static void rtl8168e_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x0d, 0x0000);
 }
 
-static void rtl_rar_exgmac_set(struct txvh_private *tp, u8 *addr)
+static void rtl_rar_exgmac_set(struct secgmac_private *tp, u8 *addr)
 {
 	const u16 w[] = {
 		addr[0] | (addr[1] << 8),
@@ -3575,7 +3575,7 @@ static void rtl_rar_exgmac_set(struct txvh_private *tp, u8 *addr)
 	rtl_write_exgmac_batch(tp, e, ARRAY_SIZE(e));
 }
 
-static void rtl8168e_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168e_2_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		/* Enable Delay cap */
@@ -3662,7 +3662,7 @@ static void rtl8168e_2_hw_phy_config(struct txvh_private *tp)
 	rtl_rar_exgmac_set(tp, tp->dev->dev_addr);
 }
 
-static void rtl8168f_hw_phy_config(struct txvh_private *tp)
+static void rtl8168f_hw_phy_config(struct secgmac_private *tp)
 {
 	/* For 4-corner performance improve */
 	rtl_writephy(tp, 0x1f, 0x0005);
@@ -3684,7 +3684,7 @@ static void rtl8168f_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168f_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168f_1_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		/* Channel estimation fine tune */
@@ -3734,14 +3734,14 @@ static void rtl8168f_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168f_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168f_2_hw_phy_config(struct secgmac_private *tp)
 {
 	rtl_apply_firmware(tp);
 
 	rtl8168f_hw_phy_config(tp);
 }
 
-static void rtl8411_hw_phy_config(struct txvh_private *tp)
+static void rtl8411_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		/* Channel estimation fine tune */
@@ -3838,7 +3838,7 @@ static void rtl8411_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168g_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168g_1_hw_phy_config(struct secgmac_private *tp)
 {
 	rtl_apply_firmware(tp);
 
@@ -3904,12 +3904,12 @@ static void rtl8168g_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168g_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168g_2_hw_phy_config(struct secgmac_private *tp)
 {
 	rtl_apply_firmware(tp);
 }
 
-static void rtl8168h_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168h_1_hw_phy_config(struct secgmac_private *tp)
 {
 	u16 dout_tapbin;
 	u32 data;
@@ -4019,7 +4019,7 @@ static void rtl8168h_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168h_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168h_2_hw_phy_config(struct secgmac_private *tp)
 {
 	u16 ioffset_p3, ioffset_p2, ioffset_p1, ioffset_p0;
 	u16 rlen;
@@ -4092,7 +4092,7 @@ static void rtl8168h_2_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168ep_1_hw_phy_config(struct txvh_private *tp)
+static void rtl8168ep_1_hw_phy_config(struct secgmac_private *tp)
 {
 	/* Enable PHY auto speed down */
 	rtl_writephy(tp, 0x1f, 0x0a44);
@@ -4134,7 +4134,7 @@ static void rtl8168ep_1_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8168ep_2_hw_phy_config(struct txvh_private *tp)
+static void rtl8168ep_2_hw_phy_config(struct secgmac_private *tp)
 {
 	/* patch 10M & ALDPS */
 	rtl_writephy(tp, 0x1f, 0x0bcc);
@@ -4225,7 +4225,7 @@ static void rtl8168ep_2_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8102e_hw_phy_config(struct txvh_private *tp)
+static void rtl8102e_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0003 },
@@ -4242,7 +4242,7 @@ static void rtl8102e_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8105e_hw_phy_config(struct txvh_private *tp)
+static void rtl8105e_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0005 },
@@ -4268,7 +4268,7 @@ static void rtl8105e_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
 }
 
-static void rtl8402_hw_phy_config(struct txvh_private *tp)
+static void rtl8402_hw_phy_config(struct secgmac_private *tp)
 {
 	/* Disable ALDPS before setting firmware */
 	rtl_writephy(tp, 0x1f, 0x0000);
@@ -4285,7 +4285,7 @@ static void rtl8402_hw_phy_config(struct txvh_private *tp)
 	rtl_writephy(tp, 0x1f, 0x0000);
 }
 
-static void rtl8106e_hw_phy_config(struct txvh_private *tp)
+static void rtl8106e_hw_phy_config(struct secgmac_private *tp)
 {
 	static const struct phy_reg phy_reg_init[] = {
 		{ 0x1f, 0x0004 },
@@ -4311,7 +4311,7 @@ static void rtl8106e_hw_phy_config(struct txvh_private *tp)
 static void rtl_hw_phy_config(struct net_device *dev)
 {
 #if 0
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl8169_print_mac_version(tp);
 
@@ -4441,7 +4441,7 @@ static void rtl_hw_phy_config(struct net_device *dev)
 #endif
 }
 
-static void rtl_phy_work(struct txvh_private *tp)
+static void rtl_phy_work(struct secgmac_private *tp)
 {
 	struct timer_list *timer = &tp->timer;
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -4469,7 +4469,7 @@ out_mod_timer:
 	mod_timer(timer, jiffies + timeout);
 }
 
-static void rtl_schedule_task(struct txvh_private *tp, enum rtl_flag flag)
+static void rtl_schedule_task(struct secgmac_private *tp, enum rtl_flag flag)
 {
 	if (!test_and_set_bit(flag, tp->wk.flags))
 		schedule_work(&tp->wk.work);
@@ -4478,7 +4478,7 @@ static void rtl_schedule_task(struct txvh_private *tp, enum rtl_flag flag)
 static void rtl8169_phy_timer(unsigned long __opaque)
 {
 	struct net_device *dev = (struct net_device *)__opaque;
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl_schedule_task(tp, RTL_FLAG_TASK_PHY_PENDING);
 }
@@ -4499,13 +4499,13 @@ DECLARE_RTL_COND(rtl_phy_reset_cond)
 }
 
 static void rtl8169_phy_reset(struct net_device *dev,
-			      struct txvh_private *tp)
+			      struct secgmac_private *tp)
 {
 	tp->phy_reset_enable(tp);
 	rtl_msleep_loop_wait_low(tp, &rtl_phy_reset_cond, 1, 100);
 }
 
-static bool rtl_tbi_enabled(struct txvh_private *tp)
+static bool rtl_tbi_enabled(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -4513,7 +4513,7 @@ static bool rtl_tbi_enabled(struct txvh_private *tp)
 	  return  (RTL_R8(PHYstatus) & TBI_Enable);
 }
 
-static void rtl8169_init_phy(struct net_device *dev, struct txvh_private *tp)
+static void rtl8169_init_phy(struct net_device *dev, struct secgmac_private *tp)
 {
 	//void __iomem *ioaddr = tp->mmio_addr;
 
@@ -4550,7 +4550,7 @@ static void rtl8169_init_phy(struct net_device *dev, struct txvh_private *tp)
 		netif_info(tp, link, dev, "TBI auto-negotiating\n");
 }
 
-static void rtl_rar_set(struct txvh_private *tp, u8 *addr)
+static void rtl_rar_set(struct secgmac_private *tp, u8 *addr)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -4574,7 +4574,7 @@ static void rtl_rar_set(struct txvh_private *tp, u8 *addr)
 
 static int rtl_set_mac_address(struct net_device *dev, void *p)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct device *d = &tp->pci_dev->dev;
 	struct sockaddr *addr = p;
 
@@ -4595,13 +4595,13 @@ static int rtl_set_mac_address(struct net_device *dev, void *p)
 
 static int rtl8169_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct mii_ioctl_data *data = if_mii(ifr);
 
 	return netif_running(dev) ? tp->do_ioctl(tp, data, cmd) : -ENODEV;
 }
 
-static int rtl_xmii_ioctl(struct txvh_private *tp,
+static int rtl_xmii_ioctl(struct secgmac_private *tp,
 			  struct mii_ioctl_data *data, int cmd)
 {
 	switch (cmd) {
@@ -4620,12 +4620,12 @@ static int rtl_xmii_ioctl(struct txvh_private *tp,
 	return -EOPNOTSUPP;
 }
 
-static int rtl_tbi_ioctl(struct txvh_private *tp, struct mii_ioctl_data *data, int cmd)
+static int rtl_tbi_ioctl(struct secgmac_private *tp, struct mii_ioctl_data *data, int cmd)
 {
 	return -EOPNOTSUPP;
 }
 
-static void rtl_disable_msi(struct pci_dev *pdev, struct txvh_private *tp)
+static void rtl_disable_msi(struct pci_dev *pdev, struct secgmac_private *tp)
 {
 	if (tp->features & RTL_FEATURE_MSI) {
 		pci_disable_msi(pdev);
@@ -4633,7 +4633,7 @@ static void rtl_disable_msi(struct pci_dev *pdev, struct txvh_private *tp)
 	}
 }
 
-static void rtl_init_mdio_ops(struct txvh_private *tp)
+static void rtl_init_mdio_ops(struct secgmac_private *tp)
 {
 #if 0
 	struct mdio_ops *ops = &tp->mdio_ops;
@@ -4672,7 +4672,7 @@ static void rtl_init_mdio_ops(struct txvh_private *tp)
 }
 
 #if 0
-static void rtl_speed_down(struct txvh_private *tp)
+static void rtl_speed_down(struct secgmac_private *tp)
 {
 	u32 adv;
 	int lpa;
@@ -4697,7 +4697,7 @@ static void rtl_speed_down(struct txvh_private *tp)
 }
 #endif
 
-static void rtl_wol_suspend_quirk(struct txvh_private *tp)
+static void rtl_wol_suspend_quirk(struct secgmac_private *tp)
 {
 #if 0
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -4735,7 +4735,7 @@ static void rtl_wol_suspend_quirk(struct txvh_private *tp)
 }
 
 #if 0
-static bool rtl_wol_pll_power_down(struct txvh_private *tp)
+static bool rtl_wol_pll_power_down(struct secgmac_private *tp)
 {
 	if (!(__rtl8169_get_wol(tp) & WAKE_ANY))
 		return false;
@@ -4746,19 +4746,19 @@ static bool rtl_wol_pll_power_down(struct txvh_private *tp)
 	return true;
 }
 
-static void r810x_phy_power_down(struct txvh_private *tp)
+static void r810x_phy_power_down(struct secgmac_private *tp)
 {
 	rtl_writephy(tp, 0x1f, 0x0000);
 	rtl_writephy(tp, MII_BMCR, BMCR_PDOWN);
 }
 
-static void r810x_phy_power_up(struct txvh_private *tp)
+static void r810x_phy_power_up(struct secgmac_private *tp)
 {
 	rtl_writephy(tp, 0x1f, 0x0000);
 	rtl_writephy(tp, MII_BMCR, BMCR_ANENABLE);
 }
 
-static void r810x_pll_power_down(struct txvh_private *tp)
+static void r810x_pll_power_down(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -4781,7 +4781,7 @@ static void r810x_pll_power_down(struct txvh_private *tp)
 	}
 }
 
-static void r810x_pll_power_up(struct txvh_private *tp)
+static void r810x_pll_power_up(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -4805,7 +4805,7 @@ static void r810x_pll_power_up(struct txvh_private *tp)
 	}
 }
 
-static void r8168_phy_power_up(struct txvh_private *tp)
+static void r8168_phy_power_up(struct secgmac_private *tp)
 {
 	rtl_writephy(tp, 0x1f, 0x0000);
 	switch (tp->mac_version) {
@@ -4832,7 +4832,7 @@ static void r8168_phy_power_up(struct txvh_private *tp)
 	rtl_writephy(tp, MII_BMCR, BMCR_ANENABLE);
 }
 
-static void r8168_phy_power_down(struct txvh_private *tp)
+static void r8168_phy_power_down(struct secgmac_private *tp)
 {
 	rtl_writephy(tp, 0x1f, 0x0000);
 	switch (tp->mac_version) {
@@ -4865,7 +4865,7 @@ static void r8168_phy_power_down(struct txvh_private *tp)
 	}
 }
 
-static void r8168_pll_power_down(struct txvh_private *tp)
+static void r8168_pll_power_down(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -4919,7 +4919,7 @@ static void r8168_pll_power_down(struct txvh_private *tp)
 	}
 }
 
-static void r8168_pll_power_up(struct txvh_private *tp)
+static void r8168_pll_power_up(struct secgmac_private *tp)
 {
 
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -4954,24 +4954,24 @@ static void r8168_pll_power_up(struct txvh_private *tp)
 }
 #endif
 
-static void rtl_generic_op(struct txvh_private *tp,
-			   void (*op)(struct txvh_private *))
+static void rtl_generic_op(struct secgmac_private *tp,
+			   void (*op)(struct secgmac_private *))
 {
 	if (op)
 		op(tp);
 }
 
-static void rtl_pll_power_down(struct txvh_private *tp)
+static void rtl_pll_power_down(struct secgmac_private *tp)
 {
 	rtl_generic_op(tp, tp->pll_power_ops.down);
 }
 
-static void rtl_pll_power_up(struct txvh_private *tp)
+static void rtl_pll_power_up(struct secgmac_private *tp)
 {
 	rtl_generic_op(tp, tp->pll_power_ops.up);
 }
 
-static void rtl_init_pll_power_ops(struct txvh_private *tp)
+static void rtl_init_pll_power_ops(struct secgmac_private *tp)
 {
 #if 0
 	struct pll_power_ops *ops = &tp->pll_power_ops;
@@ -5035,7 +5035,7 @@ static void rtl_init_pll_power_ops(struct txvh_private *tp)
 #endif
 }
 
-static void rtl_init_rxcfg(struct txvh_private *tp)
+static void rtl_init_rxcfg(struct secgmac_private *tp)
 {
 #if 0
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -5089,12 +5089,12 @@ static void rtl_init_rxcfg(struct txvh_private *tp)
 #endif
 }
 
-static void rtl8169_init_ring_indexes(struct txvh_private *tp)
+static void rtl8169_init_ring_indexes(struct secgmac_private *tp)
 {
 	tp->dirty_tx = tp->cur_tx = tp->cur_rx = 0;
 }
 
-static void rtl_hw_jumbo_enable(struct txvh_private *tp)
+static void rtl_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5103,7 +5103,7 @@ static void rtl_hw_jumbo_enable(struct txvh_private *tp)
 	RTL_W8(Cfg9346, Cfg9346_Lock);
 }
 
-static void rtl_hw_jumbo_disable(struct txvh_private *tp)
+static void rtl_hw_jumbo_disable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5113,7 +5113,7 @@ static void rtl_hw_jumbo_disable(struct txvh_private *tp)
 }
 
 #if 0
-static void r8168c_hw_jumbo_enable(struct txvh_private *tp)
+static void r8168c_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5122,7 +5122,7 @@ static void r8168c_hw_jumbo_enable(struct txvh_private *tp)
 	rtl_tx_performance_tweak(tp->pci_dev, PCI_EXP_DEVCTL_READRQ_512B);
 }
 
-static void r8168c_hw_jumbo_disable(struct txvh_private *tp)
+static void r8168c_hw_jumbo_disable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5131,21 +5131,21 @@ static void r8168c_hw_jumbo_disable(struct txvh_private *tp)
 	rtl_tx_performance_tweak(tp->pci_dev, 0x5 << MAX_READ_REQUEST_SHIFT);
 }
 
-static void r8168dp_hw_jumbo_enable(struct txvh_private *tp)
+static void r8168dp_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	RTL_W8(Config3, RTL_R8(Config3) | Jumbo_En0);
 }
 
-static void r8168dp_hw_jumbo_disable(struct txvh_private *tp)
+static void r8168dp_hw_jumbo_disable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	RTL_W8(Config3, RTL_R8(Config3) & ~Jumbo_En0);
 }
 
-static void r8168e_hw_jumbo_enable(struct txvh_private *tp)
+static void r8168e_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5155,7 +5155,7 @@ static void r8168e_hw_jumbo_enable(struct txvh_private *tp)
 	rtl_tx_performance_tweak(tp->pci_dev, PCI_EXP_DEVCTL_READRQ_512B);
 }
 
-static void r8168e_hw_jumbo_disable(struct txvh_private *tp)
+static void r8168e_hw_jumbo_disable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5165,19 +5165,19 @@ static void r8168e_hw_jumbo_disable(struct txvh_private *tp)
 	rtl_tx_performance_tweak(tp->pci_dev, 0x5 << MAX_READ_REQUEST_SHIFT);
 }
 
-static void r8168b_0_hw_jumbo_enable(struct txvh_private *tp)
+static void r8168b_0_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	rtl_tx_performance_tweak(tp->pci_dev,
 		PCI_EXP_DEVCTL_READRQ_512B | PCI_EXP_DEVCTL_NOSNOOP_EN);
 }
 
-static void r8168b_0_hw_jumbo_disable(struct txvh_private *tp)
+static void r8168b_0_hw_jumbo_disable(struct secgmac_private *tp)
 {
 	rtl_tx_performance_tweak(tp->pci_dev,
 		(0x5 << MAX_READ_REQUEST_SHIFT) | PCI_EXP_DEVCTL_NOSNOOP_EN);
 }
 
-static void r8168b_1_hw_jumbo_enable(struct txvh_private *tp)
+static void r8168b_1_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5186,7 +5186,7 @@ static void r8168b_1_hw_jumbo_enable(struct txvh_private *tp)
 	RTL_W8(Config4, RTL_R8(Config4) | (1 << 0));
 }
 
-static void r8168b_1_hw_jumbo_disable(struct txvh_private *tp)
+static void r8168b_1_hw_jumbo_disable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5196,7 +5196,7 @@ static void r8168b_1_hw_jumbo_disable(struct txvh_private *tp)
 }
 #endif
 
-static void rtl_init_jumbo_ops(struct txvh_private *tp)
+static void rtl_init_jumbo_ops(struct secgmac_private *tp)
 {
 #if 0
 	struct jumbo_ops *ops = &tp->jumbo_ops;
@@ -5267,7 +5267,7 @@ DECLARE_RTL_COND(rtl_chipcmd_cond)
 	return RTL_R8(ChipCmd) & CmdReset;
 }
 
-static void rtl_hw_reset(struct txvh_private *tp)
+static void rtl_hw_reset(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5276,7 +5276,7 @@ static void rtl_hw_reset(struct txvh_private *tp)
 	rtl_udelay_loop_wait_low(tp, &rtl_chipcmd_cond, 100, 100);
 }
 
-static void rtl_request_uncached_firmware(struct txvh_private *tp)
+static void rtl_request_uncached_firmware(struct secgmac_private *tp)
 {
 	struct rtl_fw *rtl_fw;
 	const char *name;
@@ -5314,14 +5314,14 @@ out_no_firmware:
 	goto out;
 }
 
-static void rtl_request_firmware(struct txvh_private *tp)
+static void rtl_request_firmware(struct secgmac_private *tp)
 {
 	if (IS_ERR(tp->rtl_fw))
 		rtl_request_uncached_firmware(tp);
 }
 
 #if 0
-static void rtl_rx_close(struct txvh_private *tp)
+static void rtl_rx_close(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5343,7 +5343,7 @@ DECLARE_RTL_COND(rtl_txcfg_empty_cond)
 	return RTL_R32(TxConfig) & TXCFG_EMPTY;
 }
 
-static void rtl8169_hw_reset(struct txvh_private *tp)
+static void rtl8169_hw_reset(struct secgmac_private *tp)
 {
 #if 0
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -5386,7 +5386,7 @@ static void rtl8169_hw_reset(struct txvh_private *tp)
 }
 
 #if 0
-static void rtl_set_rx_tx_config_registers(struct txvh_private *tp)
+static void rtl_set_rx_tx_config_registers(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5398,7 +5398,7 @@ static void rtl_set_rx_tx_config_registers(struct txvh_private *tp)
 
 static void rtl_hw_start(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	tp->hw_start(dev);
 
@@ -5406,7 +5406,7 @@ static void rtl_hw_start(struct net_device *dev)
 }
 
 #if 0
-static void rtl_set_rx_tx_desc_registers(struct txvh_private *tp,
+static void rtl_set_rx_tx_desc_registers(struct secgmac_private *tp,
 					 void __iomem *ioaddr)
 {
 	/*
@@ -5463,7 +5463,7 @@ static void rtl8169_set_magic_reg(void __iomem *ioaddr, unsigned mac_version)
 
 static void rtl_set_rx_mode(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	u32 mc_filter[2];	/* Multicast hash filter */
 	int rx_mode;
@@ -5517,7 +5517,7 @@ static void rtl_set_rx_mode(struct net_device *dev)
 #if 0
 static void rtl_hw_start_8169(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
 
@@ -5587,18 +5587,18 @@ static void rtl_hw_start_8169(struct net_device *dev)
 	RTL_W16(MultiIntr, RTL_R16(MultiIntr) & 0xf000);
 }
 
-static void rtl_csi_write(struct txvh_private *tp, int addr, int value)
+static void rtl_csi_write(struct secgmac_private *tp, int addr, int value)
 {
 	if (tp->csi_ops.write)
 		tp->csi_ops.write(tp, addr, value);
 }
 
-static u32 rtl_csi_read(struct txvh_private *tp, int addr)
+static u32 rtl_csi_read(struct secgmac_private *tp, int addr)
 {
 	return tp->csi_ops.read ? tp->csi_ops.read(tp, addr) : ~0;
 }
 
-static void rtl_csi_access_enable(struct txvh_private *tp, u32 bits)
+static void rtl_csi_access_enable(struct secgmac_private *tp, u32 bits)
 {
 	u32 csi;
 
@@ -5606,12 +5606,12 @@ static void rtl_csi_access_enable(struct txvh_private *tp, u32 bits)
 	rtl_csi_write(tp, 0x070c, csi | bits);
 }
 
-static void rtl_csi_access_enable_1(struct txvh_private *tp)
+static void rtl_csi_access_enable_1(struct secgmac_private *tp)
 {
 	rtl_csi_access_enable(tp, 0x17000000);
 }
 
-static void rtl_csi_access_enable_2(struct txvh_private *tp)
+static void rtl_csi_access_enable_2(struct secgmac_private *tp)
 {
 	rtl_csi_access_enable(tp, 0x27000000);
 }
@@ -5625,7 +5625,7 @@ DECLARE_RTL_COND(rtl_csiar_cond)
 }
 
 #if 0
-static void r8169_csi_write(struct txvh_private *tp, int addr, int value)
+static void r8169_csi_write(struct secgmac_private *tp, int addr, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5636,7 +5636,7 @@ static void r8169_csi_write(struct txvh_private *tp, int addr, int value)
 	rtl_udelay_loop_wait_low(tp, &rtl_csiar_cond, 10, 100);
 }
 
-static u32 r8169_csi_read(struct txvh_private *tp, int addr)
+static u32 r8169_csi_read(struct secgmac_private *tp, int addr)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5647,7 +5647,7 @@ static u32 r8169_csi_read(struct txvh_private *tp, int addr)
 		RTL_R32(CSIDR) : ~0;
 }
 
-static void r8402_csi_write(struct txvh_private *tp, int addr, int value)
+static void r8402_csi_write(struct secgmac_private *tp, int addr, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5659,7 +5659,7 @@ static void r8402_csi_write(struct txvh_private *tp, int addr, int value)
 	rtl_udelay_loop_wait_low(tp, &rtl_csiar_cond, 10, 100);
 }
 
-static u32 r8402_csi_read(struct txvh_private *tp, int addr)
+static u32 r8402_csi_read(struct secgmac_private *tp, int addr)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5670,7 +5670,7 @@ static u32 r8402_csi_read(struct txvh_private *tp, int addr)
 		RTL_R32(CSIDR) : ~0;
 }
 
-static void r8411_csi_write(struct txvh_private *tp, int addr, int value)
+static void r8411_csi_write(struct secgmac_private *tp, int addr, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5682,7 +5682,7 @@ static void r8411_csi_write(struct txvh_private *tp, int addr, int value)
 	rtl_udelay_loop_wait_low(tp, &rtl_csiar_cond, 10, 100);
 }
 
-static u32 r8411_csi_read(struct txvh_private *tp, int addr)
+static u32 r8411_csi_read(struct secgmac_private *tp, int addr)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5694,7 +5694,7 @@ static u32 r8411_csi_read(struct txvh_private *tp, int addr)
 }
 #endif
 
-static void rtl_init_csi_ops(struct txvh_private *tp)
+static void rtl_init_csi_ops(struct secgmac_private *tp)
 {
 #if 0
 	struct csi_ops *ops = &tp->csi_ops;
@@ -5744,7 +5744,7 @@ struct ephy_info {
 };
 
 #if 0
-static void rtl_ephy_init(struct txvh_private *tp, const struct ephy_info *e,
+static void rtl_ephy_init(struct secgmac_private *tp, const struct ephy_info *e,
 			  int len)
 {
 	u16 w;
@@ -5768,7 +5768,7 @@ static void rtl_enable_clock_request(struct pci_dev *pdev)
 				 PCI_EXP_LNKCTL_CLKREQ_EN);
 }
 
-static void rtl_pcie_state_l2l3_enable(struct txvh_private *tp, bool enable)
+static void rtl_pcie_state_l2l3_enable(struct secgmac_private *tp, bool enable)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	u8 data;
@@ -5795,7 +5795,7 @@ static void rtl_pcie_state_l2l3_enable(struct txvh_private *tp, bool enable)
 	Mac_dbgo_sel)
 
 #if 0
-static void rtl_hw_start_8168bb(struct txvh_private *tp)
+static void rtl_hw_start_8168bb(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -5810,7 +5810,7 @@ static void rtl_hw_start_8168bb(struct txvh_private *tp)
 	}
 }
 
-static void rtl_hw_start_8168bef(struct txvh_private *tp)
+static void rtl_hw_start_8168bef(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -5821,7 +5821,7 @@ static void rtl_hw_start_8168bef(struct txvh_private *tp)
 	RTL_W8(Config4, RTL_R8(Config4) & ~(1 << 0));
 }
 
-static void __rtl_hw_start_8168cp(struct txvh_private *tp)
+static void __rtl_hw_start_8168cp(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -5838,7 +5838,7 @@ static void __rtl_hw_start_8168cp(struct txvh_private *tp)
 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
 }
 
-static void rtl_hw_start_8168cp_1(struct txvh_private *tp)
+static void rtl_hw_start_8168cp_1(struct secgmac_private *tp)
 {
 	static const struct ephy_info e_info_8168cp[] = {
 		{ 0x01, 0,	0x0001 },
@@ -5855,7 +5855,7 @@ static void rtl_hw_start_8168cp_1(struct txvh_private *tp)
 	__rtl_hw_start_8168cp(tp);
 }
 
-static void rtl_hw_start_8168cp_2(struct txvh_private *tp)
+static void rtl_hw_start_8168cp_2(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -5870,7 +5870,7 @@ static void rtl_hw_start_8168cp_2(struct txvh_private *tp)
 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
 }
 
-static void rtl_hw_start_8168cp_3(struct txvh_private *tp)
+static void rtl_hw_start_8168cp_3(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -5890,7 +5890,7 @@ static void rtl_hw_start_8168cp_3(struct txvh_private *tp)
 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
 }
 
-static void rtl_hw_start_8168c_1(struct txvh_private *tp)
+static void rtl_hw_start_8168c_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8168c_1[] = {
@@ -5908,7 +5908,7 @@ static void rtl_hw_start_8168c_1(struct txvh_private *tp)
 	__rtl_hw_start_8168cp(tp);
 }
 
-static void rtl_hw_start_8168c_2(struct txvh_private *tp)
+static void rtl_hw_start_8168c_2(struct secgmac_private *tp)
 {
 	static const struct ephy_info e_info_8168c_2[] = {
 		{ 0x01, 0,	0x0001 },
@@ -5922,19 +5922,19 @@ static void rtl_hw_start_8168c_2(struct txvh_private *tp)
 	__rtl_hw_start_8168cp(tp);
 }
 
-static void rtl_hw_start_8168c_3(struct txvh_private *tp)
+static void rtl_hw_start_8168c_3(struct secgmac_private *tp)
 {
 	rtl_hw_start_8168c_2(tp);
 }
 
-static void rtl_hw_start_8168c_4(struct txvh_private *tp)
+static void rtl_hw_start_8168c_4(struct secgmac_private *tp)
 {
 	rtl_csi_access_enable_2(tp);
 
 	__rtl_hw_start_8168cp(tp);
 }
 
-static void rtl_hw_start_8168d(struct txvh_private *tp)
+static void rtl_hw_start_8168d(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -5951,7 +5951,7 @@ static void rtl_hw_start_8168d(struct txvh_private *tp)
 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
 }
 
-static void rtl_hw_start_8168dp(struct txvh_private *tp)
+static void rtl_hw_start_8168dp(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -5966,7 +5966,7 @@ static void rtl_hw_start_8168dp(struct txvh_private *tp)
 	rtl_disable_clock_request(pdev);
 }
 
-static void rtl_hw_start_8168d_4(struct txvh_private *tp)
+static void rtl_hw_start_8168d_4(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -5987,7 +5987,7 @@ static void rtl_hw_start_8168d_4(struct txvh_private *tp)
 	rtl_enable_clock_request(pdev);
 }
 
-static void rtl_hw_start_8168e_1(struct txvh_private *tp)
+static void rtl_hw_start_8168e_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6025,7 +6025,7 @@ static void rtl_hw_start_8168e_1(struct txvh_private *tp)
 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
 }
 
-static void rtl_hw_start_8168e_2(struct txvh_private *tp)
+static void rtl_hw_start_8168e_2(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6065,7 +6065,7 @@ static void rtl_hw_start_8168e_2(struct txvh_private *tp)
 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
 }
 
-static void rtl_hw_start_8168f(struct txvh_private *tp)
+static void rtl_hw_start_8168f(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6096,7 +6096,7 @@ static void rtl_hw_start_8168f(struct txvh_private *tp)
 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
 }
 
-static void rtl_hw_start_8168f_1(struct txvh_private *tp)
+static void rtl_hw_start_8168f_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8168f_1[] = {
@@ -6116,7 +6116,7 @@ static void rtl_hw_start_8168f_1(struct txvh_private *tp)
 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
 }
 
-static void rtl_hw_start_8411(struct txvh_private *tp)
+static void rtl_hw_start_8411(struct secgmac_private *tp)
 {
 	static const struct ephy_info e_info_8168f_1[] = {
 		{ 0x06, 0x00c0,	0x0020 },
@@ -6133,7 +6133,7 @@ static void rtl_hw_start_8411(struct txvh_private *tp)
 	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0x0000, ERIAR_EXGMAC);
 }
 
-static void rtl_hw_start_8168g(struct txvh_private *tp)
+static void rtl_hw_start_8168g(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6168,7 +6168,7 @@ static void rtl_hw_start_8168g(struct txvh_private *tp)
 	rtl_pcie_state_l2l3_enable(tp, false);
 }
 
-static void rtl_hw_start_8168g_1(struct txvh_private *tp)
+static void rtl_hw_start_8168g_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8168g_1[] = {
@@ -6186,7 +6186,7 @@ static void rtl_hw_start_8168g_1(struct txvh_private *tp)
 	rtl_ephy_init(tp, e_info_8168g_1, ARRAY_SIZE(e_info_8168g_1));
 }
 
-static void rtl_hw_start_8168g_2(struct txvh_private *tp)
+static void rtl_hw_start_8168g_2(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8168g_2[] = {
@@ -6204,7 +6204,7 @@ static void rtl_hw_start_8168g_2(struct txvh_private *tp)
 	rtl_ephy_init(tp, e_info_8168g_2, ARRAY_SIZE(e_info_8168g_2));
 }
 
-static void rtl_hw_start_8411_2(struct txvh_private *tp)
+static void rtl_hw_start_8411_2(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8411_2[] = {
@@ -6223,7 +6223,7 @@ static void rtl_hw_start_8411_2(struct txvh_private *tp)
 	rtl_ephy_init(tp, e_info_8411_2, ARRAY_SIZE(e_info_8411_2));
 }
 
-static void rtl_hw_start_8168h_1(struct txvh_private *tp)
+static void rtl_hw_start_8168h_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6321,7 +6321,7 @@ static void rtl_hw_start_8168h_1(struct txvh_private *tp)
 	r8168_mac_ocp_write(tp, 0xc09e, 0x0000);
 }
 
-static void rtl_hw_start_8168ep(struct txvh_private *tp)
+static void rtl_hw_start_8168ep(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6362,7 +6362,7 @@ static void rtl_hw_start_8168ep(struct txvh_private *tp)
 	rtl_pcie_state_l2l3_enable(tp, false);
 }
 
-static void rtl_hw_start_8168ep_1(struct txvh_private *tp)
+static void rtl_hw_start_8168ep_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8168ep_1[] = {
@@ -6381,7 +6381,7 @@ static void rtl_hw_start_8168ep_1(struct txvh_private *tp)
 	rtl_hw_start_8168ep(tp);
 }
 
-static void rtl_hw_start_8168ep_2(struct txvh_private *tp)
+static void rtl_hw_start_8168ep_2(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8168ep_2[] = {
@@ -6401,7 +6401,7 @@ static void rtl_hw_start_8168ep_2(struct txvh_private *tp)
 	RTL_W8(MISC_1, RTL_R8(MISC_1) & ~PFM_D3COLD_EN);
 }
 
-static void rtl_hw_start_8168ep_3(struct txvh_private *tp)
+static void rtl_hw_start_8168ep_3(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	u32 data;
@@ -6438,7 +6438,7 @@ static void rtl_hw_start_8168ep_3(struct txvh_private *tp)
 
 static void rtl_hw_start_8168(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	RTL_W8(Cfg9346, Cfg9346_Unlock);
@@ -6590,7 +6590,7 @@ static void rtl_hw_start_8168(struct net_device *dev)
 	PktCntrDisable | \
 	Mac_dbgo_sel)
 #if 0
-static void rtl_hw_start_8102e_1(struct txvh_private *tp)
+static void rtl_hw_start_8102e_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6623,7 +6623,7 @@ static void rtl_hw_start_8102e_1(struct txvh_private *tp)
 	rtl_ephy_init(tp, e_info_8102e_1, ARRAY_SIZE(e_info_8102e_1));
 }
 
-static void rtl_hw_start_8102e_2(struct txvh_private *tp)
+static void rtl_hw_start_8102e_2(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
@@ -6636,14 +6636,14 @@ static void rtl_hw_start_8102e_2(struct txvh_private *tp)
 	RTL_W8(Config3, RTL_R8(Config3) & ~Beacon_en);
 }
 
-static void rtl_hw_start_8102e_3(struct txvh_private *tp)
+static void rtl_hw_start_8102e_3(struct secgmac_private *tp)
 {
 	rtl_hw_start_8102e_2(tp);
 
 	rtl_ephy_write(tp, 0x03, 0xc2f9);
 }
 
-static void rtl_hw_start_8105e_1(struct txvh_private *tp)
+static void rtl_hw_start_8105e_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8105e_1[] = {
@@ -6671,7 +6671,7 @@ static void rtl_hw_start_8105e_1(struct txvh_private *tp)
 	rtl_pcie_state_l2l3_enable(tp, false);
 }
 
-static void rtl_hw_start_8105e_2(struct txvh_private *tp)
+static void rtl_hw_start_8105e_2(struct secgmac_private *tp)
 {
 	rtl_hw_start_8105e_1(tp);
 	rtl_ephy_write(tp, 0x1e, rtl_ephy_read(tp, 0x1e) | 0x8000);
@@ -6679,7 +6679,7 @@ static void rtl_hw_start_8105e_2(struct txvh_private *tp)
 #endif
 
 #if 0
-static void rtl_hw_start_8402(struct txvh_private *tp)
+static void rtl_hw_start_8402(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	static const struct ephy_info e_info_8402[] = {
@@ -6710,7 +6710,7 @@ static void rtl_hw_start_8402(struct txvh_private *tp)
 	rtl_pcie_state_l2l3_enable(tp, false);
 }
 
-static void rtl_hw_start_8106(struct txvh_private *tp)
+static void rtl_hw_start_8106(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -6726,7 +6726,7 @@ static void rtl_hw_start_8106(struct txvh_private *tp)
 
 static void rtl_hw_start_8101(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
 
@@ -6803,7 +6803,7 @@ static void rtl_hw_start_8101(struct net_device *dev)
 
 static int rtl8169_change_mtu(struct net_device *dev, int new_mtu)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	if (new_mtu < ETH_ZLEN)
 #if 0
@@ -6828,7 +6828,7 @@ static inline void rtl8169_make_unusable_by_asic(struct RxDesc *desc)
 	desc->opts1 &= ~cpu_to_le32(DescOwn | RsvdMask);
 }
 
-static void rtl8169_free_rx_databuff(struct txvh_private *tp,
+static void rtl8169_free_rx_databuff(struct secgmac_private *tp,
 				     void **data_buff, struct RxDesc *desc)
 {
 	dma_unmap_single(&tp->pci_dev->dev, le64_to_cpu(desc->addr), rx_buf_sz,
@@ -6861,7 +6861,7 @@ static inline void *rtl8169_align(void *data)
 	return (void *)ALIGN((long)data, 16);
 }
 
-static struct sk_buff *rtl8169_alloc_rx_data(struct txvh_private *tp,
+static struct sk_buff *rtl8169_alloc_rx_data(struct secgmac_private *tp,
 					     struct RxDesc *desc)
 {
 	void *data;
@@ -6897,7 +6897,7 @@ err_out:
 	return NULL;
 }
 
-static void rtl8169_rx_clear(struct txvh_private *tp)
+static void rtl8169_rx_clear(struct secgmac_private *tp)
 {
 	unsigned int i;
 
@@ -6914,7 +6914,7 @@ static inline void rtl8169_mark_as_last_descriptor(struct RxDesc *desc)
 	desc->opts1 |= cpu_to_le32(RingEnd);
 }
 
-static int rtl8169_rx_fill(struct txvh_private *tp)
+static int rtl8169_rx_fill(struct secgmac_private *tp)
 {
 	unsigned int i;
 
@@ -6942,7 +6942,7 @@ err_out:
 
 static int rtl8169_init_ring(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl8169_init_ring_indexes(tp);
 
@@ -6965,7 +6965,7 @@ static void rtl8169_unmap_tx_skb(struct device *d, struct ring_info *tx_skb,
 	tx_skb->len = 0;
 }
 
-static void rtl8169_tx_clear_range(struct txvh_private *tp, u32 start,
+static void rtl8169_tx_clear_range(struct secgmac_private *tp, u32 start,
 				   unsigned int n)
 {
 	unsigned int i;
@@ -6989,13 +6989,13 @@ static void rtl8169_tx_clear_range(struct txvh_private *tp, u32 start,
 	}
 }
 
-static void rtl8169_tx_clear(struct txvh_private *tp)
+static void rtl8169_tx_clear(struct secgmac_private *tp)
 {
 	rtl8169_tx_clear_range(tp, tp->dirty_tx, NUM_TX_DESC);
 	tp->cur_tx = tp->dirty_tx = 0;
 }
 
-static void rtl_reset_work(struct txvh_private *tp)
+static void rtl_reset_work(struct secgmac_private *tp)
 {
 	struct net_device *dev = tp->dev;
 	int i;
@@ -7020,12 +7020,12 @@ static void rtl_reset_work(struct txvh_private *tp)
 
 static void rtl8169_tx_timeout(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl_schedule_task(tp, RTL_FLAG_TASK_RESET_PENDING);
 }
 
-static int rtl8169_xmit_frags(struct txvh_private *tp, struct sk_buff *skb,
+static int rtl8169_xmit_frags(struct secgmac_private *tp, struct sk_buff *skb,
 			      u32 *opts)
 {
 	struct skb_shared_info *info = skb_shinfo(skb);
@@ -7077,7 +7077,7 @@ err_out:
 }
 
 #if 0
-static bool rtl_test_hw_pad_bug(struct txvh_private *tp, struct sk_buff *skb)
+static bool rtl_test_hw_pad_bug(struct secgmac_private *tp, struct sk_buff *skb)
 {
 	return skb->len < ETH_ZLEN; //&& tp->mac_version == RTL_GIGA_MAC_VER_34;
 }
@@ -7089,7 +7089,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
  * The hw limites the value the transport offset. When the offset is out of the
  * range, calculate the checksum by sw.
  */
-static void r8169_csum_workaround(struct txvh_private *tp,
+static void r8169_csum_workaround(struct secgmac_private *tp,
 				  struct sk_buff *skb)
 {
 	if (skb_shinfo(skb)->gso_size) {
@@ -7162,7 +7162,7 @@ static inline __be16 get_protocol(struct sk_buff *skb)
 }
 
 #if 0
-static bool rtl8169_tso_csum_v1(struct txvh_private *tp,
+static bool rtl8169_tso_csum_v1(struct secgmac_private *tp,
 				struct sk_buff *skb, u32 *opts)
 {
 	u32 mss = skb_shinfo(skb)->gso_size;
@@ -7184,7 +7184,7 @@ static bool rtl8169_tso_csum_v1(struct txvh_private *tp,
 	return true;
 }
 
-static bool rtl8169_tso_csum_v2(struct txvh_private *tp,
+static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 				struct sk_buff *skb, u32 *opts)
 {
 	u32 transport_offset = (u32)skb_transport_offset(skb);
@@ -7266,9 +7266,9 @@ static bool rtl8169_tso_csum_v2(struct txvh_private *tp,
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	unsigned int entry = tp->cur_tx % NUM_TX_DESC;
-	unsigned int txvh_entry = tp->txvh_curtx % NUM_TXVH_TXDESC;
+	unsigned int secgmac_entry = tp->secgmac_curtx % NUM_SECGMAC_TXDESC;
 	struct TxDesc *txd = tp->TxDescArray + entry;
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct device *d = &tp->pci_dev->dev;
@@ -7276,7 +7276,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	u32 status, len;
 	u32 opts[2];
 	int frags;
-	unsigned int addr_offset = tp->txvh_txdescArray[txvh_entry].bar2_addr - tp->txvh_txdescArray[0].bar2_addr;
+	unsigned int addr_offset = tp->secgmac_txdescArray[secgmac_entry].bar2_addr - tp->secgmac_txdescArray[0].bar2_addr;
 
 	skb_tx_timestamp(skb);
 	memcpy_toio(tp->bar2_addr + addr_offset, skb->data, skb->len);
@@ -7292,7 +7292,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		/* skb is sent */
 		if ((RTL_R32(csr5) & 0x1) == 0x1) {
 			RTL_W32(csr5, 0x1);
-			tp->txvh_curtx = 0;
+			tp->secgmac_curtx = 0;
 			break;
 		}
 	}
@@ -7389,7 +7389,7 @@ err_stop_0:
 
 static void rtl8169_pcierr_interrupt(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct pci_dev *pdev = tp->pci_dev;
 	u16 pci_status, pci_cmd;
 
@@ -7434,7 +7434,7 @@ static void rtl8169_pcierr_interrupt(struct net_device *dev)
 	rtl_schedule_task(tp, RTL_FLAG_TASK_RESET_PENDING);
 }
 
-static void rtl_tx(struct net_device *dev, struct txvh_private *tp)
+static void rtl_tx(struct net_device *dev, struct secgmac_private *tp)
 {
 	unsigned int dirty_tx, tx_left;
 
@@ -7516,7 +7516,7 @@ static inline void rtl8169_rx_csum(struct sk_buff *skb, u32 opts1)
 }
 
 static struct sk_buff *rtl8169_try_rx_copy(void *data,
-					   struct txvh_private *tp,
+					   struct secgmac_private *tp,
 					   int pkt_size,
 					   dma_addr_t addr)
 {
@@ -7534,7 +7534,7 @@ static struct sk_buff *rtl8169_try_rx_copy(void *data,
 	return skb;
 }
 
-static int rtl_rx(struct net_device *dev, struct txvh_private *tp, u32 budget)
+static int rtl_rx(struct net_device *dev, struct secgmac_private *tp, u32 budget)
 {
 	unsigned int cur_rx, rx_left;
 	unsigned int count;
@@ -7632,7 +7632,7 @@ release_descriptor:
 static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
 {
 	struct net_device *dev = dev_instance;
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	int handled = 0;
 	u16 status;
 
@@ -7652,7 +7652,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
 /*
  * Workqueue context.
  */
-static void rtl_slow_event_work(struct txvh_private *tp)
+static void rtl_slow_event_work(struct secgmac_private *tp)
 {
 	struct net_device *dev = tp->dev;
 	u16 status;
@@ -7685,15 +7685,15 @@ static void rtl_task(struct work_struct *work)
 {
 	static const struct {
 		int bitnr;
-		void (*action)(struct txvh_private *);
+		void (*action)(struct secgmac_private *);
 	} rtl_work[] = {
 		/* XXX - keep rtl_slow_event_work() as first element. */
 		{ RTL_FLAG_TASK_SLOW_PENDING,	rtl_slow_event_work },
 		{ RTL_FLAG_TASK_RESET_PENDING,	rtl_reset_work },
 		{ RTL_FLAG_TASK_PHY_PENDING,	rtl_phy_work }
 	};
-	struct txvh_private *tp =
-		container_of(work, struct txvh_private, wk.work);
+	struct secgmac_private *tp =
+		container_of(work, struct secgmac_private, wk.work);
 	struct net_device *dev = tp->dev;
 	int i;
 
@@ -7717,7 +7717,7 @@ out_unlock:
 
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
-	struct txvh_private *tp = container_of(napi, struct txvh_private, napi);
+	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
 	struct net_device *dev = tp->dev;
 	u16 enable_mask = RTL_EVENT_NAPI | tp->event_slow;
 	int work_done= 0, i;
@@ -7818,7 +7818,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 static void rtl8169_rx_missed(struct net_device *dev, void __iomem *ioaddr)
 {
-	//struct txvh_private *tp = netdev_priv(dev);
+	//struct secgmac_private *tp = netdev_priv(dev);
 
 //	if (tp->mac_version > RTL_GIGA_MAC_VER_06)
 //		return;
@@ -7829,7 +7829,7 @@ static void rtl8169_rx_missed(struct net_device *dev, void __iomem *ioaddr)
 
 static void rtl8169_down(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	del_timer_sync(&tp->timer);
@@ -7841,7 +7841,7 @@ static void rtl8169_down(struct net_device *dev)
 	/*
 	 * At this point device interrupts can not be enabled in any function,
 	 * as netif_running is not true (rtl8169_interrupt, rtl8169_reset_task)
-	 * and napi is disabled (txvh_poll).
+	 * and napi is disabled (secgmac_poll).
 	 */
 	rtl8169_rx_missed(dev, ioaddr);
 
@@ -7857,7 +7857,7 @@ static void rtl8169_down(struct net_device *dev)
 
 static int secgmac_close(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct pci_dev *pdev = tp->pci_dev;
 
 	pm_runtime_get_sync(&pdev->dev);
@@ -7882,11 +7882,11 @@ static int secgmac_close(struct net_device *dev)
 	tp->TxDescArray = NULL;
 	tp->RxDescArray = NULL;
 
-	kfree(tp->txvh_txdescArray);
-	tp->txvh_txdescArray = NULL;
+	kfree(tp->secgmac_txdescArray);
+	tp->secgmac_txdescArray = NULL;
 
-	kfree(tp->txvh_rxdescArray);
-	tp->txvh_rxdescArray = NULL;
+	kfree(tp->secgmac_rxdescArray);
+	tp->secgmac_rxdescArray = NULL;
 
 	pm_runtime_put_sync(&pdev->dev);
 
@@ -7896,7 +7896,7 @@ static int secgmac_close(struct net_device *dev)
 #ifdef CONFIG_NET_POLL_CONTROLLER
 static void rtl8169_netpoll(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl8169_interrupt(tp->pci_dev->irq, dev);
 }
@@ -7904,7 +7904,7 @@ static void rtl8169_netpoll(struct net_device *dev)
 
 static int secgmac_open(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
 	int retval = -ENOMEM;
@@ -7929,62 +7929,62 @@ static int secgmac_open(struct net_device *dev)
 		goto err_free_tx_0;
 
 	/* TXVH TX desc prepare */
-	tp->txvh_txdescArray = (struct txvh_txdesc *)kzalloc(5 * sizeof(struct txvh_txdesc), GFP_KERNEL);
-	if (!tp->txvh_txdescArray)
+	tp->secgmac_txdescArray = (struct secgmac_txdesc *)kzalloc(5 * sizeof(struct secgmac_txdesc), GFP_KERNEL);
+	if (!tp->secgmac_txdescArray)
 		goto err_free_rx_1;
 
 	/* Initialize tx description */
-	tp->txvh_txdescArray[0].tdesc0 = 0x1 << 31;
-        writel(tp->txvh_txdescArray[0].tdesc0, tp->bar1_addr);
-        tp->txvh_txdescArray[0].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->txvh_txdescArray[0].data_len, tp->bar1_addr + 0x4);
-        tp->txvh_txdescArray[0].bar2_addr = 0x00040000; //data in bar2 address
-        writel(tp->txvh_txdescArray[0].bar2_addr, tp->bar1_addr + 0x4 * 2);
-        tp->txvh_txdescArray[0].next_desc = 0x00010000;  //next desc addr in bar1 address
-        writel(tp->txvh_txdescArray[0].next_desc, tp->bar1_addr + 0x4 * 3);
+	tp->secgmac_txdescArray[0].tdesc0 = 0x1 << 31;
+        writel(tp->secgmac_txdescArray[0].tdesc0, tp->bar1_addr);
+        tp->secgmac_txdescArray[0].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->secgmac_txdescArray[0].data_len, tp->bar1_addr + 0x4);
+        tp->secgmac_txdescArray[0].bar2_addr = 0x00040000; //data in bar2 address
+        writel(tp->secgmac_txdescArray[0].bar2_addr, tp->bar1_addr + 0x4 * 2);
+        tp->secgmac_txdescArray[0].next_desc = 0x00010000;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[0].next_desc, tp->bar1_addr + 0x4 * 3);
 
-	tp->txvh_txdescArray[1].tdesc0 = 0x1 << 31;
-        writel(tp->txvh_txdescArray[1].tdesc0, tp->bar1_addr + 0x4 * 4);
-        tp->txvh_txdescArray[1].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->txvh_txdescArray[1].data_len, tp->bar1_addr + 0x4 * 5);
-        tp->txvh_txdescArray[1].bar2_addr = 0x00040000 + 0x5F2; //data in bar2 address
-        writel(tp->txvh_txdescArray[1].bar2_addr, tp->bar1_addr + 0x4 * 6);
-        tp->txvh_txdescArray[1].next_desc = 0x00010000 + sizeof(struct txvh_txdesc);  //next desc addr in bar1 address
-        writel(tp->txvh_txdescArray[1].next_desc, tp->bar1_addr + 0x4 * 7);
+	tp->secgmac_txdescArray[1].tdesc0 = 0x1 << 31;
+        writel(tp->secgmac_txdescArray[1].tdesc0, tp->bar1_addr + 0x4 * 4);
+        tp->secgmac_txdescArray[1].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->secgmac_txdescArray[1].data_len, tp->bar1_addr + 0x4 * 5);
+        tp->secgmac_txdescArray[1].bar2_addr = 0x00040000 + 0x5F2; //data in bar2 address
+        writel(tp->secgmac_txdescArray[1].bar2_addr, tp->bar1_addr + 0x4 * 6);
+        tp->secgmac_txdescArray[1].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc);  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[1].next_desc, tp->bar1_addr + 0x4 * 7);
 
-	tp->txvh_txdescArray[2].tdesc0 = 0x1 << 31;
-        writel(tp->txvh_txdescArray[2].tdesc0, tp->bar1_addr + 0x4 * 8);
-        tp->txvh_txdescArray[2].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->txvh_txdescArray[2].data_len, tp->bar1_addr + 0x4 * 9);
-        tp->txvh_txdescArray[2].bar2_addr = 0x00040000 + 0x5F2 * 2; //data in bar2 address
-        writel(tp->txvh_txdescArray[2].bar2_addr, tp->bar1_addr + 0x4 * 10);
-        tp->txvh_txdescArray[2].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 2;  //next desc addr in bar1 address
-        writel(tp->txvh_txdescArray[2].next_desc, tp->bar1_addr + 0x4 * 11);
+	tp->secgmac_txdescArray[2].tdesc0 = 0x1 << 31;
+        writel(tp->secgmac_txdescArray[2].tdesc0, tp->bar1_addr + 0x4 * 8);
+        tp->secgmac_txdescArray[2].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->secgmac_txdescArray[2].data_len, tp->bar1_addr + 0x4 * 9);
+        tp->secgmac_txdescArray[2].bar2_addr = 0x00040000 + 0x5F2 * 2; //data in bar2 address
+        writel(tp->secgmac_txdescArray[2].bar2_addr, tp->bar1_addr + 0x4 * 10);
+        tp->secgmac_txdescArray[2].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc) * 2;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[2].next_desc, tp->bar1_addr + 0x4 * 11);
 
-	tp->txvh_txdescArray[3].tdesc0 = 0x1 << 31;
-        writel(tp->txvh_txdescArray[3].tdesc0, tp->bar1_addr + 0x4 * 12);
-        tp->txvh_txdescArray[3].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->txvh_txdescArray[3].data_len, tp->bar1_addr + 0x4 * 13);
-        tp->txvh_txdescArray[3].bar2_addr = 0x00040000 + 0x5F2 * 3; //data in bar2 address
-        writel(tp->txvh_txdescArray[3].bar2_addr, tp->bar1_addr + 0x4 * 14);
-        tp->txvh_txdescArray[3].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 3;  //next desc addr in bar1 address
-        writel(tp->txvh_txdescArray[3].next_desc, tp->bar1_addr + 0x4 * 15);
+	tp->secgmac_txdescArray[3].tdesc0 = 0x1 << 31;
+        writel(tp->secgmac_txdescArray[3].tdesc0, tp->bar1_addr + 0x4 * 12);
+        tp->secgmac_txdescArray[3].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->secgmac_txdescArray[3].data_len, tp->bar1_addr + 0x4 * 13);
+        tp->secgmac_txdescArray[3].bar2_addr = 0x00040000 + 0x5F2 * 3; //data in bar2 address
+        writel(tp->secgmac_txdescArray[3].bar2_addr, tp->bar1_addr + 0x4 * 14);
+        tp->secgmac_txdescArray[3].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc) * 3;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[3].next_desc, tp->bar1_addr + 0x4 * 15);
 
-	tp->txvh_txdescArray[4].tdesc0 = 0x1 << 31;
-        writel(tp->txvh_txdescArray[4].tdesc0, tp->bar1_addr + 0x4 * 16);
-        tp->txvh_txdescArray[4].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->txvh_txdescArray[4].data_len, tp->bar1_addr + 0x4 * 17);
-        tp->txvh_txdescArray[4].bar2_addr = 0x00040000 + 0x5F2 * 4; //data in bar2 address
-        writel(tp->txvh_txdescArray[4].bar2_addr, tp->bar1_addr + 0x4 * 18);
-        tp->txvh_txdescArray[4].next_desc = 0x00010000 + sizeof(struct txvh_txdesc) * 4;  //next desc addr in bar1 address
-        writel(tp->txvh_txdescArray[4].next_desc, tp->bar1_addr + 0x4 * 19);
+	tp->secgmac_txdescArray[4].tdesc0 = 0x1 << 31;
+        writel(tp->secgmac_txdescArray[4].tdesc0, tp->bar1_addr + 0x4 * 16);
+        tp->secgmac_txdescArray[4].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+        writel(tp->secgmac_txdescArray[4].data_len, tp->bar1_addr + 0x4 * 17);
+        tp->secgmac_txdescArray[4].bar2_addr = 0x00040000 + 0x5F2 * 4; //data in bar2 address
+        writel(tp->secgmac_txdescArray[4].bar2_addr, tp->bar1_addr + 0x4 * 18);
+        tp->secgmac_txdescArray[4].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc) * 4;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[4].next_desc, tp->bar1_addr + 0x4 * 19);
 
-	/* txvh_curtx */
-	tp->txvh_curtx = 0;
+	/* secgmac_curtx */
+	tp->secgmac_curtx = 0;
 
 	/* TXVH RX desc prepare */
-        tp->txvh_rxdescArray = (struct txvh_rxdesc *)kzalloc(5 * sizeof(struct txvh_rxdesc), GFP_KERNEL);
-        if (!tp->txvh_rxdescArray)
+        tp->secgmac_rxdescArray = (struct secgmac_rxdesc *)kzalloc(5 * sizeof(struct secgmac_rxdesc), GFP_KERNEL);
+        if (!tp->secgmac_rxdescArray)
                 goto err_release_fw_1;
 
 	retval = rtl8169_init_ring(dev);
@@ -7992,50 +7992,50 @@ static int secgmac_open(struct net_device *dev)
 		goto err_release_fw_2;
 
 	/* rx description */
-	tp->txvh_rxdescArray[0].rdesc0 = 0x1 << 31;
-	writel(tp->txvh_rxdescArray[0].rdesc0, tp->bar3_addr);
-	tp->txvh_rxdescArray[0].data_len = 0x1 << 24 | 0x5F2; /*allocated frame length: 1522 bytes*/
-	writel(tp->txvh_rxdescArray[0].data_len, tp->bar3_addr + 0x4);
-	tp->txvh_rxdescArray[0].bar2_addr = 0x00040000 + 8 * 0x5F4; /* received buffer in bar2 address */
-	writel(tp->txvh_rxdescArray[0].bar2_addr, tp->bar3_addr + 0x4 * 2);
-	tp->txvh_rxdescArray[0].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc); /* bar3 address */
-	writel(tp->txvh_rxdescArray[0].next_desc, tp->bar3_addr + 0x4 * 3);
+	tp->secgmac_rxdescArray[0].rdesc0 = 0x1 << 31;
+	writel(tp->secgmac_rxdescArray[0].rdesc0, tp->bar3_addr);
+	tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F2; /*allocated frame length: 1522 bytes*/
+	writel(tp->secgmac_rxdescArray[0].data_len, tp->bar3_addr + 0x4);
+	tp->secgmac_rxdescArray[0].bar2_addr = 0x00040000 + 8 * 0x5F4; /* received buffer in bar2 address */
+	writel(tp->secgmac_rxdescArray[0].bar2_addr, tp->bar3_addr + 0x4 * 2);
+	tp->secgmac_rxdescArray[0].next_desc = 0x00070000 + sizeof(struct secgmac_rxdesc); /* bar3 address */
+	writel(tp->secgmac_rxdescArray[0].next_desc, tp->bar3_addr + 0x4 * 3);
 
-	tp->txvh_rxdescArray[1].rdesc0 = 0x1 << 31;
-	writel(tp->txvh_rxdescArray[1].rdesc0, tp->bar3_addr + 0x4 * 4);
-	tp->txvh_rxdescArray[1].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
-	writel(tp->txvh_rxdescArray[1].data_len, tp->bar3_addr + 0x4 * 5);
-	tp->txvh_rxdescArray[1].bar2_addr = 0x00040000 + 9 * 0x5F4; /* received buffer in bar2 address */
-	writel(tp->txvh_rxdescArray[1].bar2_addr, tp->bar3_addr + 0x4 * 6);
-	tp->txvh_rxdescArray[1].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 2; /* bar3 address */
-	writel(tp->txvh_rxdescArray[1].next_desc, tp->bar3_addr + 0x4 * 7);
+	tp->secgmac_rxdescArray[1].rdesc0 = 0x1 << 31;
+	writel(tp->secgmac_rxdescArray[1].rdesc0, tp->bar3_addr + 0x4 * 4);
+	tp->secgmac_rxdescArray[1].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
+	writel(tp->secgmac_rxdescArray[1].data_len, tp->bar3_addr + 0x4 * 5);
+	tp->secgmac_rxdescArray[1].bar2_addr = 0x00040000 + 9 * 0x5F4; /* received buffer in bar2 address */
+	writel(tp->secgmac_rxdescArray[1].bar2_addr, tp->bar3_addr + 0x4 * 6);
+	tp->secgmac_rxdescArray[1].next_desc = 0x00070000 + sizeof(struct secgmac_rxdesc) * 2; /* bar3 address */
+	writel(tp->secgmac_rxdescArray[1].next_desc, tp->bar3_addr + 0x4 * 7);
 
-	tp->txvh_rxdescArray[2].rdesc0 = 0x1 << 31;
-	writel(tp->txvh_rxdescArray[2].rdesc0, tp->bar3_addr + 0x4 * 8);
-	tp->txvh_rxdescArray[2].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
-	writel(tp->txvh_rxdescArray[2].data_len, tp->bar3_addr + 0x4 * 9);
-	tp->txvh_rxdescArray[2].bar2_addr = 0x00040000 + 10 * 0x5F4; /* received buffer in bar2 address */
-	writel(tp->txvh_rxdescArray[2].bar2_addr, tp->bar3_addr + 0x4 * 10);
-	tp->txvh_rxdescArray[2].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 3; /* bar3 address */
-	writel(tp->txvh_rxdescArray[2].next_desc, tp->bar3_addr + 0x4 * 11);
+	tp->secgmac_rxdescArray[2].rdesc0 = 0x1 << 31;
+	writel(tp->secgmac_rxdescArray[2].rdesc0, tp->bar3_addr + 0x4 * 8);
+	tp->secgmac_rxdescArray[2].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
+	writel(tp->secgmac_rxdescArray[2].data_len, tp->bar3_addr + 0x4 * 9);
+	tp->secgmac_rxdescArray[2].bar2_addr = 0x00040000 + 10 * 0x5F4; /* received buffer in bar2 address */
+	writel(tp->secgmac_rxdescArray[2].bar2_addr, tp->bar3_addr + 0x4 * 10);
+	tp->secgmac_rxdescArray[2].next_desc = 0x00070000 + sizeof(struct secgmac_rxdesc) * 3; /* bar3 address */
+	writel(tp->secgmac_rxdescArray[2].next_desc, tp->bar3_addr + 0x4 * 11);
 
-	tp->txvh_rxdescArray[3].rdesc0 = 0x1 << 31;
-	writel(tp->txvh_rxdescArray[3].rdesc0, tp->bar3_addr + 0x4 * 12);
-	tp->txvh_rxdescArray[3].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
-	writel(tp->txvh_rxdescArray[3].data_len, tp->bar3_addr + 0x4 * 13);
-	tp->txvh_rxdescArray[3].bar2_addr = 0x00040000 + 11 * 0x5F4; /* received buffer in bar2 address */
-	writel(tp->txvh_rxdescArray[3].bar2_addr, tp->bar3_addr + 0x4 * 14);
-	tp->txvh_rxdescArray[3].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc) * 4; /* bar3 address */
-	writel(tp->txvh_rxdescArray[3].next_desc, tp->bar3_addr + 0x4 * 15);
+	tp->secgmac_rxdescArray[3].rdesc0 = 0x1 << 31;
+	writel(tp->secgmac_rxdescArray[3].rdesc0, tp->bar3_addr + 0x4 * 12);
+	tp->secgmac_rxdescArray[3].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
+	writel(tp->secgmac_rxdescArray[3].data_len, tp->bar3_addr + 0x4 * 13);
+	tp->secgmac_rxdescArray[3].bar2_addr = 0x00040000 + 11 * 0x5F4; /* received buffer in bar2 address */
+	writel(tp->secgmac_rxdescArray[3].bar2_addr, tp->bar3_addr + 0x4 * 14);
+	tp->secgmac_rxdescArray[3].next_desc = 0x00070000 + sizeof(struct secgmac_rxdesc) * 4; /* bar3 address */
+	writel(tp->secgmac_rxdescArray[3].next_desc, tp->bar3_addr + 0x4 * 15);
 
-	tp->txvh_rxdescArray[4].rdesc0 = 0x1 << 31;
-	writel(tp->txvh_rxdescArray[4].rdesc0, tp->bar3_addr + 0x4 * 16);
-	tp->txvh_rxdescArray[4].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
-	writel(tp->txvh_rxdescArray[4].data_len, tp->bar3_addr + 0x4 * 17);
-	tp->txvh_rxdescArray[4].bar2_addr = 0x00040000 + 12 * 0x5F4; /* received buffer in bar2 address */
-	writel(tp->txvh_rxdescArray[4].bar2_addr, tp->bar3_addr + 0x4 * 18);
-	tp->txvh_rxdescArray[4].next_desc = 0x00070000 + sizeof(struct txvh_rxdesc); /* bar3 address */
-	writel(tp->txvh_rxdescArray[4].next_desc, tp->bar3_addr + 0x4 * 19);
+	tp->secgmac_rxdescArray[4].rdesc0 = 0x1 << 31;
+	writel(tp->secgmac_rxdescArray[4].rdesc0, tp->bar3_addr + 0x4 * 16);
+	tp->secgmac_rxdescArray[4].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
+	writel(tp->secgmac_rxdescArray[4].data_len, tp->bar3_addr + 0x4 * 17);
+	tp->secgmac_rxdescArray[4].bar2_addr = 0x00040000 + 12 * 0x5F4; /* received buffer in bar2 address */
+	writel(tp->secgmac_rxdescArray[4].bar2_addr, tp->bar3_addr + 0x4 * 18);
+	tp->secgmac_rxdescArray[4].next_desc = 0x00070000 + sizeof(struct secgmac_rxdesc); /* bar3 address */
+	writel(tp->secgmac_rxdescArray[4].next_desc, tp->bar3_addr + 0x4 * 19);
 
 	/* receive addr bar3 */
 	RTL_W32(csr3, 0x00070000);
@@ -8104,9 +8104,9 @@ out:
 err_release_fw_2:
 	rtl_release_firmware(tp);
 	rtl8169_rx_clear(tp);
-	kfree(tp->txvh_rxdescArray);
+	kfree(tp->secgmac_rxdescArray);
 err_release_fw_1:
-	kfree(tp->txvh_txdescArray);
+	kfree(tp->secgmac_txdescArray);
 err_free_rx_1:
 	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
 			  tp->RxPhyAddr);
@@ -8123,7 +8123,7 @@ err_pm_runtime_put:
 static struct rtnl_link_stats64 *
 rtl8169_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
 	struct rtl8169_counters *counters = tp->counters;
@@ -8180,7 +8180,7 @@ rtl8169_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 
 static void rtl8169_net_suspend(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	if (!netif_running(dev))
 		return;
@@ -8210,7 +8210,7 @@ static int rtl8169_suspend(struct device *device)
 
 static void __rtl8169_resume(struct net_device *dev)
 {
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	netif_device_attach(dev);
 
@@ -8228,7 +8228,7 @@ static int rtl8169_resume(struct device *device)
 {
 	struct pci_dev *pdev = to_pci_dev(device);
 	struct net_device *dev = pci_get_drvdata(pdev);
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl8169_init_phy(dev, tp);
 
@@ -8242,7 +8242,7 @@ static int rtl8169_runtime_suspend(struct device *device)
 {
 	struct pci_dev *pdev = to_pci_dev(device);
 	struct net_device *dev = pci_get_drvdata(pdev);
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	if (!tp->TxDescArray)
 		return 0;
@@ -8265,7 +8265,7 @@ static int rtl8169_runtime_resume(struct device *device)
 {
 	struct pci_dev *pdev = to_pci_dev(device);
 	struct net_device *dev = pci_get_drvdata(pdev);
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	rtl_rar_set(tp, dev->dev_addr);
 
 	if (!tp->TxDescArray)
@@ -8287,7 +8287,7 @@ static int rtl8169_runtime_idle(struct device *device)
 {
 	struct pci_dev *pdev = to_pci_dev(device);
 	struct net_device *dev = pci_get_drvdata(pdev);
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 	return tp->TxDescArray ? -EBUSY : 0;
 }
@@ -8312,7 +8312,7 @@ static const struct dev_pm_ops rtl8169_pm_ops = {
 
 #endif /* !CONFIG_PM */
 
-static void rtl_wol_shutdown_quirk(struct txvh_private *tp)
+static void rtl_wol_shutdown_quirk(struct secgmac_private *tp)
 {
 #if 0
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -8338,7 +8338,7 @@ static void rtl_wol_shutdown_quirk(struct txvh_private *tp)
 static void rtl_shutdown(struct pci_dev *pdev)
 {
 	struct net_device *dev = pci_get_drvdata(pdev);
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 	struct device *d = &pdev->dev;
 
 	pm_runtime_get_sync(d);
@@ -8363,10 +8363,10 @@ static void rtl_shutdown(struct pci_dev *pdev)
 	pm_runtime_put_noidle(d);
 }
 
-static void txvh_remove_one(struct pci_dev *pdev)
+static void secgmac_remove_one(struct pci_dev *pdev)
 {
 	struct net_device *dev = pci_get_drvdata(pdev);
-	struct txvh_private *tp = netdev_priv(dev);
+	struct secgmac_private *tp = netdev_priv(dev);
 
 #if 0
 	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
@@ -8398,7 +8398,7 @@ static void txvh_remove_one(struct pci_dev *pdev)
 	rtl8169_release_board(pdev, dev, tp->mmio_addr);
 }
 
-static const struct net_device_ops txvh_netdev_ops = {
+static const struct net_device_ops secgmac_netdev_ops = {
 	.ndo_open		= secgmac_open,
 	.ndo_stop		= secgmac_close,
 	.ndo_get_stats64	= rtl8169_get_stats64,
@@ -8456,7 +8456,7 @@ static const struct rtl_cfg_info {
 
 #if 0
 /* Cfg9346_Unlock assumed. */
-static unsigned rtl_try_msi(struct txvh_private *tp,
+static unsigned rtl_try_msi(struct secgmac_private *tp,
 			    const struct rtl_cfg_info *cfg)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -8494,7 +8494,7 @@ DECLARE_RTL_COND(rtl_rxtx_empty_cond)
 }
 
 #if 0
-static void rtl_hw_init_8168g(struct txvh_private *tp)
+static void rtl_hw_init_8168g(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 	u32 data;
@@ -8530,14 +8530,14 @@ static void rtl_hw_init_8168g(struct txvh_private *tp)
 #endif
 
 #if 0
-static void rtl_hw_init_8168ep(struct txvh_private *tp)
+static void rtl_hw_init_8168ep(struct secgmac_private *tp)
 {
 	rtl8168ep_stop_cmac(tp);
 	rtl_hw_init_8168g(tp);
 }
 #endif
 
-static void rtl_hw_initialize(struct txvh_private *tp)
+static void rtl_hw_initialize(struct secgmac_private *tp)
 {
 #if 0
 	switch (tp->mac_version) {
@@ -8563,11 +8563,11 @@ static void rtl_hw_initialize(struct txvh_private *tp)
 #endif
 }
 
-static int txvh_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	//const struct rtl_cfg_info *cfg = rtl_cfg_infos + ent->driver_data;
 	const unsigned int region = 0; //cfg->region;
-	struct txvh_private *tp;
+	struct secgmac_private *tp;
 	struct mii_if_info *mii;
 	struct net_device *dev;
 	void __iomem *ioaddr, *bar1_addr, *bar2_addr, *bar3_addr;
@@ -8586,7 +8586,7 @@ static int txvh_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 
 	SET_NETDEV_DEV(dev, &pdev->dev);
-	dev->netdev_ops = &txvh_netdev_ops;
+	dev->netdev_ops = &secgmac_netdev_ops;
 	tp = netdev_priv(dev);
 	tp->dev = dev;
 	tp->pci_dev = pdev;
@@ -8817,7 +8817,7 @@ static int txvh_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	dev->dev_addr[4] = RTL_R8(csr17);
 	dev->dev_addr[5] = RTL_R8(csr17 + 1);
 
-	dev->ethtool_ops = &txvh_ethtool_ops;
+	dev->ethtool_ops = &secgmac_ethtool_ops;
 	dev->watchdog_timeo = RTL8169_TX_TIMEOUT;
 
 	netif_napi_add(dev, &tp->napi, secgmac_poll, R8169_NAPI_WEIGHT);
@@ -8929,13 +8929,13 @@ err_out_free_dev_1:
 	goto out;
 }
 
-static struct pci_driver txvh_pci_driver = {
+static struct pci_driver secgmac_pci_driver = {
 	.name		= MODULENAME,
-	.id_table	= txvh_pci_tbl,
-	.probe		= txvh_init_one,
-	.remove		= txvh_remove_one,
+	.id_table	= secgmac_pci_tbl,
+	.probe		= secgmac_init_one,
+	.remove		= secgmac_remove_one,
 	.shutdown	= rtl_shutdown,
 	.driver.pm	= RTL8169_PM_OPS,
 };
 
-module_pci_driver(txvh_pci_driver);
+module_pci_driver(secgmac_pci_driver);
