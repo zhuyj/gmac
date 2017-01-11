@@ -7939,51 +7939,53 @@ static int secgmac_open(struct net_device *dev)
 	 * bar2: xmit buffers
 	 * bar3: rx buffers
 	 */
+#define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
+#define BAR1_PHYSICAL_BASE		(0x00010000)
 	/* Initialize tx description */
 	tp->secgmac_txdescArray[0].tdesc0 = 0x1 << 31;
-        writel(tp->secgmac_txdescArray[0].tdesc0, tp->bar1_addr);
+        writel(tp->secgmac_txdescArray[0].tdesc0, BAR1_VIRTUAL_BASE);
         tp->secgmac_txdescArray[0].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->secgmac_txdescArray[0].data_len, tp->bar1_addr + 0x4);
+        writel(tp->secgmac_txdescArray[0].data_len, BAR1_VIRTUAL_BASE + 0x4);
         tp->secgmac_txdescArray[0].bar2_addr = 0x00040000; //data in bar2 address
-        writel(tp->secgmac_txdescArray[0].bar2_addr, tp->bar1_addr + 0x4 * 2);
-        tp->secgmac_txdescArray[0].next_desc = 0x00010000;  //next desc addr in bar1 address
-        writel(tp->secgmac_txdescArray[0].next_desc, tp->bar1_addr + 0x4 * 3);
+        writel(tp->secgmac_txdescArray[0].bar2_addr, BAR1_VIRTUAL_BASE + 0x4 * 2);
+        tp->secgmac_txdescArray[0].next_desc = BAR1_PHYSICAL_BASE;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[0].next_desc, BAR1_VIRTUAL_BASE + 0x4 * 3);
 
 	tp->secgmac_txdescArray[1].tdesc0 = 0x1 << 31;
-        writel(tp->secgmac_txdescArray[1].tdesc0, tp->bar1_addr + 0x4 * 4);
+        writel(tp->secgmac_txdescArray[1].tdesc0, BAR1_VIRTUAL_BASE + 0x4 * 4);
         tp->secgmac_txdescArray[1].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->secgmac_txdescArray[1].data_len, tp->bar1_addr + 0x4 * 5);
+        writel(tp->secgmac_txdescArray[1].data_len, BAR1_VIRTUAL_BASE + 0x4 * 5);
         tp->secgmac_txdescArray[1].bar2_addr = 0x00040000 + 0x5F2; //data in bar2 address
-        writel(tp->secgmac_txdescArray[1].bar2_addr, tp->bar1_addr + 0x4 * 6);
-        tp->secgmac_txdescArray[1].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc);  //next desc addr in bar1 address
-        writel(tp->secgmac_txdescArray[1].next_desc, tp->bar1_addr + 0x4 * 7);
+        writel(tp->secgmac_txdescArray[1].bar2_addr, BAR1_VIRTUAL_BASE + 0x4 * 6);
+        tp->secgmac_txdescArray[1].next_desc = BAR1_PHYSICAL_BASE + sizeof(struct secgmac_txdesc);  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[1].next_desc, BAR1_VIRTUAL_BASE + 0x4 * 7);
 
 	tp->secgmac_txdescArray[2].tdesc0 = 0x1 << 31;
-        writel(tp->secgmac_txdescArray[2].tdesc0, tp->bar1_addr + 0x4 * 8);
+        writel(tp->secgmac_txdescArray[2].tdesc0, BAR1_VIRTUAL_BASE + 0x4 * 8);
         tp->secgmac_txdescArray[2].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->secgmac_txdescArray[2].data_len, tp->bar1_addr + 0x4 * 9);
+        writel(tp->secgmac_txdescArray[2].data_len, BAR1_VIRTUAL_BASE + 0x4 * 9);
         tp->secgmac_txdescArray[2].bar2_addr = 0x00040000 + 0x5F2 * 2; //data in bar2 address
-        writel(tp->secgmac_txdescArray[2].bar2_addr, tp->bar1_addr + 0x4 * 10);
-        tp->secgmac_txdescArray[2].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc) * 2;  //next desc addr in bar1 address
-        writel(tp->secgmac_txdescArray[2].next_desc, tp->bar1_addr + 0x4 * 11);
+        writel(tp->secgmac_txdescArray[2].bar2_addr, BAR1_VIRTUAL_BASE + 0x4 * 10);
+        tp->secgmac_txdescArray[2].next_desc = BAR1_PHYSICAL_BASE + sizeof(struct secgmac_txdesc) * 2;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[2].next_desc, BAR1_VIRTUAL_BASE + 0x4 * 11);
 
 	tp->secgmac_txdescArray[3].tdesc0 = 0x1 << 31;
-        writel(tp->secgmac_txdescArray[3].tdesc0, tp->bar1_addr + 0x4 * 12);
+        writel(tp->secgmac_txdescArray[3].tdesc0, BAR1_VIRTUAL_BASE + 0x4 * 12);
         tp->secgmac_txdescArray[3].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->secgmac_txdescArray[3].data_len, tp->bar1_addr + 0x4 * 13);
+        writel(tp->secgmac_txdescArray[3].data_len, BAR1_VIRTUAL_BASE + 0x4 * 13);
         tp->secgmac_txdescArray[3].bar2_addr = 0x00040000 + 0x5F2 * 3; //data in bar2 address
-        writel(tp->secgmac_txdescArray[3].bar2_addr, tp->bar1_addr + 0x4 * 14);
-        tp->secgmac_txdescArray[3].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc) * 3;  //next desc addr in bar1 address
-        writel(tp->secgmac_txdescArray[3].next_desc, tp->bar1_addr + 0x4 * 15);
+        writel(tp->secgmac_txdescArray[3].bar2_addr, BAR1_VIRTUAL_BASE + 0x4 * 14);
+        tp->secgmac_txdescArray[3].next_desc = BAR1_PHYSICAL_BASE + sizeof(struct secgmac_txdesc) * 3;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[3].next_desc, BAR1_VIRTUAL_BASE + 0x4 * 15);
 
 	tp->secgmac_txdescArray[4].tdesc0 = 0x1 << 31;
-        writel(tp->secgmac_txdescArray[4].tdesc0, tp->bar1_addr + 0x4 * 16);
+        writel(tp->secgmac_txdescArray[4].tdesc0, BAR1_VIRTUAL_BASE + 0x4 * 16);
         tp->secgmac_txdescArray[4].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-        writel(tp->secgmac_txdescArray[4].data_len, tp->bar1_addr + 0x4 * 17);
+        writel(tp->secgmac_txdescArray[4].data_len, BAR1_VIRTUAL_BASE + 0x4 * 17);
         tp->secgmac_txdescArray[4].bar2_addr = 0x00040000 + 0x5F2 * 4; //data in bar2 address
-        writel(tp->secgmac_txdescArray[4].bar2_addr, tp->bar1_addr + 0x4 * 18);
-        tp->secgmac_txdescArray[4].next_desc = 0x00010000 + sizeof(struct secgmac_txdesc) * 4;  //next desc addr in bar1 address
-        writel(tp->secgmac_txdescArray[4].next_desc, tp->bar1_addr + 0x4 * 19);
+        writel(tp->secgmac_txdescArray[4].bar2_addr, BAR1_VIRTUAL_BASE + 0x4 * 18);
+        tp->secgmac_txdescArray[4].next_desc = BAR1_PHYSICAL_BASE + sizeof(struct secgmac_txdesc) * 4;  //next desc addr in bar1 address
+        writel(tp->secgmac_txdescArray[4].next_desc, BAR1_VIRTUAL_BASE + 0x4 * 19);
 
 	/* secgmac_curtx */
 	tp->secgmac_curtx = 0;
@@ -7998,7 +8000,7 @@ static int secgmac_open(struct net_device *dev)
 		goto err_release_fw_2;
 
 #define BAR1_VIRTUAL_8K_OFFSET		(tp->bar1_addr  + 8 * 0x400)
-#define BAR1_PHYSICAL_8K_OFFSET	(0x00010000  + 8 * 0x400)
+#define BAR1_PHYSICAL_8K_OFFSET		(0x00010000  + 8 * 0x400)
 	/* rx description */
 	tp->secgmac_rxdescArray[0].rdesc0 = 0x1 << 31;
 	writel(tp->secgmac_rxdescArray[0].rdesc0, BAR1_VIRTUAL_8K_OFFSET);
@@ -8022,7 +8024,7 @@ static int secgmac_open(struct net_device *dev)
 	writel(tp->secgmac_rxdescArray[2].rdesc0, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 8);
 	tp->secgmac_rxdescArray[2].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
 	writel(tp->secgmac_rxdescArray[2].data_len, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 9);
-	tp->secgmac_rxdescArray[2].bar3_addr = 0x00070000 + 10 * 0x5F4; /* received buffer in bar3 address */
+	tp->secgmac_rxdescArray[2].bar3_addr = 0x00070000 + 2 * 0x5F4; /* received buffer in bar3 address */
 	writel(tp->secgmac_rxdescArray[2].bar3_addr, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 10);
 	tp->secgmac_rxdescArray[2].next_desc = BAR1_PHYSICAL_8K_OFFSET + sizeof(struct secgmac_rxdesc) * 3; /* bar1 address */
 	writel(tp->secgmac_rxdescArray[2].next_desc, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 11);
@@ -8031,7 +8033,7 @@ static int secgmac_open(struct net_device *dev)
 	writel(tp->secgmac_rxdescArray[3].rdesc0, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 12);
 	tp->secgmac_rxdescArray[3].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
 	writel(tp->secgmac_rxdescArray[3].data_len, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 13);
-	tp->secgmac_rxdescArray[3].bar3_addr = 0x00070000 + 11 * 0x5F4; /* received buffer in bar3 address */
+	tp->secgmac_rxdescArray[3].bar3_addr = 0x00070000 + 3 * 0x5F4; /* received buffer in bar3 address */
 	writel(tp->secgmac_rxdescArray[3].bar3_addr, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 14);
 	tp->secgmac_rxdescArray[3].next_desc = BAR1_PHYSICAL_8K_OFFSET + sizeof(struct secgmac_rxdesc) * 4; /* bar1 address */
 	writel(tp->secgmac_rxdescArray[3].next_desc, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 15);
@@ -8040,7 +8042,7 @@ static int secgmac_open(struct net_device *dev)
 	writel(tp->secgmac_rxdescArray[4].rdesc0, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 16);
 	tp->secgmac_rxdescArray[4].data_len = 0x1 << 24 | 0x5F4; /*allocated frame length: 1522 bytes*/
 	writel(tp->secgmac_rxdescArray[4].data_len, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 17);
-	tp->secgmac_rxdescArray[4].bar3_addr = 0x00070000 + 12 * 0x5F4; /* received buffer in bar3 address */
+	tp->secgmac_rxdescArray[4].bar3_addr = 0x00070000 + 4 * 0x5F4; /* received buffer in bar3 address */
 	writel(tp->secgmac_rxdescArray[4].bar3_addr, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 18);
 	tp->secgmac_rxdescArray[4].next_desc = BAR1_PHYSICAL_8K_OFFSET + sizeof(struct secgmac_rxdesc); /* bar1 address */
 	writel(tp->secgmac_rxdescArray[4].next_desc, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 19);
