@@ -7315,7 +7315,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	}
 	spin_lock(&tp->lock);
 	/* start transmitting */
-	RTL_W32(csr6, (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
+	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
 
 	/* check start status */
@@ -7795,7 +7795,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 #endif
 	spin_lock(&tp->lock);
 	/*start receiving*/
-	RTL_W32(csr6, 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
+	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
 	spin_unlock(&tp->lock);
 
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
