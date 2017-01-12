@@ -7977,7 +7977,11 @@ static int secgmac_open(struct net_device *dev)
 
 	/* Initialize tx description */
 	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
-		tp->secgmac_txdescArray[i].tdesc0 = 0x1 << 31;
+		/* The MAC-1G will clear this bit when it completes a
+		 * current frame transmission or when the data buffers
+		 * associated with a given descriptor are empty.
+		 */
+		tp->secgmac_txdescArray[i].tdesc0 = 0x0; //0x1 << 31;
 		writel(tp->secgmac_txdescArray[i].tdesc0,
 			BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
 		tp->secgmac_txdescArray[i].data_len =
