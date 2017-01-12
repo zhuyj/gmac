@@ -716,7 +716,7 @@ struct TxDesc {
 	__le64 addr;
 };
 
-#define NUM_SECGMAC_TXDESC	5
+#define NUM_SECGMAC_TXDESC	10
 struct secgmac_txdesc {
 	unsigned long tdesc0;
 	unsigned long data_len;  /* skb length 1522(0x5F2) bytes */
@@ -724,7 +724,7 @@ struct secgmac_txdesc {
 	unsigned long next_desc; /* next desc addr */
 };
 
-#define NUM_SECGMAC_RXDESC 5
+#define NUM_SECGMAC_RXDESC	10
 struct secgmac_rxdesc {
         unsigned long rdesc0;
         unsigned long data_len;    /* frame length 1524(0x5F4) bytes */
@@ -7910,7 +7910,7 @@ static int secgmac_open(struct net_device *dev)
 	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
-	int retval = -ENOMEM;
+	int retval = -ENOMEM, i;
 
 	/* soft reset */
 	RTL_W8(csr0, 0x1);
@@ -7932,7 +7932,8 @@ static int secgmac_open(struct net_device *dev)
 		goto err_free_tx_0;
 
 	/* TXVH TX desc prepare */
-	tp->secgmac_txdescArray = (struct secgmac_txdesc *)kzalloc(5 * sizeof(struct secgmac_txdesc), GFP_KERNEL);
+	tp->secgmac_txdescArray = (struct secgmac_txdesc *)kzalloc(
+		NUM_SECGMAC_TXDESC * sizeof(struct secgmac_txdesc), GFP_KERNEL);
 	if (!tp->secgmac_txdescArray)
 		goto err_free_rx_1;
 
@@ -7945,6 +7946,30 @@ static int secgmac_open(struct net_device *dev)
 #define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
 #define BAR1_PHYSICAL_BASE		(0x00010000)
 	/* Initialize tx description */
+	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
+		tp->secgmac_txdescArray[i].tdesc0 = 0x1 << 31;
+		writel(tp->secgmac_txdescArray[i].tdesc0,
+			BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
+		tp->secgmac_txdescArray[i].data_len =
+			0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+		writel(tp->secgmac_txdescArray[i].data_len,
+			BAR1_VIRTUAL_BASE + 0x4 * (i * 4 + 1));
+		/* skb data in bar2 address */
+		tp->secgmac_txdescArray[i].bar2_addr = 0x00040000 + 0x5F2 * i;
+		writel(tp->secgmac_txdescArray[i].bar2_addr,
+			BAR1_VIRTUAL_BASE + 0x4 * (i * 4 + 2));
+		/* next desc addr in bar1 address */
+		tp->secgmac_txdescArray[i].next_desc =
+			BAR1_PHYSICAL_BASE + sizeof(struct secgmac_txdesc) * (i + 1);
+		writel(tp->secgmac_txdescArray[i].next_desc,
+			BAR1_VIRTUAL_BASE + 0x4 * (i * 4 + 3));
+	}
+
+	/* the last next desc is the first desc */
+	tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc = BAR1_PHYSICAL_BASE;
+	writel(tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc,
+		BAR1_VIRTUAL_BASE + 0x4 * ((NUM_SECGMAC_TXDESC - 1) * 4 + 3));
+#if 0
 	tp->secgmac_txdescArray[0].tdesc0 = 0x1 << 31;
         writel(tp->secgmac_txdescArray[0].tdesc0, BAR1_VIRTUAL_BASE);
         tp->secgmac_txdescArray[0].data_len = 0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
@@ -7989,12 +8014,13 @@ static int secgmac_open(struct net_device *dev)
         writel(tp->secgmac_txdescArray[4].bar2_addr, BAR1_VIRTUAL_BASE + 0x4 * 18);
         tp->secgmac_txdescArray[4].next_desc = BAR1_PHYSICAL_BASE + sizeof(struct secgmac_txdesc) * 4;  //next desc addr in bar1 address
         writel(tp->secgmac_txdescArray[4].next_desc, BAR1_VIRTUAL_BASE + 0x4 * 19);
-
+#endif
 	/* secgmac_curtx */
 	tp->secgmac_curtx = 0;
 
 	/* TXVH RX desc prepare */
-        tp->secgmac_rxdescArray = (struct secgmac_rxdesc *)kzalloc(5 * sizeof(struct secgmac_rxdesc), GFP_KERNEL);
+        tp->secgmac_rxdescArray = (struct secgmac_rxdesc *)kzalloc(
+		NUM_SECGMAC_RXDESC * sizeof(struct secgmac_rxdesc), GFP_KERNEL);
         if (!tp->secgmac_rxdescArray)
                 goto err_release_fw_1;
 
@@ -8004,7 +8030,32 @@ static int secgmac_open(struct net_device *dev)
 
 #define BAR1_VIRTUAL_8K_OFFSET		(tp->bar1_addr  + 8 * 0x400)
 #define BAR1_PHYSICAL_8K_OFFSET		(0x00010000  + 8 * 0x400)
+
 	/* rx description */
+	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
+		tp->secgmac_rxdescArray[i].rdesc0 = 0x1 << 31;
+		writel(tp->secgmac_rxdescArray[i].rdesc0,
+			BAR1_VIRTUAL_8K_OFFSET + 0x4 * i * 4);
+		/* allocated frame length: 1524 bytes, chain linked */
+		tp->secgmac_rxdescArray[i].data_len = 0x1 << 24 | 0x5F4;
+		writel(tp->secgmac_rxdescArray[i].data_len,
+			BAR1_VIRTUAL_8K_OFFSET + 0x4 * (i * 4 + 1));
+		/* received buffer in bar3 address */
+		tp->secgmac_rxdescArray[i].bar3_addr = 0x00070000 + 0x5F4 * i;
+		writel(tp->secgmac_rxdescArray[i].bar3_addr,
+			BAR1_VIRTUAL_8K_OFFSET + 0x4 * (i * 4 + 2));
+		/* the next desc in bar1 address */
+		tp->secgmac_rxdescArray[i].next_desc = BAR1_PHYSICAL_8K_OFFSET +
+							sizeof(struct secgmac_rxdesc) * (i + 1);
+		writel(tp->secgmac_rxdescArray[i].next_desc,
+			BAR1_VIRTUAL_8K_OFFSET + 0x4 * (i * 4 + 3));
+	}
+
+	/* the last next_desc is the first desc */
+	tp->secgmac_rxdescArray[NUM_SECGMAC_RXDESC-1].next_desc = BAR1_PHYSICAL_8K_OFFSET;
+	writel(tp->secgmac_rxdescArray[NUM_SECGMAC_RXDESC-1].next_desc,
+		BAR1_VIRTUAL_8K_OFFSET + 0x4 * ((NUM_SECGMAC_RXDESC-1) * 4 + 3));
+#if 0
 	tp->secgmac_rxdescArray[0].rdesc0 = 0x1 << 31;
 	writel(tp->secgmac_rxdescArray[0].rdesc0, BAR1_VIRTUAL_8K_OFFSET);
 	tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F4; 	/*allocated frame length: 1522 bytes*/
@@ -8049,7 +8100,7 @@ static int secgmac_open(struct net_device *dev)
 	writel(tp->secgmac_rxdescArray[4].bar3_addr, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 18);
 	tp->secgmac_rxdescArray[4].next_desc = BAR1_PHYSICAL_8K_OFFSET + sizeof(struct secgmac_rxdesc); /* bar1 address */
 	writel(tp->secgmac_rxdescArray[4].next_desc, BAR1_VIRTUAL_8K_OFFSET + 0x4 * 19);
-
+#endif
 	/* receive addr bar3 */
 	RTL_W32(csr3, 0x00070000);
 
