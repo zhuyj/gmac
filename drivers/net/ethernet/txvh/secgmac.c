@@ -732,6 +732,22 @@ struct secgmac_rxdesc {
         unsigned long next_desc;   /* next desc addr */
 };
 
+/* bar1 top 8K is for tx desc*/
+#define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
+#define BAR1_PHYSICAL_BASE		(0x00010000)
+
+/* bar1 bottom 8K is for rx desc*/
+#define BAR1_VIRTUAL_8K_OFFSET		(tp->bar1_addr  + 8 * 0x400)
+#define BAR1_PHYSICAL_8K_OFFSET		(0x00010000  + 8 * 0x400)
+
+/* bar2 is to tx skb data */
+#define BAR2_VIRTUAL_BASE		(tp->bar2_addr)
+#define BAR2_PHYSICAL_BASE		(0x00040000)
+
+/* bar3 is to rx skb data */
+#define BAR3_VIRTUAL_BASE		(tp->bar3_addr)
+#define BAR3_PHYSICAL_BASE		(0x00070000)
+
 struct RxDesc {
 	__le32 opts1;
 	__le32 opts2;
@@ -7271,20 +7287,32 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	unsigned int entry = tp->cur_tx % NUM_TX_DESC;
-	unsigned int secgmac_entry = tp->secgmac_curtx % NUM_SECGMAC_TXDESC;
+	//unsigned int secgmac_entry = tp->secgmac_curtx % NUM_SECGMAC_TXDESC;
 	struct TxDesc *txd = tp->TxDescArray + entry;
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct device *d = &tp->pci_dev->dev;
 	dma_addr_t mapping;
 	u32 status, len;
 	u32 opts[2];
-	int frags;
-	unsigned int addr_offset = tp->secgmac_txdescArray[secgmac_entry].bar2_addr - tp->secgmac_txdescArray[0].bar2_addr;
+	int frags, i;
+//	unsigned int addr_offset = tp->secgmac_txdescArray[secgmac_entry].bar2_addr - tp->secgmac_txdescArray[0].bar2_addr;
 
 	skb_tx_timestamp(skb);
-	memcpy_toio(tp->bar2_addr + addr_offset, skb->data, skb->len);
-	wmb();
+	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
 
+		/* tdesc0.31 is 0, the skb on this desc is sent. */
+		if ((readl(BAR1_VIRTUAL_BASE + 0x4 * i * 4) & (0x1 << 31)) == 0) {
+			memcpy_toio(BAR2_VIRTUAL_BASE + 0x5F2 * i, skb->data, skb->len);
+			wmb();
+			writel(0x1 << 31, BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
+			break;
+		}
+	}
+
+	if (i == NUM_SECGMAC_TXDESC) {
+		dev_kfree_skb_any(skb);
+		return NETDEV_TX_BUSY;
+	}
 	spin_lock(&tp->lock);
 	/* start transmitting */
 	RTL_W32(csr6, (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
@@ -7299,6 +7327,9 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 			break;
 		}
 	}
+
+	dev_kfree_skb_any(skb);
+	return NETDEV_TX_OK;
 
 	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
 		netif_err(tp, drv, dev, "BUG! Tx Ring full when queue awake!\n");
@@ -7767,7 +7798,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	RTL_W32(csr6, 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
 	spin_unlock(&tp->lock);
 
-	for (i=0; i<5; i++) {
+	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
 		unsigned long tmp_rdesc = readl(tp->bar3_addr + 0x4 * 4 * i);
 
 		/*This desc is filled with the received skb, handle the skb */
@@ -7943,8 +7974,7 @@ static int secgmac_open(struct net_device *dev)
 	 * bar2: xmit buffers
 	 * bar3: rx buffers
 	 */
-#define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
-#define BAR1_PHYSICAL_BASE		(0x00010000)
+
 	/* Initialize tx description */
 	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
 		tp->secgmac_txdescArray[i].tdesc0 = 0x1 << 31;
@@ -7955,7 +7985,7 @@ static int secgmac_open(struct net_device *dev)
 		writel(tp->secgmac_txdescArray[i].data_len,
 			BAR1_VIRTUAL_BASE + 0x4 * (i * 4 + 1));
 		/* skb data in bar2 address */
-		tp->secgmac_txdescArray[i].bar2_addr = 0x00040000 + 0x5F2 * i;
+		tp->secgmac_txdescArray[i].bar2_addr = BAR2_PHYSICAL_BASE + 0x5F2 * i;
 		writel(tp->secgmac_txdescArray[i].bar2_addr,
 			BAR1_VIRTUAL_BASE + 0x4 * (i * 4 + 2));
 		/* next desc addr in bar1 address */
@@ -8028,9 +8058,6 @@ static int secgmac_open(struct net_device *dev)
 	if (retval < 0)
 		goto err_release_fw_2;
 
-#define BAR1_VIRTUAL_8K_OFFSET		(tp->bar1_addr  + 8 * 0x400)
-#define BAR1_PHYSICAL_8K_OFFSET		(0x00010000  + 8 * 0x400)
-
 	/* rx description */
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
 		tp->secgmac_rxdescArray[i].rdesc0 = 0x1 << 31;
@@ -8041,7 +8068,7 @@ static int secgmac_open(struct net_device *dev)
 		writel(tp->secgmac_rxdescArray[i].data_len,
 			BAR1_VIRTUAL_8K_OFFSET + 0x4 * (i * 4 + 1));
 		/* received buffer in bar3 address */
-		tp->secgmac_rxdescArray[i].bar3_addr = 0x00070000 + 0x5F4 * i;
+		tp->secgmac_rxdescArray[i].bar3_addr = BAR3_PHYSICAL_BASE + 0x5F4 * i;
 		writel(tp->secgmac_rxdescArray[i].bar3_addr,
 			BAR1_VIRTUAL_8K_OFFSET + 0x4 * (i * 4 + 2));
 		/* the next desc in bar1 address */
