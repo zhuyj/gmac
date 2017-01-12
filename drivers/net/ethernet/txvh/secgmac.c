@@ -1649,7 +1649,6 @@ static void rtl8169_irq_mask_and_ack(struct secgmac_private *tp)
 	rtl_ack_events(tp, RTL_EVENT_NAPI | tp->event_slow);
 	RTL_R8(ChipCmd);
 }
-#endif
 
 static unsigned int rtl8169_tbi_reset_pending(struct secgmac_private *tp)
 {
@@ -1687,6 +1686,7 @@ static void rtl8169_xmii_reset_enable(struct secgmac_private *tp)
 	val = rtl_readphy(tp, MII_BMCR) | BMCR_RESET;
 	rtl_writephy(tp, MII_BMCR, val & 0xffff);
 }
+#endif
 
 static void rtl_link_chg_patch(struct secgmac_private *tp)
 {
@@ -1985,7 +1985,7 @@ static int rtl8169_get_regs_len(struct net_device *dev)
 {
 	return TXVH_REGS_SIZE;
 }
-
+#if 0
 static int rtl8169_set_speed_tbi(struct net_device *dev,
 				 u8 autoneg, u16 speed, u8 duplex, u32 ignored)
 {
@@ -2087,7 +2087,7 @@ static int rtl8169_set_speed_xmii(struct net_device *dev,
 out:
 	return rc;
 }
-
+#endif
 static int rtl8169_set_speed(struct net_device *dev,
 			     u8 autoneg, u16 speed, u8 duplex, u32 advertising)
 {
@@ -2198,6 +2198,7 @@ static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), swab16(opts2 & 0xffff));
 }
 
+#if 0
 static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -2225,6 +2226,7 @@ static int rtl8169_gset_xmii(struct net_device *dev, struct ethtool_cmd *cmd)
 
 	return mii_ethtool_gset(&tp->mii, cmd);
 }
+#endif
 
 static int rtl8169_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
@@ -4601,6 +4603,7 @@ static int rtl8169_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	return netif_running(dev) ? tp->do_ioctl(tp, data, cmd) : -ENODEV;
 }
 
+#if 0
 static int rtl_xmii_ioctl(struct secgmac_private *tp,
 			  struct mii_ioctl_data *data, int cmd)
 {
@@ -4624,7 +4627,7 @@ static int rtl_tbi_ioctl(struct secgmac_private *tp, struct mii_ioctl_data *data
 {
 	return -EOPNOTSUPP;
 }
-
+#endif
 static void rtl_disable_msi(struct pci_dev *pdev, struct secgmac_private *tp)
 {
 	if (tp->features & RTL_FEATURE_MSI) {
@@ -8765,7 +8768,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 			tp->features |= RTL_FEATURE_WOL;
 		break;
 	}
-#endif
+
 	if ((RTL_R8(Config5) & (UWF | BWF | MWF)) != 0)
 		tp->features |= RTL_FEATURE_WOL;
 	//tp->features |= rtl_try_msi(tp, cfg);
@@ -8786,7 +8789,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		tp->link_ok = rtl8169_xmii_link_ok;
 		tp->do_ioctl = rtl_xmii_ioctl;
 	}
-
+#endif
 	mutex_init(&tp->wk.mutex);
 	u64_stats_init(&tp->rx_stats.syncp);
 	u64_stats_init(&tp->tx_stats.syncp);
