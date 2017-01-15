@@ -90,7 +90,7 @@ static const int multicast_filter_limit = 32;
 #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
 #define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
 
-#define RTL8169_TX_TIMEOUT	(6*HZ)
+#define SECGMAC_TX_TIMEOUT	(6*HZ)
 #define RTL8169_PHY_TIMEOUT	(10*HZ)
 
 /* write/read MMIO register */
@@ -1008,7 +1008,6 @@ static bool rtl_msleep_loop_wait_high(struct secgmac_private *tp,
 {
 	return rtl_loop_wait(tp, c, msleep, d, n, true);
 }
-#endif
 
 static bool rtl_msleep_loop_wait_low(struct secgmac_private *tp,
 				     const struct rtl_cond *c,
@@ -1016,6 +1015,7 @@ static bool rtl_msleep_loop_wait_low(struct secgmac_private *tp,
 {
 	return rtl_loop_wait(tp, c, msleep, d, n, false);
 }
+#endif
 
 #define DECLARE_RTL_COND(name)				\
 static bool name ## _check(struct secgmac_private *);	\
@@ -1651,12 +1651,12 @@ static void rtl_irq_enable(struct secgmac_private *tp, u16 bits)
 #define RTL_EVENT_NAPI_TX	(TxOK | TxErr)
 #define RTL_EVENT_NAPI		(RTL_EVENT_NAPI_RX | RTL_EVENT_NAPI_TX)
 
+#if 0
 static void rtl_irq_enable_all(struct secgmac_private *tp)
 {
 	rtl_irq_enable(tp, RTL_EVENT_NAPI | tp->event_slow);
 }
 
-#if 0
 static void rtl8169_irq_mask_and_ack(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -2383,7 +2383,7 @@ static bool rtl8169_init_counter_offsets(struct net_device *dev)
 	 * values, we collect the initial values at first open(*) and use them
 	 * as offsets to normalize the values returned by @get_stats64.
 	 *
-	 * (*) We can't call rtl8169_init_counter_offsets from rtl_init_one
+	 * (*) We can't call rtl8169_init_counter_offsets from secgmac_init_one
 	 * for the reason stated in rtl8169_update_counters; CmdRxEnb is only
 	 * set at open time by rtl_hw_start.
 	 */
@@ -4326,9 +4326,9 @@ static void rtl8106e_hw_phy_config(struct secgmac_private *tp)
 }
 #endif
 
+#if 0
 static void rtl_hw_phy_config(struct net_device *dev)
 {
-#if 0
 	struct secgmac_private *tp = netdev_priv(dev);
 
 	rtl8169_print_mac_version(tp);
@@ -4456,7 +4456,6 @@ static void rtl_hw_phy_config(struct net_device *dev)
 	default:
 		break;
 	}
-#endif
 }
 
 static void rtl_phy_work(struct secgmac_private *tp)
@@ -4486,6 +4485,7 @@ static void rtl_phy_work(struct secgmac_private *tp)
 out_mod_timer:
 	mod_timer(timer, jiffies + timeout);
 }
+#endif
 
 static void rtl_schedule_task(struct secgmac_private *tp, enum rtl_flag flag)
 {
@@ -4516,6 +4516,7 @@ DECLARE_RTL_COND(rtl_phy_reset_cond)
 	return tp->phy_reset_pending(tp);
 }
 
+#if 0
 static void rtl8169_phy_reset(struct net_device *dev,
 			      struct secgmac_private *tp)
 {
@@ -4537,7 +4538,6 @@ static void rtl8169_init_phy(struct net_device *dev, struct secgmac_private *tp)
 
 	rtl_hw_phy_config(dev);
 
-#if 0
 	if (tp->mac_version <= RTL_GIGA_MAC_VER_06) {
 		dprintk("Set MAC Reg C+CR Offset 0x82h = 0x01h\n");
 		RTL_W8(0x82, 0x01);
@@ -4554,7 +4554,7 @@ static void rtl8169_init_phy(struct net_device *dev, struct secgmac_private *tp)
 		dprintk("Set PHY Reg 0x0bh = 0x00h\n");
 		rtl_writephy(tp, 0x0b, 0x0000); //w 0x0b 15 0 0
 	}
-#endif
+
 	rtl8169_phy_reset(dev, tp);
 
 	rtl8169_set_speed(dev, AUTONEG_ENABLE, SPEED_1000, DUPLEX_FULL,
@@ -4567,6 +4567,7 @@ static void rtl8169_init_phy(struct net_device *dev, struct secgmac_private *tp)
 	if (rtl_tbi_enabled(tp))
 		netif_info(tp, link, dev, "TBI auto-negotiating\n");
 }
+#endif
 
 static void rtl_rar_set(struct secgmac_private *tp, u8 *addr)
 {
@@ -5286,13 +5287,15 @@ DECLARE_RTL_COND(rtl_chipcmd_cond)
 	return RTL_R8(ChipCmd) & CmdReset;
 }
 
-static void rtl_hw_reset(struct secgmac_private *tp)
+static void secgmac_hw_reset(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
-	RTL_W8(ChipCmd, CmdReset);
+	/* soft reset */
+	RTL_W8(csr0, 0x1);
+//	RTL_W8(ChipCmd, CmdReset);
 
-	rtl_udelay_loop_wait_low(tp, &rtl_chipcmd_cond, 100, 100);
+//	rtl_udelay_loop_wait_low(tp, &rtl_chipcmd_cond, 100, 100);
 }
 
 static void rtl_request_uncached_firmware(struct secgmac_private *tp)
@@ -5413,7 +5416,6 @@ static void rtl_set_rx_tx_config_registers(struct secgmac_private *tp)
 	RTL_W32(TxConfig, (TX_DMA_BURST << TxDMAShift) |
 		(InterFrameGap << TxInterFrameGapShift));
 }
-#endif
 
 static void rtl_hw_start(struct net_device *dev)
 {
@@ -5424,7 +5426,6 @@ static void rtl_hw_start(struct net_device *dev)
 	rtl_irq_enable_all(tp);
 }
 
-#if 0
 static void rtl_set_rx_tx_desc_registers(struct secgmac_private *tp,
 					 void __iomem *ioaddr)
 {
@@ -7014,6 +7015,7 @@ static void rtl8169_tx_clear(struct secgmac_private *tp)
 	tp->cur_tx = tp->dirty_tx = 0;
 }
 
+#if 0
 static void rtl_reset_work(struct secgmac_private *tp)
 {
 	struct net_device *dev = tp->dev;
@@ -7036,6 +7038,7 @@ static void rtl_reset_work(struct secgmac_private *tp)
 	netif_wake_queue(dev);
 	rtl8169_check_link_status(dev, tp, tp->mmio_addr);
 }
+#endif
 
 static void rtl8169_tx_timeout(struct net_device *dev)
 {
@@ -7297,6 +7300,10 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	int frags, i;
 //	unsigned int addr_offset = tp->secgmac_txdescArray[secgmac_entry].bar2_addr - tp->secgmac_txdescArray[0].bar2_addr;
 
+	if (printk_ratelimit()) {
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	}
+
 	skb_tx_timestamp(skb);
 	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
 
@@ -7421,6 +7428,7 @@ err_stop_0:
 	return NETDEV_TX_BUSY;
 }
 
+#if 0
 static void rtl8169_pcierr_interrupt(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -7467,6 +7475,7 @@ static void rtl8169_pcierr_interrupt(struct net_device *dev)
 
 	rtl_schedule_task(tp, RTL_FLAG_TASK_RESET_PENDING);
 }
+#endif
 
 static void rtl_tx(struct net_device *dev, struct secgmac_private *tp)
 {
@@ -7683,6 +7692,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
 	return IRQ_RETVAL(handled);
 }
 
+#if 0
 /*
  * Workqueue context.
  */
@@ -7693,7 +7703,6 @@ static void rtl_slow_event_work(struct secgmac_private *tp)
 
 	status = rtl_get_events(tp) & tp->event_slow;
 	rtl_ack_events(tp, status);
-#if 0
 	if (unlikely(status & RxFIFOOver)) {
 		switch (tp->mac_version) {
 		/* Work around for rx fifo overflow */
@@ -7705,7 +7714,6 @@ static void rtl_slow_event_work(struct secgmac_private *tp)
 			break;
 		}
 	}
-#endif
 	if (unlikely(status & SYSErr))
 		rtl8169_pcierr_interrupt(dev);
 
@@ -7748,6 +7756,7 @@ static void rtl_task(struct work_struct *work)
 out_unlock:
 	rtl_unlock_work(tp);
 }
+#endif
 
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
@@ -7946,7 +7955,10 @@ static int secgmac_open(struct net_device *dev)
 	/* soft reset */
 	RTL_W8(csr0, 0x1);
 
-	pm_runtime_get_sync(&pdev->dev);
+	if (printk_ratelimit()) {
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	}
+//	pm_runtime_get_sync(&pdev->dev);
 
 	/*
 	 * Rx and Tx descriptors needs 256 bytes alignment.
@@ -8156,11 +8168,12 @@ static int secgmac_open(struct net_device *dev)
 	/* start receiving and sending */
 	RTL_W32(csr6, 0x1 << 30 | 0x1 << 16 | 0x1 << 13 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
 
-	INIT_WORK(&tp->wk.work, rtl_task);
+//	INIT_WORK(&tp->wk.work, rtl_task);
 
 	smp_mb();
 
-	rtl_request_firmware(tp);
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+//	rtl_request_firmware(tp);
 
 	retval = request_irq(pdev->irq, rtl8169_interrupt,
 			     (tp->features & RTL_FEATURE_MSI) ? 0 : IRQF_SHARED,
@@ -8173,15 +8186,15 @@ static int secgmac_open(struct net_device *dev)
 	set_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
 
 	napi_enable(&tp->napi);
-
-	rtl8169_init_phy(dev, tp);
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+//	rtl8169_init_phy(dev, tp);
 
 	__rtl8169_set_features(dev, dev->features);
 
-	rtl_pll_power_up(tp);
+//	rtl_pll_power_up(tp);
 
-	rtl_hw_start(dev);
-
+//	rtl_hw_start(dev);
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	if (!rtl8169_init_counter_offsets(dev))
 		netif_warn(tp, hw, dev, "counter reset/update failed\n");
 
@@ -8190,9 +8203,11 @@ static int secgmac_open(struct net_device *dev)
 	rtl_unlock_work(tp);
 
 	tp->saved_wolopts = 0;
-	pm_runtime_put_noidle(&pdev->dev);
+//	pm_runtime_put_noidle(&pdev->dev);
 
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	rtl8169_check_link_status(dev, tp, ioaddr);
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 out:
 	return retval;
 
@@ -8323,9 +8338,9 @@ static int rtl8169_resume(struct device *device)
 {
 	struct pci_dev *pdev = to_pci_dev(device);
 	struct net_device *dev = pci_get_drvdata(pdev);
-	struct secgmac_private *tp = netdev_priv(dev);
+	//struct secgmac_private *tp = netdev_priv(dev);
 
-	rtl8169_init_phy(dev, tp);
+	//rtl8169_init_phy(dev, tp);
 
 	if (netif_running(dev))
 		__rtl8169_resume(dev);
@@ -8371,7 +8386,7 @@ static int rtl8169_runtime_resume(struct device *device)
 	tp->saved_wolopts = 0;
 	rtl_unlock_work(tp);
 
-	rtl8169_init_phy(dev, tp);
+	//rtl8169_init_phy(dev, tp);
 
 	__rtl8169_resume(dev);
 
@@ -8800,7 +8815,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	rtl_hw_initialize(tp);
 
-	rtl_hw_reset(tp);
+	secgmac_hw_reset(tp);
 
 	rtl_ack_events(tp, 0xffff);
 
@@ -8904,19 +8919,24 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 #endif
 	/* set gmac mac address in csr16 and csr17 */
+	printk("secgmac func:%s, line:%d, ioaddr:0x%p\n", __FUNCTION__, __LINE__, ioaddr);
 	RTL_W32(csr16, 0x55443322);
+	printk("secgmac func:%s, line:%d, csr16:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr16));
 	RTL_W32(csr17, 0x00007766);
-	for (i = 0; i < ETH_ALEN-2; i++)
+	printk("secgmac func:%s, line:%d, csr17:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr17));
+	for (i = 0; i < ETH_ALEN-2; i++) {
 		dev->dev_addr[i] = RTL_R8(csr16 + i);
-	
+		printk("txvh func:%s, line:%d, addr:0x%x\n", __FUNCTION__, __LINE__, dev->dev_addr[i]);
+	}
+
 	dev->dev_addr[4] = RTL_R8(csr17);
+	printk("txvh func:%s, line:%d, addr:0x%x\n", __FUNCTION__, __LINE__, dev->dev_addr[4]);
 	dev->dev_addr[5] = RTL_R8(csr17 + 1);
+	printk("txvh func:%s, line:%d, addr:0x%x\n", __FUNCTION__, __LINE__, dev->dev_addr[5]);
 
 	dev->ethtool_ops = &secgmac_ethtool_ops;
-	dev->watchdog_timeo = RTL8169_TX_TIMEOUT;
-
+	dev->watchdog_timeo = SECGMAC_TX_TIMEOUT;
 	netif_napi_add(dev, &tp->napi, secgmac_poll, R8169_NAPI_WEIGHT);
-
 	/* don't enable SG, IP_CSUM and TSO by default - it might not work
 	 * properly for all devices */
 	dev->features |= NETIF_F_RXCSUM |
@@ -8959,7 +8979,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	init_timer(&tp->timer);
 	tp->timer.data = (unsigned long) dev;
 	tp->timer.function = rtl8169_phy_timer;
-
 	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
 
 	tp->counters = dma_alloc_coherent (&pdev->dev, sizeof(*tp->counters),
@@ -8968,15 +8987,14 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		rc = -ENOMEM;
 		goto err_out_msi_5;
 	}
-
 	rc = register_netdev(dev);
 	if (rc < 0)
 		goto err_out_cnt_6;
 
 	pci_set_drvdata(pdev, dev);
-
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	netif_info(tp, probe, dev, "%s at 0x%p, %pM, XID %08x IRQ %d\n",
-		   /*rtl_chip_infos[chipset].name*/"Txvh_gmac", ioaddr, dev->dev_addr,
+		   /*rtl_chip_infos[chipset].name*/"secgmac", ioaddr, dev->dev_addr,
 		   (u32)(RTL_R32(TxConfig) & 0x9cf0f8ff), pdev->irq);
 #if 0	
 	if (rtl_chip_infos[chipset].jumbo_max != JUMBO_1K) {
@@ -8997,7 +9015,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 #endif
 	device_set_wakeup_enable(&pdev->dev, tp->features & RTL_FEATURE_WOL);
-
 	if (pci_dev_run_wake(pdev))
 		pm_runtime_put_noidle(&pdev->dev);
 
