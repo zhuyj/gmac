@@ -1632,6 +1632,7 @@ static void rtl_ack_events(struct secgmac_private *tp, u16 bits)
 	mmiowb();
 }
 
+#if 0
 static void rtl_irq_disable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1646,6 +1647,7 @@ static void rtl_irq_enable(struct secgmac_private *tp, u16 bits)
 
 	RTL_W16(IntrMask, bits);
 }
+#endif
 
 #define RTL_EVENT_NAPI_RX	(RxOK | RxErr)
 #define RTL_EVENT_NAPI_TX	(TxOK | TxErr)
@@ -2168,7 +2170,7 @@ static void __rtl8169_set_features(struct net_device *dev,
 	else
 		rx_config &= ~(AcceptErr | AcceptRunt);
 
-	RTL_W32(RxConfig, rx_config);
+	//RTL_W32(RxConfig, rx_config);
 
 	if (features & NETIF_F_RXCSUM)
 		tp->cp_cmd |= RxChkSum;
@@ -2182,8 +2184,8 @@ static void __rtl8169_set_features(struct net_device *dev,
 
 	tp->cp_cmd |= RTL_R16(CPlusCmd) & ~(RxVlan | RxChkSum);
 
-	RTL_W16(CPlusCmd, tp->cp_cmd);
-	RTL_R16(CPlusCmd);
+	//RTL_W16(CPlusCmd, tp->cp_cmd);
+	//RTL_R16(CPlusCmd);
 }
 
 static int rtl8169_set_features(struct net_device *dev,
@@ -2322,20 +2324,20 @@ DECLARE_RTL_COND(rtl_counters_cond)
 static bool rtl8169_do_counters(struct net_device *dev, u32 counter_cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
-	void __iomem *ioaddr = tp->mmio_addr;
+	//void __iomem *ioaddr = tp->mmio_addr;
 	dma_addr_t paddr = tp->counters_phys_addr;
 	u32 cmd;
 	bool ret;
 
-	RTL_W32(CounterAddrHigh, (u64)paddr >> 32);
+	//RTL_W32(CounterAddrHigh, (u64)paddr >> 32);
 	cmd = (u64)paddr & DMA_BIT_MASK(32);
-	RTL_W32(CounterAddrLow, cmd);
-	RTL_W32(CounterAddrLow, cmd | counter_cmd);
+	//RTL_W32(CounterAddrLow, cmd);
+	//RTL_W32(CounterAddrLow, cmd | counter_cmd);
 
 	ret = rtl_udelay_loop_wait_low(tp, &rtl_counters_cond, 10, 1000);
 
-	RTL_W32(CounterAddrLow, 0);
-	RTL_W32(CounterAddrHigh, 0);
+	//RTL_W32(CounterAddrLow, 0);
+	//RTL_W32(CounterAddrHigh, 0);
 
 	return ret;
 }
@@ -4568,7 +4570,6 @@ static void rtl8169_init_phy(struct net_device *dev, struct secgmac_private *tp)
 	if (rtl_tbi_enabled(tp))
 		netif_info(tp, link, dev, "TBI auto-negotiating\n");
 }
-#endif
 
 static void rtl_rar_set(struct secgmac_private *tp, u8 *addr)
 {
@@ -4591,11 +4592,12 @@ static void rtl_rar_set(struct secgmac_private *tp, u8 *addr)
 
 	rtl_unlock_work(tp);
 }
+#endif
 
 static int rtl_set_mac_address(struct net_device *dev, void *p)
 {
-	struct secgmac_private *tp = netdev_priv(dev);
-	struct device *d = &tp->pci_dev->dev;
+//	struct secgmac_private *tp = netdev_priv(dev);
+//	struct device *d = &tp->pci_dev->dev;
 	struct sockaddr *addr = p;
 
 	if (!is_valid_ether_addr(addr->sa_data))
@@ -4603,12 +4605,12 @@ static int rtl_set_mac_address(struct net_device *dev, void *p)
 
 	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
 
-	pm_runtime_get_noresume(d);
+//	pm_runtime_get_noresume(d);
 
-	if (pm_runtime_active(d))
-		rtl_rar_set(tp, dev->dev_addr);
+//	if (pm_runtime_active(d))
+//		rtl_rar_set(tp, dev->dev_addr);
 
-	pm_runtime_put_noidle(d);
+//	pm_runtime_put_noidle(d);
 
 	return 0;
 }
@@ -5056,9 +5058,9 @@ static void rtl_init_pll_power_ops(struct secgmac_private *tp)
 #endif
 }
 
+#if 0
 static void rtl_init_rxcfg(struct secgmac_private *tp)
 {
-#if 0
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	switch (tp->mac_version) {
@@ -5107,8 +5109,8 @@ static void rtl_init_rxcfg(struct secgmac_private *tp)
 		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST);
 		break;
 	}
-#endif
 }
+#endif
 
 static void rtl8169_init_ring_indexes(struct secgmac_private *tp)
 {
@@ -7686,7 +7688,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
 		if (status) {
 			handled = 1;
 
-			rtl_irq_disable(tp);
+			//rtl_irq_disable(tp);
 			napi_schedule(&tp->napi);
 		}
 	}
@@ -7853,7 +7855,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	if (work_done < budget) {
 		napi_complete(napi);
 
-		rtl_irq_enable(tp, enable_mask);
+		//rtl_irq_enable(tp, enable_mask);
 		mmiowb();
 	}
 
@@ -8377,7 +8379,7 @@ static int rtl8169_runtime_resume(struct device *device)
 	struct pci_dev *pdev = to_pci_dev(device);
 	struct net_device *dev = pci_get_drvdata(pdev);
 	struct secgmac_private *tp = netdev_priv(dev);
-	rtl_rar_set(tp, dev->dev_addr);
+	//rtl_rar_set(tp, dev->dev_addr);
 
 	if (!tp->TxDescArray)
 		return 0;
@@ -8457,7 +8459,7 @@ static void rtl_shutdown(struct pci_dev *pdev)
 	rtl8169_net_suspend(dev);
 
 	/* Restore original MAC address */
-	rtl_rar_set(tp, dev->perm_addr);
+	//rtl_rar_set(tp, dev->perm_addr);
 
 	rtl8169_hw_reset(tp);
 
@@ -8503,7 +8505,7 @@ static void secgmac_remove_one(struct pci_dev *pdev)
 		pm_runtime_get_noresume(&pdev->dev);
 
 	/* restore original MAC address */
-	rtl_rar_set(tp, dev->perm_addr);
+	//rtl_rar_set(tp, dev->perm_addr);
 
 	rtl_disable_msi(pdev, tp);
 	rtl8169_release_board(pdev, dev, tp->mmio_addr);
@@ -8648,9 +8650,9 @@ static void rtl_hw_init_8168ep(struct secgmac_private *tp)
 }
 #endif
 
+#if 0
 static void rtl_hw_initialize(struct secgmac_private *tp)
 {
-#if 0
 	switch (tp->mac_version) {
 	case RTL_GIGA_MAC_VER_40:
 	case RTL_GIGA_MAC_VER_41:
@@ -8671,8 +8673,8 @@ static void rtl_hw_initialize(struct secgmac_private *tp)
 	default:
 		break;
 	}
-#endif
 }
+#endif
 
 static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
@@ -8810,11 +8812,11 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		}
 	}
 
-	rtl_init_rxcfg(tp);
+	//rtl_init_rxcfg(tp);
 
-	rtl_irq_disable(tp);
+	//rtl_irq_disable(tp);
 
-	rtl_hw_initialize(tp);
+//	rtl_hw_initialize(tp);
 
 	secgmac_hw_reset(tp);
 
@@ -8834,9 +8836,9 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 //	chipset = tp->mac_version;
 //	tp->txd_version = 1; //rtl_chip_infos[chipset].txd_version;
 
-	RTL_W8(Cfg9346, Cfg9346_Unlock);
-	RTL_W8(Config1, RTL_R8(Config1) | PMEnable);
-	RTL_W8(Config5, RTL_R8(Config5) & (BWF | MWF | UWF | LanWake | PMEStatus));
+//	RTL_W8(Cfg9346, Cfg9346_Unlock);
+//	RTL_W8(Config1, RTL_R8(Config1) | PMEnable);
+//	RTL_W8(Config5, RTL_R8(Config5) & (BWF | MWF | UWF | LanWake | PMEStatus));
 #if 0
 	switch (tp->mac_version) {
 	case RTL_GIGA_MAC_VER_34:
