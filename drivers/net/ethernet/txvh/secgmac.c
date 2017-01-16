@@ -1,5 +1,5 @@
 /*
- * secgmac.c: TXVH gmac ethernet driver.
+ * secgmac.c: TXVH secgmac ethernet driver.
  *
  */
 
@@ -830,8 +830,8 @@ struct secgmac_private {
 	struct net_device *dev;
 	struct napi_struct napi;
 	u32 msg_enable;
-	u16 txd_version;
-	u16 mac_version;
+//	u16 txd_version;
+//	u16 mac_version;
 	u32 cur_rx; /* Index into the Rx descriptor buffer of next Rx pkt. */
 	u32 cur_tx; /* Index into the Tx descriptor buffer of next Rx pkt. */
 	u32 secgmac_curtx;
@@ -8682,8 +8682,8 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	struct mii_if_info *mii;
 	struct net_device *dev;
 	void __iomem *ioaddr, *bar1_addr, *bar2_addr, *bar3_addr;
-	int chipset, i;
-	int rc;
+//	int chipset, i;
+	int rc, i;
 
 	if (netif_msg_drv(&debug)) {
 		printk(KERN_INFO "%s Gigabit Ethernet driver %s loaded\n",
@@ -8831,8 +8831,8 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	rtl8169_print_mac_version(tp);
 
-	chipset = tp->mac_version;
-	tp->txd_version = 1; //rtl_chip_infos[chipset].txd_version;
+//	chipset = tp->mac_version;
+//	tp->txd_version = 1; //rtl_chip_infos[chipset].txd_version;
 
 	RTL_W8(Cfg9346, Cfg9346_Unlock);
 	RTL_W8(Config1, RTL_R8(Config1) | PMEnable);
