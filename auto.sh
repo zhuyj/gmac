@@ -5,7 +5,10 @@ if [ -f config-txvh ]; then
 		make oldconfig
 	fi
 fi
-mv drivers/net/ethernet/txvh/secgmac.ko drivers/net/ethernet/txvh/secgmac.ko-bak
+
+if [ -f drivers/net/ethernet/txvh/secgmac.ko ]; then
+	mv drivers/net/ethernet/txvh/secgmac.ko drivers/net/ethernet/txvh/secgmac.ko-bak
+fi
 make drivers/net/ethernet/txvh/secgmac.ko
 if [ -f drivers/net/ethernet/txvh/secgmac.ko ]; then
 	if [ -f /lib/modules/4.8.4/kernel/drivers/net/ethernet/txvh/secgmac.ko ]; then

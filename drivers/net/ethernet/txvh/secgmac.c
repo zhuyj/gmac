@@ -83,7 +83,7 @@ static const int multicast_filter_limit = 32;
 #define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
 #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
 
-#define TXVH_REGS_SIZE		256
+#define SECGMAC_REGS_SIZE		256
 #define R8169_NAPI_WEIGHT	64
 #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
 #define NUM_RX_DESC	256U	/* Number of Rx descriptor registers */
@@ -1976,11 +1976,13 @@ static int rtl8169_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 	return 0;
 }
 
+#if 0
 static const char *rtl_lookup_firmware_name(struct secgmac_private *tp)
 {
 	//return rtl_chip_infos[tp->mac_version].fw_name;
 	return "Txvh_gmac";
 }
+#endif
 
 static void rtl8169_get_drvinfo(struct net_device *dev,
 				struct ethtool_drvinfo *info)
@@ -1999,7 +2001,7 @@ static void rtl8169_get_drvinfo(struct net_device *dev,
 
 static int rtl8169_get_regs_len(struct net_device *dev)
 {
-	return TXVH_REGS_SIZE;
+	return SECGMAC_REGS_SIZE;
 }
 #if 0
 static int rtl8169_set_speed_tbi(struct net_device *dev,
@@ -2265,7 +2267,7 @@ static void rtl8169_get_regs(struct net_device *dev, struct ethtool_regs *regs,
 	int i;
 
 	rtl_lock_work(tp);
-	for (i = 0; i < TXVH_REGS_SIZE; i += 4)
+	for (i = 0; i < SECGMAC_REGS_SIZE; i += 4)
 		memcpy_fromio(dw++, data++, 4);
 	rtl_unlock_work(tp);
 }
@@ -2644,7 +2646,7 @@ struct fw_info {
 } __packed;
 
 #define FW_OPCODE_SIZE	sizeof(typeof(*((struct rtl_fw_phy_action *)0)->code))
-
+#if 0
 static bool rtl_fw_format_ok(struct secgmac_private *tp, struct rtl_fw *rtl_fw)
 {
 	const struct firmware *fw = rtl_fw->fw;
@@ -2768,7 +2770,6 @@ out:
 	return rc;
 }
 
-#if 0
 static void rtl_phy_write_fw(struct secgmac_private *tp, struct rtl_fw *rtl_fw)
 {
 	struct rtl_fw_phy_action *pa = &rtl_fw->phy_action;
@@ -5298,6 +5299,7 @@ static void secgmac_hw_reset(struct secgmac_private *tp)
 //	rtl_udelay_loop_wait_low(tp, &rtl_chipcmd_cond, 100, 100);
 }
 
+#if 0
 static void rtl_request_uncached_firmware(struct secgmac_private *tp)
 {
 	struct rtl_fw *rtl_fw;
@@ -5342,7 +5344,6 @@ static void rtl_request_firmware(struct secgmac_private *tp)
 		rtl_request_uncached_firmware(tp);
 }
 
-#if 0
 static void rtl_rx_close(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -8735,7 +8736,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 
 	/* check for weird/broken PCI region reporting */
-	if (pci_resource_len(pdev, region) < TXVH_REGS_SIZE) {
+	if (pci_resource_len(pdev, region) < SECGMAC_REGS_SIZE) {
 		netif_err(tp, probe, dev,
 			  "Invalid PCI region size(s), aborting\n");
 		rc = -ENODEV;
@@ -8749,7 +8750,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 
 	/* ioremap MMIO region bar0 */
-	ioaddr = ioremap(pci_resource_start(pdev, 0), TXVH_REGS_SIZE);
+	ioaddr = ioremap(pci_resource_start(pdev, 0), SECGMAC_REGS_SIZE);
 	if (!ioaddr) {
 		netif_err(tp, probe, dev, "cannot remap MMIO, aborting\n");
 		rc = -EIO;
@@ -8758,7 +8759,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->mmio_addr = ioaddr;
 
 	/* ioremap bar1, bar1 for tx */
-	bar1_addr = ioremap(pci_resource_start(pdev, 1), TXVH_REGS_SIZE*4);
+	bar1_addr = ioremap(pci_resource_start(pdev, 1), SECGMAC_REGS_SIZE * 4);
 	if (bar1_addr == NULL) {
 		rc = -EIO;
 		printk("txwh func:%s, line:%d\n", __FUNCTION__, __LINE__);
@@ -8767,7 +8768,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->bar1_addr = bar1_addr;
 
 	/* ioremap bar2, bar2 for data */
-	bar2_addr = ioremap(pci_resource_start(pdev, 2), TXVH_REGS_SIZE*4);
+	bar2_addr = ioremap(pci_resource_start(pdev, 2), SECGMAC_REGS_SIZE * 4);
 	if (bar2_addr == NULL) {
 		rc = -EIO;
 		printk("txwh func:%s, line:%d\n", __FUNCTION__, __LINE__);
@@ -8776,7 +8777,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->bar2_addr = bar2_addr;
 
 	/* ioremap bar3, bar3 for data */
-	bar3_addr = ioremap(pci_resource_start(pdev, 3), TXVH_REGS_SIZE*4);
+	bar3_addr = ioremap(pci_resource_start(pdev, 3), SECGMAC_REGS_SIZE * 4);
 	if (bar3_addr == NULL) {
 		rc = -EIO;
 		printk("txwh func:%s, line:%d\n", __FUNCTION__, __LINE__);
@@ -9014,9 +9015,9 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		rtl8168_driver_start(tp);
 	}
 #endif
-	device_set_wakeup_enable(&pdev->dev, tp->features & RTL_FEATURE_WOL);
-	if (pci_dev_run_wake(pdev))
-		pm_runtime_put_noidle(&pdev->dev);
+//	device_set_wakeup_enable(&pdev->dev, tp->features & RTL_FEATURE_WOL);
+//	if (pci_dev_run_wake(pdev))
+//		pm_runtime_put_noidle(&pdev->dev);
 
 	netif_carrier_off(dev);
 
