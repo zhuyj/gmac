@@ -892,7 +892,7 @@ struct secgmac_private {
 	dma_addr_t counters_phys_addr;
 	struct rtl8169_counters *counters;
 	struct rtl8169_tc_offsets tc_offset;
-	u32 saved_wolopts;
+//	u32 saved_wolopts;
 	u32 opts1_mask;
 
 	struct rtl_fw {
@@ -964,6 +964,7 @@ struct rtl_cond {
 	const char *msg;
 };
 
+#if 0
 static void rtl_udelay(unsigned int d)
 {
 	udelay(d);
@@ -985,14 +986,12 @@ static bool rtl_loop_wait(struct secgmac_private *tp, const struct rtl_cond *c,
 	return false;
 }
 
-#if 0
 static bool rtl_udelay_loop_wait_high(struct secgmac_private *tp,
 				      const struct rtl_cond *c,
 				      unsigned int d, int n)
 {
 	return rtl_loop_wait(tp, c, rtl_udelay, d, n, true);
 }
-#endif
 
 static bool rtl_udelay_loop_wait_low(struct secgmac_private *tp,
 				     const struct rtl_cond *c,
@@ -1001,7 +1000,6 @@ static bool rtl_udelay_loop_wait_low(struct secgmac_private *tp,
 	return rtl_loop_wait(tp, c, rtl_udelay, d, n, false);
 }
 
-#if 0
 static bool rtl_msleep_loop_wait_high(struct secgmac_private *tp,
 				      const struct rtl_cond *c,
 				      unsigned int d, int n)
@@ -1295,6 +1293,7 @@ static int rtl_mdio_read(struct net_device *dev, int phy_id, int location)
 	return rtl_readphy(tp, location);
 }
 
+#if 0
 DECLARE_RTL_COND(rtl_ephyar_cond)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1302,7 +1301,6 @@ DECLARE_RTL_COND(rtl_ephyar_cond)
 	return RTL_R32(EPHYAR) & EPHYAR_FLAG;
 }
 
-#if 0
 static void rtl_ephy_write(struct secgmac_private *tp, int reg_addr, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1378,11 +1376,9 @@ static u32 r8168ep_ocp_read(struct secgmac_private *tp, u8 mask, u16 reg)
 {
 	return rtl_eri_read(tp, reg, ERIAR_OOB);
 }
-#endif
 
 static u32 ocp_read(struct secgmac_private *tp, u8 mask, u16 reg)
 {
-#if 0
 	switch (tp->mac_version) {
 	case RTL_GIGA_MAC_VER_27:
 	case RTL_GIGA_MAC_VER_28:
@@ -1396,11 +1392,9 @@ static u32 ocp_read(struct secgmac_private *tp, u8 mask, u16 reg)
 		BUG();
 		return ~0;
 	}
-#endif
 	return ~0;
 }
 
-#if 0
 static void r8168dp_ocp_write(struct secgmac_private *tp, u8 mask, u16 reg,
 			      u32 data)
 {
@@ -1449,6 +1443,7 @@ static void rtl8168_oob_notify(struct secgmac_private *tp, u8 cmd)
 #define OOB_CMD_DRIVER_START	0x05
 #define OOB_CMD_DRIVER_STOP	0x06
 
+#if 0
 static u16 rtl8168_get_ocp_reg(struct secgmac_private *tp)
 {
 	//return (tp->mac_version == RTL_GIGA_MAC_VER_31) ? 0xb8 : 0x10;
@@ -1476,7 +1471,6 @@ DECLARE_RTL_COND(rtl_ocp_tx_cond)
 	return RTL_R8(IBISR0) & 0x02;
 }
 
-#if 0
 static void rtl8168ep_stop_cmac(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1772,16 +1766,16 @@ static void __rtl8169_check_link_status(struct net_device *dev,
 	if (tp->link_ok(ioaddr)) {
 		rtl_link_chg_patch(tp);
 		/* This is to cancel a scheduled suspend if there's one. */
-		if (pm)
-			pm_request_resume(&tp->pci_dev->dev);
+//		if (pm)
+//			pm_request_resume(&tp->pci_dev->dev);
 		netif_carrier_on(dev);
 		if (net_ratelimit())
 			netif_info(tp, ifup, dev, "link up\n");
 	} else {
 		netif_carrier_off(dev);
 		netif_info(tp, ifdown, dev, "link down\n");
-		if (pm)
-			pm_schedule_suspend(&tp->pci_dev->dev, 5000);
+//		if (pm)
+//			pm_schedule_suspend(&tp->pci_dev->dev, 5000);
 	}
 }
 
@@ -1845,6 +1839,7 @@ static u32 __rtl8169_get_wol(struct secgmac_private *tp)
 	return wolopts;
 }
 
+#if 0
 static void rtl8169_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -1867,7 +1862,6 @@ static void rtl8169_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 
 static void __rtl8169_set_wol(struct secgmac_private *tp, u32 wolopts)
 {
-#if 0
 	void __iomem *ioaddr = tp->mmio_addr;
 	unsigned int i, tmp;
 	static const struct {
@@ -1948,7 +1942,6 @@ static void __rtl8169_set_wol(struct secgmac_private *tp, u32 wolopts)
 	}
 
 	RTL_W8(Cfg9346, Cfg9346_Lock);
-#endif
 }
 
 static int rtl8169_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
@@ -1978,7 +1971,6 @@ static int rtl8169_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 	return 0;
 }
 
-#if 0
 static const char *rtl_lookup_firmware_name(struct secgmac_private *tp)
 {
 	//return rtl_chip_infos[tp->mac_version].fw_name;
@@ -2321,6 +2313,7 @@ DECLARE_RTL_COND(rtl_counters_cond)
 	return RTL_R32(CounterAddrLow) & (CounterReset | CounterDump);
 }
 
+#if 0
 static bool rtl8169_do_counters(struct net_device *dev, u32 counter_cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -2409,22 +2402,23 @@ static bool rtl8169_init_counter_offsets(struct net_device *dev)
 
 	return ret;
 }
+#endif
 
 static void rtl8169_get_ethtool_stats(struct net_device *dev,
 				      struct ethtool_stats *stats, u64 *data)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
-	struct device *d = &tp->pci_dev->dev;
+	//struct device *d = &tp->pci_dev->dev;
 	struct rtl8169_counters *counters = tp->counters;
 
 	ASSERT_RTNL();
 
-	pm_runtime_get_noresume(d);
+//	pm_runtime_get_noresume(d);
 
-	if (pm_runtime_active(d))
-		rtl8169_update_counters(dev);
+//	if (pm_runtime_active(d))
+//		rtl8169_update_counters(dev);
 
-	pm_runtime_put_noidle(d);
+//	pm_runtime_put_noidle(d);
 
 	data[0] = le64_to_cpu(counters->tx_packets);
 	data[1] = le64_to_cpu(counters->rx_packets);
@@ -2459,8 +2453,8 @@ static const struct ethtool_ops secgmac_ethtool_ops = {
 	.get_msglevel		= rtl8169_get_msglevel,
 	.set_msglevel		= rtl8169_set_msglevel,
 	.get_regs		= rtl8169_get_regs,
-	.get_wol		= rtl8169_get_wol,
-	.set_wol		= rtl8169_set_wol,
+//	.get_wol		= rtl8169_get_wol,
+//	.set_wol		= rtl8169_set_wol,
 	.get_strings		= rtl8169_get_strings,
 	.get_sset_count		= rtl8169_get_sset_count,
 	.get_ethtool_stats	= rtl8169_get_ethtool_stats,
@@ -7909,7 +7903,7 @@ static int secgmac_close(struct net_device *dev)
 	pm_runtime_get_sync(&pdev->dev);
 
 	/* Update counters before going down */
-	rtl8169_update_counters(dev);
+	//rtl8169_update_counters(dev);
 
 	rtl_lock_work(tp);
 	clear_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
@@ -8198,14 +8192,14 @@ static int secgmac_open(struct net_device *dev)
 
 //	rtl_hw_start(dev);
 	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
-	if (!rtl8169_init_counter_offsets(dev))
-		netif_warn(tp, hw, dev, "counter reset/update failed\n");
+//	if (!rtl8169_init_counter_offsets(dev))
+//		netif_warn(tp, hw, dev, "counter reset/update failed\n");
 
 	netif_start_queue(dev);
 
 	rtl_unlock_work(tp);
 
-	tp->saved_wolopts = 0;
+//	tp->saved_wolopts = 0;
 //	pm_runtime_put_noidle(&pdev->dev);
 
 	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
@@ -8272,8 +8266,8 @@ rtl8169_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 	 * Fetch additonal counter values missing in stats collected by driver
 	 * from tally counters.
 	 */
-	if (pm_runtime_active(&pdev->dev))
-		rtl8169_update_counters(dev);
+//	if (pm_runtime_active(&pdev->dev))
+//		rtl8169_update_counters(dev);
 
 	/*
 	 * Subtract values fetched during initalization.
@@ -8361,15 +8355,15 @@ static int rtl8169_runtime_suspend(struct device *device)
 		return 0;
 
 	rtl_lock_work(tp);
-	tp->saved_wolopts = __rtl8169_get_wol(tp);
-	__rtl8169_set_wol(tp, WAKE_ANY);
+//	tp->saved_wolopts = __rtl8169_get_wol(tp);
+//	__rtl8169_set_wol(tp, WAKE_ANY);
 	rtl_unlock_work(tp);
 
 	rtl8169_net_suspend(dev);
 
 	/* Update counters before going runtime suspend */
 	rtl8169_rx_missed(dev, tp->mmio_addr);
-	rtl8169_update_counters(dev);
+	//rtl8169_update_counters(dev);
 
 	return 0;
 }
@@ -8384,10 +8378,10 @@ static int rtl8169_runtime_resume(struct device *device)
 	if (!tp->TxDescArray)
 		return 0;
 
-	rtl_lock_work(tp);
-	__rtl8169_set_wol(tp, tp->saved_wolopts);
-	tp->saved_wolopts = 0;
-	rtl_unlock_work(tp);
+//	rtl_lock_work(tp);
+//	__rtl8169_set_wol(tp, tp->saved_wolopts);
+//	tp->saved_wolopts = 0;
+//	rtl_unlock_work(tp);
 
 	//rtl8169_init_phy(dev, tp);
 
