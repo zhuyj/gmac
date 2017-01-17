@@ -16,8 +16,8 @@ if [ -f drivers/net/ethernet/txvh/secgmac.ko ]; then
 		cp -f drivers/net/ethernet/txvh/secgmac.ko /lib/modules/4.8.4/kernel/drivers/net/ethernet/txvh/secgmac.ko
 		md5sum drivers/net/ethernet/txvh/secgmac.ko
 		md5sum /lib/modules/4.8.4/kernel/drivers/net/ethernet/txvh/secgmac.ko
-		update-initramfs -u -k $(uname -r)
 		modprobe secgmac
+		update-initramfs -u -k $(uname -r)
 	fi
 fi
 #rmmod txvh_gmac
