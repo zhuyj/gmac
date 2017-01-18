@@ -1214,11 +1214,9 @@ static int r8168dp_1_mdio_read(struct secgmac_private *tp, int reg)
 	return rtl_udelay_loop_wait_high(tp, &rtl_ocpar_cond, 1000, 100) ?
 		RTL_R32(OCPDR) & OCPDR_DATA_MASK : ~0;
 }
-#endif
 
 #define R8168DP_1_MDIO_ACCESS_BIT	0x00020000
 
-#if 0
 static void r8168dp_2_mdio_start(void __iomem *ioaddr)
 {
 	RTL_W32(0xd0, RTL_R32(0xd0) & ~R8168DP_1_MDIO_ACCESS_BIT);
@@ -7313,6 +7311,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	if (i == NUM_SECGMAC_TXDESC) {
 		dev_kfree_skb_any(skb);
+		netif_stop_queue(dev);
 		return NETDEV_TX_BUSY;
 	}
 	spin_lock(&tp->lock);
