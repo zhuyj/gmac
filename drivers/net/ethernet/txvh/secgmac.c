@@ -4990,11 +4990,9 @@ static void rtl_pll_power_up(struct secgmac_private *tp)
 {
 	rtl_generic_op(tp, tp->pll_power_ops.up);
 }
-#endif
 
 static void rtl_init_pll_power_ops(struct secgmac_private *tp)
 {
-#if 0
 	struct pll_power_ops *ops = &tp->pll_power_ops;
 
 	switch (tp->mac_version) {
@@ -5053,10 +5051,8 @@ static void rtl_init_pll_power_ops(struct secgmac_private *tp)
 		ops->up		= NULL;
 		break;
 	}
-#endif
 }
 
-#if 0
 static void rtl_init_rxcfg(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -8822,7 +8818,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	pci_set_master(pdev);
 
 	rtl_init_mdio_ops(tp);
-	rtl_init_pll_power_ops(tp);
+	//rtl_init_pll_power_ops(tp);
 	rtl_init_jumbo_ops(tp);
 	rtl_init_csi_ops(tp);
 
