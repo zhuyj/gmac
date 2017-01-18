@@ -313,11 +313,13 @@ static const struct {
 #endif
 #undef _R
 
+#if 0
 enum cfg_version {
 	RTL_CFG_0 = 0x00,
 	RTL_CFG_1,
 	RTL_CFG_2
 };
+#endif
 
 static const struct pci_device_id secgmac_pci_tbl[] = {
 #if 0
@@ -4983,10 +4985,12 @@ static void rtl_pll_power_down(struct secgmac_private *tp)
 	rtl_generic_op(tp, tp->pll_power_ops.down);
 }
 
+#if 0
 static void rtl_pll_power_up(struct secgmac_private *tp)
 {
 	rtl_generic_op(tp, tp->pll_power_ops.up);
 }
+#endif
 
 static void rtl_init_pll_power_ops(struct secgmac_private *tp)
 {
@@ -7864,7 +7868,7 @@ static void rtl8169_rx_missed(struct net_device *dev, void __iomem *ioaddr)
 //		return;
 
 	dev->stats.rx_missed_errors += (RTL_R32(RxMissed) & 0xffffff);
-	RTL_W32(RxMissed, 0);
+//	RTL_W32(RxMissed, 0);
 }
 
 static void rtl8169_down(struct net_device *dev)
@@ -8303,8 +8307,8 @@ static void rtl8169_net_suspend(struct net_device *dev)
 	rtl_pll_power_down(tp);
 }
 
+#if 0
 #ifdef CONFIG_PM
-
 static int rtl8169_suspend(struct device *device)
 {
 	struct pci_dev *pdev = to_pci_dev(device);
@@ -8412,13 +8416,12 @@ static const struct dev_pm_ops rtl8169_pm_ops = {
 };
 
 #define RTL8169_PM_OPS	(&rtl8169_pm_ops)
-
 #else /* !CONFIG_PM */
 
 #define RTL8169_PM_OPS	NULL
 
 #endif /* !CONFIG_PM */
-
+#endif
 static void rtl_wol_shutdown_quirk(struct secgmac_private *tp)
 {
 #if 0
@@ -9044,7 +9047,7 @@ static struct pci_driver secgmac_pci_driver = {
 	.probe		= secgmac_init_one,
 	.remove		= secgmac_remove_one,
 	.shutdown	= rtl_shutdown,
-	.driver.pm	= RTL8169_PM_OPS,
+//	.driver.pm	= RTL8169_PM_OPS,
 };
 
 module_pci_driver(secgmac_pci_driver);
