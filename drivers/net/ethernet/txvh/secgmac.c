@@ -4971,7 +4971,6 @@ static void r8168_pll_power_up(struct secgmac_private *tp)
 
 	r8168_phy_power_up(tp);
 }
-#endif
 
 static void rtl_generic_op(struct secgmac_private *tp,
 			   void (*op)(struct secgmac_private *))
@@ -4985,7 +4984,6 @@ static void rtl_pll_power_down(struct secgmac_private *tp)
 	rtl_generic_op(tp, tp->pll_power_ops.down);
 }
 
-#if 0
 static void rtl_pll_power_up(struct secgmac_private *tp)
 {
 	rtl_generic_op(tp, tp->pll_power_ops.up);
@@ -5111,6 +5109,7 @@ static void rtl8169_init_ring_indexes(struct secgmac_private *tp)
 	tp->dirty_tx = tp->cur_tx = tp->cur_rx = 0;
 }
 
+#if 0
 static void rtl_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -5129,7 +5128,6 @@ static void rtl_hw_jumbo_disable(struct secgmac_private *tp)
 	RTL_W8(Cfg9346, Cfg9346_Lock);
 }
 
-#if 0
 static void r8168c_hw_jumbo_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -6820,19 +6818,19 @@ static void rtl_hw_start_8101(struct net_device *dev)
 
 static int rtl8169_change_mtu(struct net_device *dev, int new_mtu)
 {
-	struct secgmac_private *tp = netdev_priv(dev);
+//	struct secgmac_private *tp = netdev_priv(dev);
 
 	if (new_mtu < ETH_ZLEN)
 #if 0
 	    || (new_mtu > rtl_chip_infos[tp->mac_version].jumbo_max)
 #endif
 		return -EINVAL;
-
+#if 0
 	if (new_mtu > ETH_DATA_LEN)
 		rtl_hw_jumbo_enable(tp);
 	else
 		rtl_hw_jumbo_disable(tp);
-
+#endif
 	dev->mtu = new_mtu;
 	netdev_update_features(dev);
 
@@ -7892,7 +7890,7 @@ static void rtl8169_down(struct net_device *dev)
 
 	rtl8169_rx_clear(tp);
 
-	rtl_pll_power_down(tp);
+//	rtl_pll_power_down(tp);
 }
 
 static int secgmac_close(struct net_device *dev)
@@ -8300,7 +8298,7 @@ static void rtl8169_net_suspend(struct net_device *dev)
 	clear_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
 	rtl_unlock_work(tp);
 
-	rtl_pll_power_down(tp);
+//	rtl_pll_power_down(tp);
 }
 
 #if 0
