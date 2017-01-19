@@ -7966,8 +7966,10 @@ static int secgmac_open(struct net_device *dev)
 	/* TXVH TX desc prepare */
 	tp->secgmac_txdescArray = (struct secgmac_txdesc *)kzalloc(
 		NUM_SECGMAC_TXDESC * sizeof(struct secgmac_txdesc), GFP_KERNEL);
-	if (!tp->secgmac_txdescArray)
+	if (!tp->secgmac_txdescArray) {
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		goto err_free_rx_1;
+	}
 
 	/*
 	 * bar0: registers
@@ -7982,6 +7984,7 @@ static int secgmac_open(struct net_device *dev)
 		 * current frame transmission or when the data buffers
 		 * associated with a given descriptor are empty.
 		 */
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		tp->secgmac_txdescArray[i].tdesc0 = 0x0; //0x1 << 31;
 		writel(tp->secgmac_txdescArray[i].tdesc0,
 			BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
@@ -8000,6 +8003,7 @@ static int secgmac_open(struct net_device *dev)
 			BAR1_VIRTUAL_BASE + 0x4 * (i * 4 + 3));
 	}
 
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	/* the last next desc is the first desc */
 	tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc = BAR1_PHYSICAL_BASE;
 	writel(tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc,
@@ -8056,13 +8060,15 @@ static int secgmac_open(struct net_device *dev)
 	/* TXVH RX desc prepare */
         tp->secgmac_rxdescArray = (struct secgmac_rxdesc *)kzalloc(
 		NUM_SECGMAC_RXDESC * sizeof(struct secgmac_rxdesc), GFP_KERNEL);
-        if (!tp->secgmac_rxdescArray)
+        if (!tp->secgmac_rxdescArray) {
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
                 goto err_release_fw_1;
-
+	}
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	retval = rtl8169_init_ring(dev);
 	if (retval < 0)
 		goto err_release_fw_2;
-
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	/* rx description */
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
 		tp->secgmac_rxdescArray[i].rdesc0 = 0x1 << 31;
