@@ -8924,6 +8924,15 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	dev->dev_addr[5] = RTL_R8(csr17 + 1);
 	printk("txvh func:%s, line:%d, addr:0x%x\n", __FUNCTION__, __LINE__, dev->dev_addr[5]);
 
+	if ((dev->dev_addr[0] == 0x0) &&
+		(dev->dev_addr[1] == 0x0) &&
+		(dev->dev_addr[2] == 0x0) &&
+		(dev->dev_addr[3] == 0x0) &&
+		(dev->dev_addr[4] == 0x0) &&
+		(dev->dev_addr[5] == 0x0)) {
+		eth_random_addr(dev->dev_addr);
+	}
+
 	dev->ethtool_ops = &secgmac_ethtool_ops;
 	dev->watchdog_timeo = SECGMAC_TX_TIMEOUT;
 	netif_napi_add(dev, &tp->napi, secgmac_poll, R8169_NAPI_WEIGHT);
