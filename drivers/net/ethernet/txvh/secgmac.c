@@ -1620,10 +1620,12 @@ static u16 rtl_get_events(struct secgmac_private *tp)
 
 static void rtl_ack_events(struct secgmac_private *tp, u16 bits)
 {
+#if 0
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	RTL_W16(IntrStatus, bits);
 	mmiowb();
+#endif
 }
 
 #if 0
@@ -2596,13 +2598,12 @@ static void rtl8169_get_mac_version(struct secgmac_private *tp,
 				  RTL_GIGA_MAC_VER_48;
 	}
 }
-#endif
 
 static void rtl8169_print_mac_version(struct secgmac_private *tp)
 {
 	dprintk("mac_version = 0x%02x\n", tp->mac_version);
 }
-
+#endif
 struct phy_reg {
 	u16 reg;
 	u16 val;
@@ -4650,9 +4651,9 @@ static void rtl_disable_msi(struct pci_dev *pdev, struct secgmac_private *tp)
 	}
 }
 
+#if 0
 static void rtl_init_mdio_ops(struct secgmac_private *tp)
 {
-#if 0
 	struct mdio_ops *ops = &tp->mdio_ops;
 
 	switch (tp->mac_version) {
@@ -4685,10 +4686,8 @@ static void rtl_init_mdio_ops(struct secgmac_private *tp)
 		ops->read	= r8169_mdio_read;
 		break;
 	}
-#endif
 }
 
-#if 0
 static void rtl_speed_down(struct secgmac_private *tp)
 {
 	u32 adv;
@@ -5207,11 +5206,9 @@ static void r8168b_1_hw_jumbo_disable(struct secgmac_private *tp)
 
 	RTL_W8(Config4, RTL_R8(Config4) & ~(1 << 0));
 }
-#endif
 
 static void rtl_init_jumbo_ops(struct secgmac_private *tp)
 {
-#if 0
 	struct jumbo_ops *ops = &tp->jumbo_ops;
 
 	switch (tp->mac_version) {
@@ -5270,8 +5267,8 @@ static void rtl_init_jumbo_ops(struct secgmac_private *tp)
 		ops->enable	= NULL;
 		break;
 	}
-#endif
 }
+#endif
 
 DECLARE_RTL_COND(rtl_chipcmd_cond)
 {
@@ -5282,10 +5279,10 @@ DECLARE_RTL_COND(rtl_chipcmd_cond)
 
 static void secgmac_hw_reset(struct secgmac_private *tp)
 {
-	void __iomem *ioaddr = tp->mmio_addr;
+//	void __iomem *ioaddr = tp->mmio_addr;
 
 	/* soft reset */
-	RTL_W8(csr0, 0x1);
+//	RTL_W8(csr0, 0x1);
 //	RTL_W8(ChipCmd, CmdReset);
 
 //	rtl_udelay_loop_wait_low(tp, &rtl_chipcmd_cond, 100, 100);
@@ -5705,11 +5702,9 @@ static u32 r8411_csi_read(struct secgmac_private *tp, int addr)
 	return rtl_udelay_loop_wait_high(tp, &rtl_csiar_cond, 10, 100) ?
 		RTL_R32(CSIDR) : ~0;
 }
-#endif
 
 static void rtl_init_csi_ops(struct secgmac_private *tp)
 {
-#if 0
 	struct csi_ops *ops = &tp->csi_ops;
 
 	switch (tp->mac_version) {
@@ -5747,8 +5742,8 @@ static void rtl_init_csi_ops(struct secgmac_private *tp)
 		ops->read	= r8169_csi_read;
 		break;
 	}
-#endif
 }
+#endif
 
 struct ephy_info {
 	unsigned int offset;
@@ -8814,14 +8809,14 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	pci_set_master(pdev);
 
-	rtl_init_mdio_ops(tp);
+	//rtl_init_mdio_ops(tp);
 	//rtl_init_pll_power_ops(tp);
-	rtl_init_jumbo_ops(tp);
-	rtl_init_csi_ops(tp);
+	//rtl_init_jumbo_ops(tp);
+	//rtl_init_csi_ops(tp);
 
 	spin_lock_init(&tp->lock);
 
-	rtl8169_print_mac_version(tp);
+	//rtl8169_print_mac_version(tp);
 
 //	chipset = tp->mac_version;
 //	tp->txd_version = 1; //rtl_chip_infos[chipset].txd_version;
@@ -8914,8 +8909,10 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	/* set gmac mac address in csr16 and csr17 */
 	printk("secgmac func:%s, line:%d, ioaddr:0x%p\n", __FUNCTION__, __LINE__, ioaddr);
 	RTL_W32(csr16, 0x55443322);
-	printk("secgmac func:%s, line:%d, csr16:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr16));
 	RTL_W32(csr17, 0x00007766);
+	mmiowb();
+	wmb();
+	printk("secgmac func:%s, line:%d, csr16:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr16));
 	printk("secgmac func:%s, line:%d, csr17:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr17));
 	for (i = 0; i < ETH_ALEN-2; i++) {
 		dev->dev_addr[i] = RTL_R8(csr16 + i);
