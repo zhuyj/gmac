@@ -8154,13 +8154,13 @@ static int secgmac_open(struct net_device *dev)
 	/* start polling, check frames to be received */
 	RTL_W32(csr2, 0x1);
 
+	/* make sure csr6.16 csr6.17 as 0*/
+	RTL_W32(csr6, 0x0);
+
 	/* start receiving and sending */
-	RTL_W32(csr6, 0x1 << 30 | 0x1 << 13 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
+	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 13 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
 
 //	INIT_WORK(&tp->wk.work, rtl_task);
-
-	/* set the speed to 100M */
-	RTL_W32(csr6, RTL_R32(csr6) & ~(0x1 << 16 | 0x1 << 17));
 
 	smp_mb();
 
