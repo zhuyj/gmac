@@ -1765,20 +1765,20 @@ static void __rtl8169_check_link_status(struct net_device *dev,
 					struct secgmac_private *tp,
 					void __iomem *ioaddr, bool pm)
 {
-	if (tp->link_ok(ioaddr)) {
-		rtl_link_chg_patch(tp);
+//	if (tp->link_ok(ioaddr)) {
+	//	rtl_link_chg_patch(tp);
 		/* This is to cancel a scheduled suspend if there's one. */
 //		if (pm)
 //			pm_request_resume(&tp->pci_dev->dev);
 		netif_carrier_on(dev);
 		if (net_ratelimit())
 			netif_info(tp, ifup, dev, "link up\n");
-	} else {
-		netif_carrier_off(dev);
-		netif_info(tp, ifdown, dev, "link down\n");
+//	} else {
+//		netif_carrier_off(dev);
+//		netif_info(tp, ifdown, dev, "link down\n");
 //		if (pm)
 //			pm_schedule_suspend(&tp->pci_dev->dev, 5000);
-	}
+//	}
 }
 
 static void rtl8169_check_link_status(struct net_device *dev,
