@@ -1702,9 +1702,9 @@ static void rtl8169_xmii_reset_enable(struct secgmac_private *tp)
 }
 #endif
 
+#if 0
 static void rtl_link_chg_patch(struct secgmac_private *tp)
 {
-#if 0
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct net_device *dev = tp->dev;
 
@@ -1758,8 +1758,8 @@ static void rtl_link_chg_patch(struct secgmac_private *tp)
 				      ERIAR_EXGMAC);
 		}
 	}
-#endif
 }
+#endif
 
 static void __rtl8169_check_link_status(struct net_device *dev,
 					struct secgmac_private *tp,
