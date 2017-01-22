@@ -1980,7 +1980,7 @@ static const char *rtl_lookup_firmware_name(struct secgmac_private *tp)
 }
 #endif
 
-static void rtl8169_get_drvinfo(struct net_device *dev,
+static void secgmac_get_drvinfo(struct net_device *dev,
 				struct ethtool_drvinfo *info)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -1995,7 +1995,7 @@ static void rtl8169_get_drvinfo(struct net_device *dev,
 			sizeof(info->fw_version));
 }
 
-static int rtl8169_get_regs_len(struct net_device *dev)
+static int secgmac_get_regs_len(struct net_device *dev)
 {
 	return SECGMAC_REGS_SIZE;
 }
@@ -2102,6 +2102,7 @@ out:
 	return rc;
 }
 #endif
+#if 0
 static int rtl8169_set_speed(struct net_device *dev,
 			     u8 autoneg, u16 speed, u8 duplex, u32 advertising)
 {
@@ -2121,7 +2122,7 @@ out:
 	return ret;
 }
 
-static int rtl8169_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+static int secgmac_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	int ret;
@@ -2135,7 +2136,7 @@ static int rtl8169_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 
 	return ret;
 }
-
+#endif
 static netdev_features_t rtl8169_fix_features(struct net_device *dev,
 	netdev_features_t features)
 {
@@ -2212,28 +2213,28 @@ static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), swab16(opts2 & 0xffff));
 }
 
-#if 0
-static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
+static int secgmac_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
 {
-	struct secgmac_private *tp = netdev_priv(dev);
-	void __iomem *ioaddr = tp->mmio_addr;
+//	struct secgmac_private *tp = netdev_priv(dev);
+//	void __iomem *ioaddr = tp->mmio_addr;
 	u32 status;
 
 	cmd->supported =
 		SUPPORTED_1000baseT_Full | SUPPORTED_Autoneg | SUPPORTED_FIBRE;
-	cmd->port = PORT_FIBRE;
+	cmd->port = PORT_TP;
 	cmd->transceiver = XCVR_INTERNAL;
 
-	status = RTL_R32(TBICSR);
+	status = 0; //RTL_R32(TBICSR);
 	cmd->advertising = (status & TBINwEnable) ?  ADVERTISED_Autoneg : 0;
 	cmd->autoneg = !!(status & TBINwEnable);
 
-	ethtool_cmd_speed_set(cmd, SPEED_1000);
+	ethtool_cmd_speed_set(cmd, SPEED_100);
 	cmd->duplex = DUPLEX_FULL; /* Always set */
 
 	return 0;
 }
 
+#if 0
 static int rtl8169_gset_xmii(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -2242,7 +2243,7 @@ static int rtl8169_gset_xmii(struct net_device *dev, struct ethtool_cmd *cmd)
 }
 #endif
 
-static int rtl8169_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+static int secgmac_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	int rc;
@@ -2447,11 +2448,11 @@ static void rtl8169_get_strings(struct net_device *dev, u32 stringset, u8 *data)
 }
 
 static const struct ethtool_ops secgmac_ethtool_ops = {
-	.get_drvinfo		= rtl8169_get_drvinfo,
-	.get_regs_len		= rtl8169_get_regs_len,
+	.get_drvinfo		= secgmac_get_drvinfo,
+	.get_regs_len		= secgmac_get_regs_len,
 	.get_link		= ethtool_op_get_link,
-	.get_settings		= rtl8169_get_settings,
-	.set_settings		= rtl8169_set_settings,
+	.get_settings		= secgmac_get_settings,
+	//.set_settings		= secgmac_set_settings,
 	.get_msglevel		= rtl8169_get_msglevel,
 	.set_msglevel		= rtl8169_set_msglevel,
 	.get_regs		= rtl8169_get_regs,
@@ -7294,11 +7295,10 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	skb_tx_timestamp(skb);
 	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
-
 		/* tdesc0.31 is 0, the skb on this desc is sent. */
 		if ((readl(BAR1_VIRTUAL_BASE + 0x4 * i * 4) & (0x1 << 31)) == 0) {
 			memcpy_toio(BAR2_VIRTUAL_BASE + 0x5F2 * i, skb->data, skb->len);
-			wmb();
+			smp_wmb();
 			writel(0x1 << 31, BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
 			break;
 		}
@@ -7311,7 +7311,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	}
 	spin_lock(&tp->lock);
 	/* start transmitting */
-	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
+	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
 
 	/* check start status */
@@ -8884,6 +8884,14 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		tp->do_ioctl = rtl_xmii_ioctl;
 	}
 #endif
+
+//	tp->set_speed = rtl8169_set_speed_tbi;
+	tp->get_settings = secgmac_gset_tbi;
+//	tp->phy_reset_enable = rtl8169_tbi_reset_enable;
+//	tp->phy_reset_pending = rtl8169_tbi_reset_pending;
+//	tp->link_ok = rtl8169_tbi_link_ok;
+//	tp->do_ioctl = rtl_tbi_ioctl;
+
 	mutex_init(&tp->wk.mutex);
 	u64_stats_init(&tp->rx_stats.syncp);
 	u64_stats_init(&tp->tx_stats.syncp);
@@ -8920,7 +8928,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	RTL_W32(csr16, 0x55443322);
 	RTL_W32(csr17, 0x00007766);
 	mmiowb();
-	wmb();
+	smp_wmb();
 	printk("secgmac func:%s, line:%d, csr16:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr16));
 	printk("secgmac func:%s, line:%d, csr17:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr17));
 	for (i = 0; i < ETH_ALEN-2; i++) {
