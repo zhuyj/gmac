@@ -1663,14 +1663,14 @@ static void rtl8169_irq_mask_and_ack(struct secgmac_private *tp)
 	rtl_ack_events(tp, RTL_EVENT_NAPI | tp->event_slow);
 	RTL_R8(ChipCmd);
 }
-
-static unsigned int rtl8169_tbi_reset_pending(struct secgmac_private *tp)
+#endif
+static unsigned int secgmac_gmii_reset_pending(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
-	return RTL_R32(TBICSR) & TBIReset;
+	return (RTL_R32(csr0) & 0x1) == 0x1;
 }
-
+#if 0
 static unsigned int rtl8169_xmii_reset_pending(struct secgmac_private *tp)
 {
 	return rtl_readphy(tp, MII_BMCR) & BMCR_RESET;
@@ -1680,19 +1680,20 @@ static unsigned int rtl8169_tbi_link_ok(void __iomem *ioaddr)
 {
 	return RTL_R32(TBICSR) & TBILinkOk;
 }
-
-static unsigned int rtl8169_xmii_link_ok(void __iomem *ioaddr)
+#endif
+static unsigned int secgmac_gmii_link_ok(void __iomem *ioaddr)
 {
-	return RTL_R8(PHYstatus) & LinkStatus;
+	return 1;//RTL_R8(PHYstatus) & LinkStatus;
 }
 
-static void rtl8169_tbi_reset_enable(struct secgmac_private *tp)
+static void secgmac_gmii_reset_enable(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
 
-	RTL_W32(TBICSR, RTL_R32(TBICSR) | TBIReset);
+	RTL_W32(csr0, RTL_R32(csr0) | 0x1);
 }
 
+#if 0
 static void rtl8169_xmii_reset_enable(struct secgmac_private *tp)
 {
 	unsigned int val;
@@ -1999,15 +2000,19 @@ static int secgmac_get_regs_len(struct net_device *dev)
 {
 	return SECGMAC_REGS_SIZE;
 }
-#if 0
-static int rtl8169_set_speed_tbi(struct net_device *dev,
+
+static int secgmac_set_speed_gmii(struct net_device *dev,
 				 u8 autoneg, u16 speed, u8 duplex, u32 ignored)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	int ret = 0;
-	u32 reg;
-
+	/* speed at 100M, set csr6.16 and csr6.17 to zero, to make
+	 * speed as 100M
+	 */
+	RTL_W32(csr6, RTL_R32(csr6) & ~(0x1 << 16 | 0x1 << 17));
+//	u32 reg;
+#if 0
 	reg = RTL_R32(TBICSR);
 	if ((autoneg == AUTONEG_DISABLE) && (speed == SPEED_1000) &&
 	    (duplex == DUPLEX_FULL)) {
@@ -2019,10 +2024,10 @@ static int rtl8169_set_speed_tbi(struct net_device *dev,
 			   "incorrect speed setting refused in TBI mode\n");
 		ret = -EOPNOTSUPP;
 	}
-
+#endif
 	return ret;
 }
-
+#if 0
 static int rtl8169_set_speed_xmii(struct net_device *dev,
 				  u8 autoneg, u16 speed, u8 duplex, u32 adv)
 {
@@ -2101,8 +2106,7 @@ static int rtl8169_set_speed_xmii(struct net_device *dev,
 out:
 	return rc;
 }
-#endif
-#if 0
+
 static int rtl8169_set_speed(struct net_device *dev,
 			     u8 autoneg, u16 speed, u8 duplex, u32 advertising)
 {
@@ -2213,19 +2217,19 @@ static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), swab16(opts2 & 0xffff));
 }
 
-static int secgmac_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
+static int secgmac_gset_gmii(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 //	struct secgmac_private *tp = netdev_priv(dev);
 //	void __iomem *ioaddr = tp->mmio_addr;
 	u32 status;
 
 	cmd->supported =
-		SUPPORTED_1000baseT_Full | SUPPORTED_Autoneg | SUPPORTED_FIBRE;
+		SUPPORTED_100baseT_Full | SUPPORTED_Autoneg | SUPPORTED_TP;
 	cmd->port = PORT_TP;
 	cmd->transceiver = XCVR_INTERNAL;
 
 	status = 0; //RTL_R32(TBICSR);
-	cmd->advertising = (status & TBINwEnable) ?  ADVERTISED_Autoneg : 0;
+	cmd->advertising = ADVERTISED_Autoneg | ADVERTISED_TP;
 	cmd->autoneg = !!(status & TBINwEnable);
 
 	ethtool_cmd_speed_set(cmd, SPEED_100);
@@ -8885,11 +8889,11 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 #endif
 
-//	tp->set_speed = rtl8169_set_speed_tbi;
-	tp->get_settings = secgmac_gset_tbi;
-//	tp->phy_reset_enable = rtl8169_tbi_reset_enable;
-//	tp->phy_reset_pending = rtl8169_tbi_reset_pending;
-//	tp->link_ok = rtl8169_tbi_link_ok;
+	tp->set_speed = secgmac_set_speed_gmii;
+	tp->get_settings = secgmac_gset_gmii;
+	tp->phy_reset_enable = secgmac_gmii_reset_enable;
+	tp->phy_reset_pending = secgmac_gmii_reset_pending;
+	tp->link_ok = secgmac_gmii_link_ok;
 //	tp->do_ioctl = rtl_tbi_ioctl;
 
 	mutex_init(&tp->wk.mutex);
