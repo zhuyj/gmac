@@ -4615,7 +4615,7 @@ static int rtl_set_mac_address(struct net_device *dev, void *p)
 	return 0;
 }
 
-static int rtl8169_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+static int secgmac_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	struct mii_ioctl_data *data = if_mii(ifr);
@@ -4623,8 +4623,7 @@ static int rtl8169_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	return netif_running(dev) ? tp->do_ioctl(tp, data, cmd) : -ENODEV;
 }
 
-#if 0
-static int rtl_xmii_ioctl(struct secgmac_private *tp,
+static int secgmac_gmii_ioctl(struct secgmac_private *tp,
 			  struct mii_ioctl_data *data, int cmd)
 {
 	switch (cmd) {
@@ -4643,6 +4642,7 @@ static int rtl_xmii_ioctl(struct secgmac_private *tp,
 	return -EOPNOTSUPP;
 }
 
+#if 0
 static int rtl_tbi_ioctl(struct secgmac_private *tp, struct mii_ioctl_data *data, int cmd)
 {
 	return -EOPNOTSUPP;
@@ -8520,7 +8520,7 @@ static const struct net_device_ops secgmac_netdev_ops = {
 	.ndo_fix_features	= rtl8169_fix_features,
 	.ndo_set_features	= rtl8169_set_features,
 	.ndo_set_mac_address	= rtl_set_mac_address,
-	.ndo_do_ioctl		= rtl8169_ioctl,
+	.ndo_do_ioctl		= secgmac_ioctl,
 	.ndo_set_rx_mode	= rtl_set_rx_mode,
 #ifdef CONFIG_NET_POLL_CONTROLLER
 	.ndo_poll_controller	= rtl8169_netpoll,
@@ -8894,7 +8894,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->phy_reset_enable = secgmac_gmii_reset_enable;
 	tp->phy_reset_pending = secgmac_gmii_reset_pending;
 	tp->link_ok = secgmac_gmii_link_ok;
-//	tp->do_ioctl = rtl_tbi_ioctl;
+	tp->do_ioctl = secgmac_gmii_ioctl;
 
 	mutex_init(&tp->wk.mutex);
 	u64_stats_init(&tp->rx_stats.syncp);
