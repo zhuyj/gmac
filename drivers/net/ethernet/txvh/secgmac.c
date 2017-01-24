@@ -1762,7 +1762,7 @@ static void rtl_link_chg_patch(struct secgmac_private *tp)
 }
 #endif
 
-static void __rtl8169_check_link_status(struct net_device *dev,
+static void __secgmac_check_link_status(struct net_device *dev,
 					struct secgmac_private *tp,
 					void __iomem *ioaddr, bool pm)
 {
@@ -1782,11 +1782,11 @@ static void __rtl8169_check_link_status(struct net_device *dev,
 //	}
 }
 
-static void rtl8169_check_link_status(struct net_device *dev,
+static void secgmac_check_link_status(struct net_device *dev,
 				      struct secgmac_private *tp,
 				      void __iomem *ioaddr)
 {
-	__rtl8169_check_link_status(dev, tp, ioaddr, false);
+	__secgmac_check_link_status(dev, tp, ioaddr, false);
 }
 
 #define WAKE_ANY (WAKE_PHY | WAKE_MAGIC | WAKE_UCAST | WAKE_BCAST | WAKE_MCAST)
@@ -7033,11 +7033,20 @@ static void rtl_reset_work(struct secgmac_private *tp)
 }
 #endif
 
-static void rtl8169_tx_timeout(struct net_device *dev)
+static void secgmac_tx_timeout(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 
-	rtl_schedule_task(tp, RTL_FLAG_TASK_RESET_PENDING);
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+        napi_disable(&tp->napi);
+        netif_stop_queue(dev);
+        synchronize_sched();
+
+        secgmac_hw_reset(tp);
+
+        napi_enable(&tp->napi);
+        netif_wake_queue(dev);
+        secgmac_check_link_status(dev, tp, tp->mmio_addr);
 }
 
 static int rtl8169_xmit_frags(struct secgmac_private *tp, struct sk_buff *skb,
@@ -7297,8 +7306,9 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	}
 
-	skb_tx_timestamp(skb);
+//	skb_tx_timestamp(skb);
 	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		/* tdesc0.31 is 0, the skb on this desc is sent. */
 		if ((readl(BAR1_VIRTUAL_BASE + 0x4 * i * 4) & (0x1 << 31)) == 0) {
 			memcpy_toio(BAR2_VIRTUAL_BASE + 0x5F2 * i, skb->data, skb->len);
@@ -7309,15 +7319,17 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	}
 
 	if (i == NUM_SECGMAC_TXDESC) {
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		dev_kfree_skb_any(skb);
 		netif_stop_queue(dev);
 		return NETDEV_TX_BUSY;
 	}
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	spin_lock(&tp->lock);
 	/* start transmitting */
 	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
-
+#if 0
 	/* check start status */
 	while (1) {
 		/* skb is sent */
@@ -7327,7 +7339,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 			break;
 		}
 	}
-
+#endif
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
 
@@ -8208,7 +8220,7 @@ static int secgmac_open(struct net_device *dev)
 //	pm_runtime_put_noidle(&pdev->dev);
 
 	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
-	rtl8169_check_link_status(dev, tp, ioaddr);
+	secgmac_check_link_status(dev, tp, ioaddr);
 	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 out:
 	return retval;
@@ -8514,7 +8526,7 @@ static const struct net_device_ops secgmac_netdev_ops = {
 	.ndo_stop		= secgmac_close,
 	.ndo_get_stats64	= rtl8169_get_stats64,
 	.ndo_start_xmit		= secgmac_start_xmit,
-	.ndo_tx_timeout		= rtl8169_tx_timeout,
+	.ndo_tx_timeout		= secgmac_tx_timeout,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_change_mtu		= rtl8169_change_mtu,
 	.ndo_fix_features	= rtl8169_fix_features,
