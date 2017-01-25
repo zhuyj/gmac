@@ -5284,10 +5284,10 @@ DECLARE_RTL_COND(rtl_chipcmd_cond)
 
 static void secgmac_hw_reset(struct secgmac_private *tp)
 {
-//	void __iomem *ioaddr = tp->mmio_addr;
+	void __iomem *ioaddr = tp->mmio_addr;
 
 	/* soft reset */
-//	RTL_W8(csr0, 0x1);
+	RTL_W8(csr0, 0x1);
 //	RTL_W8(ChipCmd, CmdReset);
 
 //	rtl_udelay_loop_wait_low(tp, &rtl_chipcmd_cond, 100, 100);
@@ -7292,7 +7292,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	unsigned int entry = tp->cur_tx % NUM_TX_DESC;
-	//unsigned int secgmac_entry = tp->secgmac_curtx % NUM_SECGMAC_TXDESC;
+	unsigned int secgmac_entry = tp->secgmac_curtx % NUM_SECGMAC_TXDESC;
 	struct TxDesc *txd = tp->TxDescArray + entry;
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct device *d = &tp->pci_dev->dev;
@@ -7306,19 +7306,15 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	}
 
-//	skb_tx_timestamp(skb);
-	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
-		/* tdesc0.31 is 0, the skb on this desc is sent. */
-		if ((readl(BAR1_VIRTUAL_BASE + 0x4 * i * 4) & (0x1 << 31)) == 0) {
-			memcpy_toio(BAR2_VIRTUAL_BASE + 0x5F2 * i, skb->data, skb->len);
-			smp_wmb();
-			writel(0x1 << 31, BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
-			break;
-		}
-	}
-
-	if (i == NUM_SECGMAC_TXDESC) {
+	skb_tx_timestamp(skb);
+	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	/* tdesc0.31 is 0, the skb on this desc is sent. */
+	if (likely((readl(BAR1_VIRTUAL_BASE + 0x4 * secgmac_entry * 4) & (0x1 << 31)) == 0)) {
+		memcpy_toio(BAR2_VIRTUAL_BASE + 0x5F2 * i, skb->data, skb->len);
+		smp_wmb();
+		writel(0x1 << 31, BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
+		tp->secgmac_curtx++;
+	} else {
 		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		dev_kfree_skb_any(skb);
 		netif_stop_queue(dev);
@@ -7774,7 +7770,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	void __iomem *ioaddr = tp->mmio_addr;
 
 	if (printk_ratelimit()) {
-		printk("function:%s, line:%d\n", __FUNCTION__, __LINE__);
+		printk("txvh function:%s, line:%d\n", __FUNCTION__, __LINE__);
 	}
 #if 0
 	/* rx description */
