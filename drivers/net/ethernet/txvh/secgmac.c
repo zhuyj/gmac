@@ -7336,6 +7336,9 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		}
 	}
 #endif
+	if (printk_ratelimit()) {
+		printk("txvh func:%s, line:%d, csr5:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr5));
+	}
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
 
@@ -7673,12 +7676,16 @@ release_descriptor:
 	return count;
 }
 
-static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+static irqreturn_t secgmac_interrupt(int irq, void *dev_instance)
 {
 	struct net_device *dev = dev_instance;
 	struct secgmac_private *tp = netdev_priv(dev);
 	int handled = 0;
 	u16 status;
+
+	if (printk_ratelimit()) {
+		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	}
 
 	status = rtl_get_events(tp);
 	if (status && status != 0xffff) {
@@ -7884,7 +7891,7 @@ static void rtl8169_down(struct net_device *dev)
 	rtl8169_hw_reset(tp);
 	/*
 	 * At this point device interrupts can not be enabled in any function,
-	 * as netif_running is not true (rtl8169_interrupt, rtl8169_reset_task)
+	 * as netif_running is not true (secgmac_interrupt, rtl8169_reset_task)
 	 * and napi is disabled (secgmac_poll).
 	 */
 	rtl8169_rx_missed(dev, ioaddr);
@@ -7942,7 +7949,7 @@ static void rtl8169_netpoll(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 
-	rtl8169_interrupt(tp->pci_dev->irq, dev);
+	secgmac_interrupt(tp->pci_dev->irq, dev);
 }
 #endif
 
@@ -8157,8 +8164,8 @@ static int secgmac_open(struct net_device *dev)
 	/* Start of the transmit list address bar1 */
 	RTL_W32(csr4, 0x00010000);
 
-	/* timer */
-	RTL_W32(csr11, 0x0);
+	/* timer, tx interrupt(1 frame trigger irq), rx interrupt(1 frame trigger irq) */
+	RTL_W32(csr11, 0x0 | 0x1 << 17 | 0x1 << 24);
 
 	/* enable interrupt */
 	RTL_W32(csr7, 0xffffffff);
@@ -8185,7 +8192,7 @@ static int secgmac_open(struct net_device *dev)
 	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 //	rtl_request_firmware(tp);
 
-	retval = request_irq(pdev->irq, rtl8169_interrupt,
+	retval = request_irq(pdev->irq, secgmac_interrupt,
 			     (tp->features & RTL_FEATURE_MSI) ? 0 : IRQF_SHARED,
 			     dev->name, dev);
 	if (retval < 0)
