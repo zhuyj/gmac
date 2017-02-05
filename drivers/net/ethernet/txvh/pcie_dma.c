@@ -54,64 +54,87 @@ static void dma_imwr(struct pci_dev *pdev, unsigned int chn_num,
 		}
 	}
 }
+
+#define DMA_READ_ENGINE_EN_OFF			0x99c
+#define DMA_VIEWPORT_SEL_OFF			0xa6c
+#define DMA_READ_CHANNEL_ARB_WEIGHT_LOW_OFF	0x9a8
+#define DMA_READ_INT_MASK_OFF			0xa18
+#define DMA_CH_CONTROL1_OFF_RDCH_0_0		
+#define DMA_TRANSFER_SIZE_OFF_RDCH_0_0
+#define DMA_SAR_LOW_OFF_RDCH_0_0
+#define DMA_SAR_HIGH_OFF_RDCH_0_0
+#define DMA_DAR_LOW_OFF_RDCH_0_0
+#define DMA_DAR_HIGH_OFF_RDCH_0_0
+#define DMA_WRITE_ENGINE_EN_OFF			0x97c
+#define DMA_VIEWPORT_SEL_OFF			0xa6c
+#define DMA_WRITE_CHANNEL_ARB_WEIGHT_LOW_OFF	0x988
+#define DMA_WRITE_INT_MASK_OFF			0x9c4
+#define DMA_CH_CONTROL1_OFF_WRCH_0  
+#define DMA_TRANSFER_SIZE_OFF_WRCH_0
+#define DMA_SAR_LOW_OFF_WRCH_0
+#define DMA_SAR_HIGH_OFF_WRCH_0
+#define DMA_DAR_LOW_OFF_WRCH_0
+#define DMA_DAR_HIGH_OFF_WRCH_0 
 #if 0
 //w_r: 0(write), 1(read), 32-bit system
-void nonll_dma_config(unsigned int chn_num, unsigned int w_r, unsigned int sz_byte, unsigned int sar, unsigned int dar)
+static void nonll_dma_config(struct pci_dev *pdev,
+				unsigned int chn_num,
+				unsigned int w_r, unsigned int sz_byte,
+				unsigned int sar, unsigned int dar)
 {
-  if(w_r)  //read
-  {
-    pci_write_config_dword(pdev, DMA_READ_ENGINE_EN_OFF) = 0x1;
-    pci_write_config_dword(pdev, DMA_VIEWPORT_SEL_OFF) = ((w_r << 31) + chn_num);
-    pci_write_config_dword(pdev, DMA_READ_CHANNEL_ARB_WEIGHT_LOW_OFF) = 0x8421;    //weight arbitration for channel 0-3
-    pci_write_config_dword(pdev, DMA_READ_INT_MASK_OFF) = 0x0;
-    pci_write_config_dword(pdev, DMA_CH_CONTROL1_OFF_RDCH_0_0) = ((0x1 << 4) + (0x1 << 3));
-    pci_write_config_dword(pdev, DMA_TRANSFER_SIZE_OFF_RDCH_0_0) = sz_byte;
-    pci_write_config_dword(pdev, DMA_SAR_LOW_OFF_RDCH_0_0) = sar;
-    pci_write_config_dword(pdev, DMA_SAR_HIGH_OFF_RDCH_0_0) = 0x0;
-    pci_write_config_dword(pdev, DMA_DAR_LOW_OFF_RDCH_0_0) = dar;
-    pci_write_config_dword(pdev, DMA_DAR_HIGH_OFF_RDCH_0_0) = 0x0;
-  }
-  else  //write
-  {
-    pci_write_config_dword(pdev, DMA_WRITE_ENGINE_EN_OFF) = 0x1;
-    pci_write_config_dword(pdev, DMA_VIEWPORT_SEL_OFF) = ((w_r << 31) + chn_num);
-    pci_write_config_dword(pdev, DMA_WRITE_CHANNEL_ARB_WEIGHT_LOW_OFF) = 0x8421;  //weight arbitration for channel 0-3
-    pci_write_config_dword(pdev, DMA_WRITE_INT_MASK_OFF) = 0x0;
-    pci_write_config_dword(pdev, DMA_CH_CONTROL1_OFF_WRCH_0) = ((0x1 << 4) + (0x1 << 3));  
-    pci_write_config_dword(pdev, DMA_TRANSFER_SIZE_OFF_WRCH_0) = sz_byte;
-    pci_write_config_dword(pdev, DMA_SAR_LOW_OFF_WRCH_0) = sar;
-    pci_write_config_dword(pdev, DMA_SAR_HIGH_OFF_WRCH_0) = 0x0;
-    pci_write_config_dword(pdev, DMA_DAR_LOW_OFF_WRCH_0) = dar;
-    pci_write_config_dword(pdev, DMA_DAR_HIGH_OFF_WRCH_0) = 0x0; 
-  }
+	if(w_r) {  //read
+		pci_write_config_dword(pdev, DMA_READ_ENGINE_EN_OFF, 0x1);
+		pci_write_config_dword(pdev, DMA_VIEWPORT_SEL_OFF, ((w_r << 31) + chn_num));
+		pci_write_config_dword(pdev, DMA_READ_CHANNEL_ARB_WEIGHT_LOW_OFF, 0x8421);    //weight arbitration for channel 0-3
+		pci_write_config_dword(pdev, DMA_READ_INT_MASK_OFF, 0x0);
+		pci_write_config_dword(pdev, DMA_CH_CONTROL1_OFF_RDCH_0_0, ((0x1 << 4) + (0x1 << 3)));
+		pci_write_config_dword(pdev, DMA_TRANSFER_SIZE_OFF_RDCH_0_0, sz_byte);
+		pci_write_config_dword(pdev, DMA_SAR_LOW_OFF_RDCH_0_0, sar);
+		pci_write_config_dword(pdev, DMA_SAR_HIGH_OFF_RDCH_0_0, 0x0);
+		pci_write_config_dword(pdev, DMA_DAR_LOW_OFF_RDCH_0_0, dar);
+		pci_write_config_dword(pdev, DMA_DAR_HIGH_OFF_RDCH_0_0, 0x0);
+	} else { //write
+		pci_write_config_dword(pdev, DMA_WRITE_ENGINE_EN_OFF, 0x1);
+		pci_write_config_dword(pdev, DMA_VIEWPORT_SEL_OFF, ((w_r << 31) + chn_num));
+		pci_write_config_dword(pdev, DMA_WRITE_CHANNEL_ARB_WEIGHT_LOW_OFF, 0x8421);  //weight arbitration for channel 0-3
+		pci_write_config_dword(pdev, DMA_WRITE_INT_MASK_OFF, 0x0);
+		pci_write_config_dword(pdev, DMA_CH_CONTROL1_OFF_WRCH_0, ((0x1 << 4) + (0x1 << 3)));  
+		pci_write_config_dword(pdev, DMA_TRANSFER_SIZE_OFF_WRCH_0, sz_byte);
+		pci_write_config_dword(pdev, DMA_SAR_LOW_OFF_WRCH_0, sar);
+		pci_write_config_dword(pdev, DMA_SAR_HIGH_OFF_WRCH_0, 0x0);
+		pci_write_config_dword(pdev, DMA_DAR_LOW_OFF_WRCH_0, dar);
+		pci_write_config_dword(pdev, DMA_DAR_HIGH_OFF_WRCH_0, 0x0); 
+	}
+}
+#endif
+#define DMA_READ_DOORBELL_OFF		0x9a0
+#define DMA_WRITE_DOORBELL_OFF		0x980
+static void dma_doorbell(struct pci_dev *pdev,
+				unsigned int chn_num, unsigned int w_r)
+{
+	if(w_r) {  //read
+		pci_write_config_dword(pdev, DMA_READ_DOORBELL_OFF, ((0 << 31) + (chn_num)));
+	} else {  //write
+
+		pci_write_config_dword(pdev, DMA_WRITE_DOORBELL_OFF, ((0 << 31) + (chn_num)));
+	}  
 }
 
-void dma_doorbell(unsigned int chn_num, unsigned int w_r)
-{
-  if(w_r)  //read
-  {
-    pci_write_config_dword(pdev, DMA_READ_DOORBELL_OFF) = ((0 << 31) + (chn_num));
-  }
-  else   //write
-  {
-    pci_write_config_dword(pdev, DMA_WRITE_DOORBELL_OFF) = ((0 << 31) + (chn_num));
-  }  
-}
-
-void dma_com(unsigned int chn_num, unsigned int w_r)
+static void dma_com(struct pci_dev *pdev,
+			unsigned int chn_num, unsigned int w_r)
 {
   if(w_r)  //read
   {
     while(!(pci_write_config_dword(pdev, DMA_READ_INT_STATUS_OFF) & (0x1 << chn_num)));
-    pci_write_config_dword(pdev, DMA_READ_INT_CLEAR_OFF) = (0x1 << chn_num);
+    pci_write_config_dword(pdev, DMA_READ_INT_CLEAR_OFF, (0x1 << chn_num));
   }
   else   //write
   {
     while(!(pci_write_config_dword(pdev, DMA_WRITE_INT_STATUS_OFF) & (0x1 << chn_num)));
-    pci_write_config_dword(pdev, DMA_WRITE_INT_CLEAR_OFF) = (0x1 << chn_num);
+    pci_write_config_dword(pdev, DMA_WRITE_INT_CLEAR_OFF, (0x1 << chn_num));
   }    
 }
-
+#if 0
 int pcie_dma_rw()
 {
   unsigned int i = 0;
