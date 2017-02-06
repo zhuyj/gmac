@@ -21,7 +21,7 @@ static void dma_imwr(struct pci_dev *pdev, unsigned int chn_num,
 			unsigned int w_r, unsigned int done_addr,
 			unsigned int abrt_addr, unsigned short int data)
 {
-	if(w_r) {  //read
+	if (w_r) {  //read
 		pci_write_config_dword(pdev, DMA_READ_DONE_IMWR_LOW_OFF, done_addr);
 		pci_write_config_dword(pdev, DMA_READ_DONE_IMWR_HIGH_OFF, 0x0); 
 		pci_write_config_dword(pdev, DMA_READ_ABORT_IMWR_LOW_OFF, abrt_addr);
@@ -112,28 +112,35 @@ static void nonll_dma_config(struct pci_dev *pdev,
 static void dma_doorbell(struct pci_dev *pdev,
 				unsigned int chn_num, unsigned int w_r)
 {
-	if(w_r) {  //read
+	if (w_r) {  //read
 		pci_write_config_dword(pdev, DMA_READ_DOORBELL_OFF, ((0 << 31) + (chn_num)));
 	} else {  //write
-
 		pci_write_config_dword(pdev, DMA_WRITE_DOORBELL_OFF, ((0 << 31) + (chn_num)));
 	}  
 }
 
+#define DMA_READ_INT_STATUS_OFF		0xa10
+#define DMA_READ_INT_CLEAR_OFF		0xa1c
+#define DMA_WRITE_INT_STATUS_OFF	0x9bc
+#define DMA_WRITE_INT_CLEAR_OFF		0x9c8
 static void dma_com(struct pci_dev *pdev,
 			unsigned int chn_num, unsigned int w_r)
 {
-  if(w_r)  //read
-  {
-    while(!(pci_write_config_dword(pdev, DMA_READ_INT_STATUS_OFF) & (0x1 << chn_num)));
-    pci_write_config_dword(pdev, DMA_READ_INT_CLEAR_OFF, (0x1 << chn_num));
-  }
-  else   //write
-  {
-    while(!(pci_write_config_dword(pdev, DMA_WRITE_INT_STATUS_OFF) & (0x1 << chn_num)));
-    pci_write_config_dword(pdev, DMA_WRITE_INT_CLEAR_OFF, (0x1 << chn_num));
-  }    
+	if (w_r) {  //read
+		u32 val;
+		pci_read_config_dword(pdev, DMA_READ_INT_STATUS_OFF, &val);
+		while(!(val & (0x1 << chn_num)))
+			pci_read_config_dword(pdev, DMA_READ_INT_STATUS_OFF, &val);
+		pci_write_config_dword(pdev, DMA_READ_INT_CLEAR_OFF, (0x1 << chn_num));
+	} else { //write
+		u32 val;
+		pci_read_config_dword(pdev, DMA_WRITE_INT_STATUS_OFF, &val);
+		while(!(val & (0x1 << chn_num)))
+			pci_read_config_dword(pdev, DMA_WRITE_INT_STATUS_OFF, &val);
+		pci_write_config_dword(pdev, DMA_WRITE_INT_CLEAR_OFF, (0x1 << chn_num));
+	}
 }
+
 #if 0
 int pcie_dma_rw()
 {
