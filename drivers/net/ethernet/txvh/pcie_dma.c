@@ -1,22 +1,6 @@
 #include <linux/pci.h>
+#include "pcie.h"
 
-#if 0
-unsigned int cap_ptr = 0;
-unsigned int pm_cap = 0;
-unsigned int pcie_cap = 0;
-unsigned int aer_cap = 0;
-unsigned int msi_cap = 0;
-#endif
-#define DMA_READ_DONE_IMWR_LOW_OFF	0xa3c
-#define DMA_READ_DONE_IMWR_HIGH_OFF	0xa40
-#define DMA_READ_ABORT_IMWR_LOW_OFF	0xa44
-#define DMA_READ_ABORT_IMWR_HIGH_OFF	0xa48
-#define DMA_READ_CH01_IMWR_DATA_OFF	0xa4c
-#define DMA_WRITE_DONE_IMWR_LOW_OFF	0x9d0
-#define DMA_WRITE_DONE_IMWR_HIGH_OFF	0x9d4
-#define DMA_WRITE_ABORT_IMWR_LOW_OFF	0x9d8
-#define DMA_WRITE_ABORT_IMWR_HIGH_OFF	0x9dc
-#define DMA_WRITE_CH01_IMWR_DATA_OFF	0x9e0
 static void dma_imwr(struct pci_dev *pdev, unsigned int chn_num,
 			unsigned int w_r, unsigned int done_addr,
 			unsigned int abrt_addr, unsigned short int data)
@@ -55,27 +39,6 @@ static void dma_imwr(struct pci_dev *pdev, unsigned int chn_num,
 	}
 }
 
-#define DMA_READ_ENGINE_EN_OFF			0x99c
-#define DMA_VIEWPORT_SEL_OFF			0xa6c
-#define DMA_READ_CHANNEL_ARB_WEIGHT_LOW_OFF	0x9a8
-#define DMA_READ_INT_MASK_OFF			0xa18
-#define DMA_CH_CONTROL1_OFF_RDCH_0_0		
-#define DMA_TRANSFER_SIZE_OFF_RDCH_0_0
-#define DMA_SAR_LOW_OFF_RDCH_0_0
-#define DMA_SAR_HIGH_OFF_RDCH_0_0
-#define DMA_DAR_LOW_OFF_RDCH_0_0
-#define DMA_DAR_HIGH_OFF_RDCH_0_0
-#define DMA_WRITE_ENGINE_EN_OFF			0x97c
-#define DMA_VIEWPORT_SEL_OFF			0xa6c
-#define DMA_WRITE_CHANNEL_ARB_WEIGHT_LOW_OFF	0x988
-#define DMA_WRITE_INT_MASK_OFF			0x9c4
-#define DMA_CH_CONTROL1_OFF_WRCH_0  
-#define DMA_TRANSFER_SIZE_OFF_WRCH_0
-#define DMA_SAR_LOW_OFF_WRCH_0
-#define DMA_SAR_HIGH_OFF_WRCH_0
-#define DMA_DAR_LOW_OFF_WRCH_0
-#define DMA_DAR_HIGH_OFF_WRCH_0 
-#if 0
 //w_r: 0(write), 1(read), 32-bit system
 static void nonll_dma_config(struct pci_dev *pdev,
 				unsigned int chn_num,
@@ -106,9 +69,7 @@ static void nonll_dma_config(struct pci_dev *pdev,
 		pci_write_config_dword(pdev, DMA_DAR_HIGH_OFF_WRCH_0, 0x0); 
 	}
 }
-#endif
-#define DMA_READ_DOORBELL_OFF		0x9a0
-#define DMA_WRITE_DOORBELL_OFF		0x980
+
 static void dma_doorbell(struct pci_dev *pdev,
 				unsigned int chn_num, unsigned int w_r)
 {
@@ -119,10 +80,6 @@ static void dma_doorbell(struct pci_dev *pdev,
 	}  
 }
 
-#define DMA_READ_INT_STATUS_OFF		0xa10
-#define DMA_READ_INT_CLEAR_OFF		0xa1c
-#define DMA_WRITE_INT_STATUS_OFF	0x9bc
-#define DMA_WRITE_INT_CLEAR_OFF		0x9c8
 static void dma_com(struct pci_dev *pdev,
 			unsigned int chn_num, unsigned int w_r)
 {
