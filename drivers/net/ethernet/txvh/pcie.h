@@ -1,7 +1,7 @@
 /*
  * ABSTRACT : Register definition header file for 
  */
-#define PCIE_BASE		0x0
+#define PCIE_BASE		0x0 //(tp->bar1_addr)	
 #define PF0_TYPE0_HDR_BaseAddress (PCIE_BASE + 0x0)
 
 #define PF0_PM_CAP_BaseAddress (PCIE_BASE + 0x40)
