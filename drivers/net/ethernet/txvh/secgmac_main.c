@@ -52,6 +52,16 @@
 #define FIRMWARE_8107E_1	"rtl_nic/rtl8107e-1.fw"
 #define FIRMWARE_8107E_2	"rtl_nic/rtl8107e-2.fw"
 #endif
+#define SECGMAC_DEBUG(fmt, args...) \
+	do { if (printk_ratelimit()) { \
+		char tmp[256] = {0}; \
+		sprintf(tmp, fmt, ## args); \
+		printk("secgmac func:%s, line:%d, %s\n", \
+			__FUNCTION__, __LINE__, tmp);} }while (0);
+
+#define debug(fmt, args...) \
+        do { char tmp[256] = {0}; sprintf(tmp, fmt, ## args);printf("%s\n", tmp);}while(0)
+
 #ifdef RTL8169_DEBUG
 #define assert(expr) \
 	if (!(expr)) {					\
@@ -856,8 +866,8 @@ struct secgmac_private {
 	struct rtl8169_stats tx_stats;
 	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
 	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
-	struct secgmac_txdesc *secgmac_txdescArray;	/* TXVH TX description now 5 */
-	struct secgmac_rxdesc *secgmac_rxdescArray;	/* TXVH RX description now 5 */
+	struct secgmac_txdesc *secgmac_txdescArray;	/* TXVH TX description now 10 */
+	struct secgmac_rxdesc *secgmac_rxdescArray;	/* TXVH RX description now 10 */
 	dma_addr_t TxPhyAddr;
 	dma_addr_t RxPhyAddr;
 	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
