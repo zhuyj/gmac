@@ -7940,6 +7940,7 @@ static int secgmac_close(struct net_device *dev)
 	/* Update counters before going down */
 	//rtl8169_update_counters(dev);
 
+	SECGMAC_DEBUG(" ");
 	rtl_lock_work(tp);
 	clear_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
 
@@ -7984,6 +7985,7 @@ static int secgmac_open(struct net_device *dev)
 	struct pci_dev *pdev = tp->pci_dev;
 	int retval = -ENOMEM, i;
 
+	SECGMAC_DEBUG(" ");
 	/* soft reset */
 	RTL_W8(csr0, 0x1);
 
@@ -8351,6 +8353,7 @@ static int rtl8169_runtime_idle(struct device *device)
 	struct net_device *dev = pci_get_drvdata(pdev);
 	struct secgmac_private *tp = netdev_priv(dev);
 
+	SECGMAC_DEBUG("");
 	return tp->TxDescArray ? -EBUSY : 0;
 }
 
@@ -8402,6 +8405,7 @@ static void rtl_shutdown(struct pci_dev *pdev)
 	struct secgmac_private *tp = netdev_priv(dev);
 	struct device *d = &pdev->dev;
 
+	SECGMAC_DEBUG(" ");
 	pm_runtime_get_sync(d);
 
 	rtl8169_net_suspend(dev);
