@@ -8131,6 +8131,7 @@ static int secgmac_open(struct net_device *dev)
 			     dev->name, dev);
 	if (retval < 0)
 		goto err_release_fw_2;
+	SECGMAC_DEBUG("retval:0x%x", retval);
 
 	rtl_lock_work(tp);
 
@@ -8992,6 +8993,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	netif_carrier_off(dev);
 
 out:
+	SECGMAC_DEBUG("rc:0x%x", rc);
 	return rc;
 
 err_out_cnt_6:
