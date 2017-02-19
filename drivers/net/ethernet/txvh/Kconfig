@@ -4,7 +4,7 @@
 config TXVH_SECGMAC 
 	tristate "Txvh security gmac gigabit ethernet support"
 	default m
-	depends on PCI
+	depends on PCI && USB_DWC3_PCI 
 	select FW_LOADER
 	select CRC32
 	select MII

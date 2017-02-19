@@ -98,25 +98,28 @@ static void dma_com(struct pci_dev *pdev,
 	}
 }
 
+#define DRAM0_BASE	0x00010000
+#define DRAM1_BASE	0x00040000
+
 int pcie_dma_rw(struct pci_dev *pdev)
 {
-  unsigned int i = 0;
- 
-  pci_write_config_dword(pdev, GEN2_CTRL_OFF, 0x00100000); //Select de-emphasis level -3.5db
-  pci_write_config_dword(pdev, PORT_LINK_CTRL_OFF, 0x80);  //enable fast link mode
+	unsigned int i = 0;
 
-  pci_write_config_dword(pdev, DEVICE_CONTROL_DEVICE_STATUS, (0x1 << 5)); //max payload size = 256 bytes
+	pci_write_config_dword(pdev, GEN2_CTRL_OFF, 0x00100000); //Select de-emphasis level -3.5db
+	pci_write_config_dword(pdev, PORT_LINK_CTRL_OFF, 0x80);  //enable fast link mode
 
-  //nonll_dma_config(pdev, 0/*chn_num*/, 1/*w_r*/, 0x200/*sz_byte*/, 0x8e6ff000/*sar*/, DRAM0_BASE/*dar*/);
-  dma_imwr(pdev, 0/*chn_num*/, 1/*w_r*/, 0x8e6ff000/*done_addr*/, 0/*abrt_addr*/, 0x0/*data*/);
-  dma_doorbell(pdev, 0/*chn_num*/, 1/*w_r*/);
+	pci_write_config_dword(pdev, DEVICE_CONTROL_DEVICE_STATUS, (0x1 << 5)); //max payload size = 256 bytes
 
-  //nonll_dma_config(pdev, 0/*chn_num*/, 0/*w_r*/, 0x200/*sz_byte*/, DRAM0_BASE/*sar*/, 0x8e6ff000/*dar*/);
-  dma_imwr(pdev, 0/*chn_num*/, 0/*w_r*/, 0x8e6ff000/*done_addr*/, 0/*abrt_addr*/, 0x1/*data*/);
-  dma_doorbell(pdev, 0/*chn_num*/, 0/*w_r*/);
+	nonll_dma_config(pdev, 0/*chn_num*/, 1/*w_r*/, 0x200/*sz_byte*/, 0x8e6ff000/*sar*/, DRAM0_BASE/*dar*/);
+	dma_imwr(pdev, 0/*chn_num*/, 1/*w_r*/, 0x8e6ff000/*done_addr*/, 0/*abrt_addr*/, 0x0/*data*/);
+	dma_doorbell(pdev, 0/*chn_num*/, 1/*w_r*/);
 
-  dma_com(pdev, 0/*chn_num*/, 1/*w_r*/) ;
-  dma_com(pdev, 0/*chn_num*/, 0/*w_r*/) ;
- 
-  while(1);
+	nonll_dma_config(pdev, 0/*chn_num*/, 0/*w_r*/, 0x200/*sz_byte*/, DRAM0_BASE/*sar*/, 0x8e6ff000/*dar*/);
+	dma_imwr(pdev, 0/*chn_num*/, 0/*w_r*/, 0x8e6ff000/*done_addr*/, 0/*abrt_addr*/, 0x1/*data*/);
+	dma_doorbell(pdev, 0/*chn_num*/, 0/*w_r*/);
+
+	dma_com(pdev, 0/*chn_num*/, 1/*w_r*/);
+	dma_com(pdev, 0/*chn_num*/, 0/*w_r*/);
+
+	while(1);
 }

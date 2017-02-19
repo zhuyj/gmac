@@ -762,6 +762,7 @@ struct secgmac_rxdesc {
 
 /* bar2 bottom for tx skb */
 #define TX_SKB_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
+#define TX_SKB_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
 
 /* bar3 is to rx skb data, top 512 bytes for rx desc */
 #define BAR3_VIRTUAL_BASE		(tp->bar3_addr)
@@ -7323,7 +7324,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	dma_addr_t mapping;
 	u32 status, len;
 	u32 opts[2];
-	int frags, i;
+	int frags;
 //	unsigned int addr_offset = tp->secgmac_txdescArray[secgmac_entry].bar2_addr - tp->secgmac_txdescArray[0].bar2_addr;
 
 	if (printk_ratelimit()) {
@@ -7332,11 +7333,13 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	skb_tx_timestamp(skb);
 	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+
 	/* tdesc0.31 is 0, the skb on this desc is sent. */
-	if (likely((readl(BAR1_VIRTUAL_BASE + 0x4 * secgmac_entry * 4) & (0x1 << 31)) == 0)) {
-		memcpy_toio(BAR2_VIRTUAL_BASE + 0x5F2 * i, skb->data, skb->len);
+	if (likely((readl(TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4) & (0x1 << 31)) == 0)) {
+		SECGMAC_DEBUG(" ");
+		memcpy_toio(TX_SKB_VIRTUAL_BASE + 0x5F2 * secgmac_entry, skb->data, skb->len);
 		smp_wmb();
-		writel(0x1 << 31, BAR1_VIRTUAL_BASE + 0x4 * (i * 4));
+		writel(0x1 << 31, TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4);
 		tp->secgmac_curtx++;
 	} else {
 		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
@@ -7344,7 +7347,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		netif_stop_queue(dev);
 		return NETDEV_TX_BUSY;
 	}
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+
+	SECGMAC_DEBUG(" ");
 	spin_lock(&tp->lock);
 	/* start transmitting */
 	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
@@ -8029,7 +8033,7 @@ static int secgmac_open(struct net_device *dev)
 		 * current frame transmission or when the data buffers
 		 * associated with a given descriptor are empty.
 		 */
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+		//printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		tp->secgmac_txdescArray[i].tdesc0 = 0x0; //0x1 << 31;
 		writel(tp->secgmac_txdescArray[i].tdesc0,
 			TX_DESC_VIRTUAL_BASE + 0x4 * (i * 4));
@@ -8048,7 +8052,7 @@ static int secgmac_open(struct net_device *dev)
 			TX_DESC_VIRTUAL_BASE + 0x4 * (i * 4 + 3));
 	}
 
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	SECGMAC_DEBUG(" ");
 	/* the last next desc is the first desc */
 	tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc = TX_DESC_PHYSICAL_BASE;
 	writel(tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc,
@@ -8064,11 +8068,12 @@ static int secgmac_open(struct net_device *dev)
 		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
                 goto err_release_fw_1;
 	}
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	SECGMAC_DEBUG(" ");
 	retval = rtl8169_init_ring(dev);
 	if (retval < 0)
 		goto err_release_fw_2;
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+
+	SECGMAC_DEBUG(" ");
 	/* rx description */
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
 		tp->secgmac_rxdescArray[i].rdesc0 = 0x1 << 31;
@@ -8089,16 +8094,18 @@ static int secgmac_open(struct net_device *dev)
 			RX_DESC_VIRTUAL_BASE + 0x4 * (i * 4 + 3));
 	}
 
+	SECGMAC_DEBUG(" ");
 	/* the last next_desc is the first desc */
 	tp->secgmac_rxdescArray[NUM_SECGMAC_RXDESC-1].next_desc = RX_DESC_PHYSICAL_BASE;
 	writel(tp->secgmac_rxdescArray[NUM_SECGMAC_RXDESC-1].next_desc,
 		RX_DESC_VIRTUAL_BASE + 0x4 * ((NUM_SECGMAC_RXDESC-1) * 4 + 3));
 
+	SECGMAC_DEBUG(" ");
 	/* receive addr bar3 */
-	RTL_W32(csr3, 0x00070000);
+	RTL_W32(csr3, RX_SKB_PHYSICAL_BASE);
 
-	/* Start of the transmit list address bar1 */
-	RTL_W32(csr4, 0x00010000);
+	/* Start of the transmit list address bar2 */
+	RTL_W32(csr4, TX_SKB_PHYSICAL_BASE);
 
 	/* timer, tx interrupt(1 frame trigger irq), rx interrupt(1 frame trigger irq) */
 	RTL_W32(csr11, 0x0 | 0x1 << 17 | 0x1 << 24);
@@ -8125,7 +8132,7 @@ static int secgmac_open(struct net_device *dev)
 
 	smp_mb();
 
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	//printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 //	rtl_request_firmware(tp);
 
 	retval = request_irq(pdev->irq, secgmac_interrupt,
@@ -8140,7 +8147,7 @@ static int secgmac_open(struct net_device *dev)
 	set_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
 
 	napi_enable(&tp->napi);
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+//	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 //	rtl8169_init_phy(dev, tp);
 
 	__rtl8169_set_features(dev, dev->features);
@@ -8148,7 +8155,7 @@ static int secgmac_open(struct net_device *dev)
 //	rtl_pll_power_up(tp);
 
 //	rtl_hw_start(dev);
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	//printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 //	if (!rtl8169_init_counter_offsets(dev))
 //		netif_warn(tp, hw, dev, "counter reset/update failed\n");
 
@@ -8159,9 +8166,9 @@ static int secgmac_open(struct net_device *dev)
 //	tp->saved_wolopts = 0;
 //	pm_runtime_put_noidle(&pdev->dev);
 
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+//	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	secgmac_check_link_status(dev, tp, ioaddr);
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+//	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 out:
 	return retval;
 
@@ -8639,24 +8646,28 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 //	int chipset, i;
 	int rc, i;
 
+	SECGMAC_DEBUG(" ");
 	if (netif_msg_drv(&debug)) {
 		printk(KERN_INFO "%s Gigabit Ethernet driver %s loaded\n",
 		       MODULENAME, TXVH_VERSION);
 	}
 
+	SECGMAC_DEBUG(" ");
 	dev = alloc_etherdev(sizeof (*tp));
 	if (!dev) {
 		rc = -ENOMEM;
 		goto out;
 	}
 
+	SECGMAC_DEBUG(" ");
 	SET_NETDEV_DEV(dev, &pdev->dev);
 	dev->netdev_ops = &secgmac_netdev_ops;
 	tp = netdev_priv(dev);
 	tp->dev = dev;
 	tp->pci_dev = pdev;
 	tp->msg_enable = netif_msg_init(debug.msg_enable, R8169_MSG_DEFAULT);
-
+	
+	SECGMAC_DEBUG(" ");
 	mii = &tp->mii;
 	mii->dev = dev;
 	mii->mdio_read = rtl_mdio_read;
