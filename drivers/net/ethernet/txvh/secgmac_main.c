@@ -7325,24 +7325,19 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	u32 status, len;
 	u32 opts[2];
 	int frags;
-//	unsigned int addr_offset = tp->secgmac_txdescArray[secgmac_entry].bar2_addr - tp->secgmac_txdescArray[0].bar2_addr;
 
-	if (printk_ratelimit()) {
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
-	}
-
+	SECGMAC_DEBUG(" ");
 	skb_tx_timestamp(skb);
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 
 	/* tdesc0.31 is 0, the skb on this desc is sent. */
-	if (likely((readl(TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4) & (0x1 << 31)) == 0)) {
+	if (likely((RTL_R32(TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4) & (0x1 << 31)) == 0)) {
 		SECGMAC_DEBUG(" ");
 		memcpy_toio(TX_SKB_VIRTUAL_BASE + 0x5F2 * secgmac_entry, skb->data, skb->len);
 		smp_wmb();
 		writel(0x1 << 31, TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4);
 		tp->secgmac_curtx++;
 	} else {
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+		printk("secgmac func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		dev_kfree_skb_any(skb);
 		netif_stop_queue(dev);
 		return NETDEV_TX_BUSY;
@@ -7353,6 +7348,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	/* start transmitting */
 	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
+	RTL_W32(csr1, 0x1);
 #if 0
 	/* check start status */
 	while (1) {
@@ -7711,10 +7707,7 @@ static irqreturn_t secgmac_interrupt(int irq, void *dev_instance)
 	int handled = 0;
 	u16 status;
 
-	if (printk_ratelimit()) {
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
-	}
-
+	SECGMAC_DEBUG(" ");
 	status = rtl_get_events(tp);
 	if (status && status != 0xffff) {
 		status &= RTL_EVENT_NAPI | tp->event_slow;
@@ -7993,9 +7986,6 @@ static int secgmac_open(struct net_device *dev)
 	/* soft reset */
 	RTL_W8(csr0, 0x1);
 
-	if (printk_ratelimit()) {
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
-	}
 //	pm_runtime_get_sync(&pdev->dev);
 
 	/*
@@ -8016,7 +8006,7 @@ static int secgmac_open(struct net_device *dev)
 	tp->secgmac_txdescArray = (struct secgmac_txdesc *)kzalloc(
 		NUM_SECGMAC_TXDESC * sizeof(struct secgmac_txdesc), GFP_KERNEL);
 	if (!tp->secgmac_txdescArray) {
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+		SECGMAC_DEBUG(" ");
 		goto err_free_rx_1;
 	}
 
@@ -8033,7 +8023,6 @@ static int secgmac_open(struct net_device *dev)
 		 * current frame transmission or when the data buffers
 		 * associated with a given descriptor are empty.
 		 */
-		//printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 		tp->secgmac_txdescArray[i].tdesc0 = 0x0; //0x1 << 31;
 		writel(tp->secgmac_txdescArray[i].tdesc0,
 			TX_DESC_VIRTUAL_BASE + 0x4 * (i * 4));
@@ -8065,7 +8054,7 @@ static int secgmac_open(struct net_device *dev)
         tp->secgmac_rxdescArray = (struct secgmac_rxdesc *)kzalloc(
 		NUM_SECGMAC_RXDESC * sizeof(struct secgmac_rxdesc), GFP_KERNEL);
         if (!tp->secgmac_rxdescArray) {
-		printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+		SECGMAC_DEBUG(" ");
                 goto err_release_fw_1;
 	}
 	SECGMAC_DEBUG(" ");
@@ -8122,7 +8111,7 @@ static int secgmac_open(struct net_device *dev)
 	/* start polling, check frames to be received */
 	RTL_W32(csr2, 0x1);
 
-	/* make sure csr6.16 csr6.17 as 0*/
+	/* make sure csr6.16 csr6.17 as 0, the speed is 100M */
 	RTL_W32(csr6, 0x0);
 
 	/* start receiving and sending */
@@ -8140,7 +8129,7 @@ static int secgmac_open(struct net_device *dev)
 			     dev->name, dev);
 	if (retval < 0)
 		goto err_release_fw_2;
-	SECGMAC_DEBUG("retval:0x%x", retval);
+	SECGMAC_DEBUG("request_irq retval:0x%x", retval);
 
 	rtl_lock_work(tp);
 
