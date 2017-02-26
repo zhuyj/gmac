@@ -7797,9 +7797,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	unsigned long status_csr5;
 	void __iomem *ioaddr = tp->mmio_addr;
 
-	if (printk_ratelimit()) {
-		printk("txvh function:%s, line:%d\n", __FUNCTION__, __LINE__);
-	}
+	SECGMAC_DEBUG("netpoll begin!");
 #if 0
 	/* rx description */
 	rdesc.rdesc0 = 0x1 << 31;
@@ -8136,7 +8134,7 @@ static int secgmac_open(struct net_device *dev)
 	set_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
 
 	napi_enable(&tp->napi);
-//	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+	SECGMAC_DEBUG("napi enable!");
 //	rtl8169_init_phy(dev, tp);
 
 	__rtl8169_set_features(dev, dev->features);
