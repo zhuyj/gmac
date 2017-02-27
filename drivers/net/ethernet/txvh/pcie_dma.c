@@ -103,7 +103,7 @@ static void dma_com(struct pci_dev *pdev,
 
 int pcie_dma_rw(struct pci_dev *pdev)
 {
-	unsigned int i = 0;
+	//unsigned int i = 0;
 
 	pci_write_config_dword(pdev, GEN2_CTRL_OFF, 0x00100000); //Select de-emphasis level -3.5db
 	pci_write_config_dword(pdev, PORT_LINK_CTRL_OFF, 0x80);  //enable fast link mode
