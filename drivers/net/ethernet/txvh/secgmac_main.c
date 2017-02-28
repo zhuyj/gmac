@@ -8114,6 +8114,8 @@ static int secgmac_open(struct net_device *dev)
 
 //	INIT_WORK(&tp->wk.work, rtl_task);
 
+	/* check the csr9, csr10 value to prepare mdio */
+	secgmac_debug("csr9: 0x%x, csr10: 0x%x", RTL_R32(csr9), RTL_R32(csr10));
 	smp_mb();
 
 	//printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
@@ -8508,9 +8510,7 @@ static const struct rtl_cfg_info {
 		.default_ver	= RTL_GIGA_MAC_VER_13,
 	}
 };
-#endif
 
-#if 0
 /* Cfg9346_Unlock assumed. */
 static unsigned rtl_try_msi(struct secgmac_private *tp,
 			    const struct rtl_cfg_info *cfg)
@@ -8583,17 +8583,13 @@ static void rtl_hw_init_8168g(struct secgmac_private *tp)
 	if (!rtl_udelay_loop_wait_high(tp, &rtl_link_list_ready_cond, 100, 42))
 		return;
 }
-#endif
 
-#if 0
 static void rtl_hw_init_8168ep(struct secgmac_private *tp)
 {
 	rtl8168ep_stop_cmac(tp);
 	rtl_hw_init_8168g(tp);
 }
-#endif
 
-#if 0
 static void rtl_hw_initialize(struct secgmac_private *tp)
 {
 	switch (tp->mac_version) {
