@@ -7326,13 +7326,20 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	u32 opts[2];
 	int frags;
 
-	secgmac_debug(" ");
+	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
 	skb_tx_timestamp(skb);
 
 	/* tdesc0.31 is 0, the skb on this desc is sent. */
 	if (likely((readl(TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4) & (0x1 << 31)) == 0)) {
 		secgmac_debug(" ");
-		memcpy_toio(TX_SKB_VIRTUAL_BASE + 0x5F2 * secgmac_entry, skb->data, skb->len);
+		/* Clear csr6.13, this will stop xmit */
+		RTL_W32(csr6, RTL_R32(csr6) & ~(0x1 << 13));
+		/* test xmit is stopped */
+		if ((RTL_R32(csr5) & 0x2) == 0) {
+			memcpy_toio(TX_SKB_VIRTUAL_BASE + 0x5F2 * secgmac_entry, skb->data, skb->len);
+		} else {
+			secgmac_debug("xmit is not stopped!");
+		}
 		smp_wmb();
 		writel(0x1 << 31, TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4);
 		tp->secgmac_curtx++;
