@@ -94,7 +94,7 @@ static const int multicast_filter_limit = 32;
 #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
 
 #define SECGMAC_REGS_SIZE		256
-#define R8169_NAPI_WEIGHT	64
+#define SECGMAC_NAPI_WEIGHT	64
 #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
 #define NUM_RX_DESC	256U	/* Number of Rx descriptor registers */
 #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
@@ -2227,13 +2227,12 @@ static int rtl8169_set_features(struct net_device *dev,
 	return 0;
 }
 
-
 static inline u32 rtl8169_tx_vlan_tag(struct sk_buff *skb)
 {
 	return (skb_vlan_tag_present(skb)) ?
 		TxVlanTag | swab16(skb_vlan_tag_get(skb)) : 0x00;
 }
-
+#if 0
 static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 {
 	u32 opts2 = le32_to_cpu(desc->opts2);
@@ -2241,7 +2240,7 @@ static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 	if (opts2 & RxVlanTag)
 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), swab16(opts2 & 0xffff));
 }
-
+#endif
 static int secgmac_gset_gmii(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 //	struct secgmac_private *tp = netdev_priv(dev);
@@ -7508,7 +7507,6 @@ static void rtl8169_pcierr_interrupt(struct net_device *dev)
 
 	rtl_schedule_task(tp, RTL_FLAG_TASK_RESET_PENDING);
 }
-#endif
 
 static void rtl_tx(struct net_device *dev, struct secgmac_private *tp)
 {
@@ -7574,6 +7572,7 @@ static void rtl_tx(struct net_device *dev, struct secgmac_private *tp)
 		}
 	}
 }
+#endif
 
 static inline int rtl8169_fragmented_frame(u32 status)
 {
@@ -7591,6 +7590,7 @@ static inline void rtl8169_rx_csum(struct sk_buff *skb, u32 opts1)
 		skb_checksum_none_assert(skb);
 }
 
+#if 0
 static struct sk_buff *rtl8169_try_rx_copy(void *data,
 					   struct secgmac_private *tp,
 					   int pkt_size,
@@ -7704,6 +7704,7 @@ release_descriptor:
 
 	return count;
 }
+#endif
 
 static irqreturn_t secgmac_interrupt(int irq, void *dev_instance)
 {
@@ -7795,10 +7796,10 @@ out_unlock:
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
-	struct net_device *dev = tp->dev;
-	u16 enable_mask = RTL_EVENT_NAPI | tp->event_slow;
-	int work_done= 0, i;
-	u16 status;
+	//struct net_device *dev = tp->dev;
+	//u16 enable_mask = RTL_EVENT_NAPI | tp->event_slow;
+	int work_done= 1, i;
+	//u16 status;
 	unsigned long status_csr5;
 	void __iomem *ioaddr = tp->mmio_addr;
 
@@ -7863,8 +7864,14 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 //                netif_rx(skb);
   //    	  }
 	}
-//	msleep(5000);
-
+	/* To inform the rx is complete */
+	napi_complete(napi);
+	/* sleep 500ms */
+	msleep(500);
+	/* Trigger the rx again */
+	napi_schedule(napi);
+	mmiowb();
+#if 0
 	status = rtl_get_events(tp);
 	rtl_ack_events(tp, status & ~tp->event_slow);
 
@@ -7886,7 +7893,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		//rtl_irq_enable(tp, enable_mask);
 		mmiowb();
 	}
-
+#endif
 	return work_done;
 }
 
@@ -7901,7 +7908,7 @@ static void rtl8169_rx_missed(struct net_device *dev, void __iomem *ioaddr)
 //	RTL_W32(RxMissed, 0);
 }
 
-static void rtl8169_down(struct net_device *dev)
+static void secgmac_down(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -7943,7 +7950,7 @@ static int secgmac_close(struct net_device *dev)
 	rtl_lock_work(tp);
 	clear_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
 
-	rtl8169_down(dev);
+	secgmac_down(dev);
 	rtl_unlock_work(tp);
 
 	cancel_work_sync(&tp->wk.work);
@@ -8140,6 +8147,8 @@ static int secgmac_open(struct net_device *dev)
 	set_bit(RTL_FLAG_TASK_ENABLED, tp->wk.flags);
 
 	napi_enable(&tp->napi);
+	/* Begin to run poll */
+	napi_schedule(&tp->napi);
 	secgmac_debug("napi enable!");
 //	rtl8169_init_phy(dev, tp);
 
@@ -8910,7 +8919,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	dev->ethtool_ops = &secgmac_ethtool_ops;
 	dev->watchdog_timeo = SECGMAC_TX_TIMEOUT;
-	netif_napi_add(dev, &tp->napi, secgmac_poll, R8169_NAPI_WEIGHT);
+	netif_napi_add(dev, &tp->napi, secgmac_poll, SECGMAC_NAPI_WEIGHT);
 	/* don't enable SG, IP_CSUM and TSO by default - it might not work
 	 * properly for all devices */
 	dev->features |= NETIF_F_RXCSUM |
