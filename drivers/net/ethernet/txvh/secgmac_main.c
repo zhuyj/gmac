@@ -7778,6 +7778,8 @@ out_unlock:
 }
 #endif
 
+extern int pcie_dma_rw(struct pci_dev *pdev);
+
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
@@ -7848,11 +7850,12 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 //                netif_rx(skb);
   //    	  }
+		pcie_dma_rw(tp->pci_dev);
 	}
 	/* To inform the rx is complete */
 	napi_complete(napi);
 	/* sleep 500ms */
-	msleep(500);
+	//msleep(500);
 	/* Trigger the rx again */
 	napi_schedule(napi);
 	mmiowb();
