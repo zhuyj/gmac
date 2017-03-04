@@ -7,15 +7,15 @@ if [ -f config-txvh ]; then
 fi
 
 if [ -f drivers/net/ethernet/txvh/secgmac.ko ]; then
-	mv drivers/net/ethernet/txvh/secgmac.ko drivers/net/ethernet/txvh/secgmac.ko-bak
+	rm -f drivers/net/ethernet/txvh/secgmac.ko
 fi
 make drivers/net/ethernet/txvh/secgmac.ko
 if [ -f drivers/net/ethernet/txvh/secgmac.ko ]; then
-	if [ -f /lib/modules/4.8.4/kernel/drivers/net/ethernet/txvh/secgmac.ko ]; then
+	if [ -f /lib/modules/$(uname -r)/kernel/drivers/net/ethernet/txvh/secgmac.ko ]; then
 		rmmod secgmac
-		cp -f drivers/net/ethernet/txvh/secgmac.ko /lib/modules/4.8.4/kernel/drivers/net/ethernet/txvh/secgmac.ko
+		cp -f drivers/net/ethernet/txvh/secgmac.ko /lib/modules/$(uname -r)/kernel/drivers/net/ethernet/txvh/secgmac.ko
 		md5sum drivers/net/ethernet/txvh/secgmac.ko
-		md5sum /lib/modules/4.8.4/kernel/drivers/net/ethernet/txvh/secgmac.ko
+		md5sum /lib/modules/$(uname -r)/kernel/drivers/net/ethernet/txvh/secgmac.ko
 		modprobe secgmac
 		update-initramfs -u -k $(uname -r)
 	fi
