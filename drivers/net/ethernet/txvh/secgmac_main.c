@@ -8713,7 +8713,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	bar1_addr = ioremap(pci_resource_start(pdev, 1), SECGMAC_REGS_SIZE * 4);
 	if (bar1_addr == NULL) {
 		rc = -EIO;
-		printk("secgmac func:%s, line:%d\n", __FUNCTION__, __LINE__);
+		secgmac_debug("bar1_addr error!");
 		goto err_out_free_res_3;
 	}
 	tp->bar1_addr = bar1_addr;
@@ -8722,7 +8722,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	bar2_addr = ioremap(pci_resource_start(pdev, 2), SECGMAC_REGS_SIZE * 4);
 	if (bar2_addr == NULL) {
 		rc = -EIO;
-		printk("txwh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+		secgmac_debug("bar2_addr error!");
 		goto err_out_free_res_3;
 	}
 	tp->bar2_addr = bar2_addr;
@@ -8731,7 +8731,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	bar3_addr = ioremap(pci_resource_start(pdev, 3), SECGMAC_REGS_SIZE * 4);
 	if (bar3_addr == NULL) {
 		rc = -EIO;
-		printk("txwh func:%s, line:%d\n", __FUNCTION__, __LINE__);
+		secgmac_debug("bar3_addr error!");
 		goto err_out_free_res_3;
 	}
 	tp->bar3_addr = bar3_addr;
@@ -8879,22 +8879,22 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 #endif
 	/* set gmac mac address in csr16 and csr17 */
-	printk("secgmac func:%s, line:%d, ioaddr:0x%p\n", __FUNCTION__, __LINE__, ioaddr);
+	secgmac_debug("ioaddr:0x%p", ioaddr);
 	RTL_W32(csr16, 0x55443322);
 	RTL_W32(csr17, 0x00007766);
 	mmiowb();
 	smp_wmb();
-	printk("secgmac func:%s, line:%d, csr16:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr16));
-	printk("secgmac func:%s, line:%d, csr17:0x%x\n", __FUNCTION__, __LINE__, RTL_R32(csr17));
+	secgmac_debug("csr16:0x%x", RTL_R32(csr16));
+	secgmac_debug("csr17:0x%x", RTL_R32(csr17));
 	for (i = 0; i < ETH_ALEN-2; i++) {
 		dev->dev_addr[i] = RTL_R8(csr16 + i);
-		printk("txvh func:%s, line:%d, addr:0x%x\n", __FUNCTION__, __LINE__, dev->dev_addr[i]);
+		secgmac_debug("addr:0x%x", dev->dev_addr[i]);
 	}
 
 	dev->dev_addr[4] = RTL_R8(csr17);
-	printk("txvh func:%s, line:%d, addr:0x%x\n", __FUNCTION__, __LINE__, dev->dev_addr[4]);
+	secgmac_debug("addr:0x%x", dev->dev_addr[4]);
 	dev->dev_addr[5] = RTL_R8(csr17 + 1);
-	printk("txvh func:%s, line:%d, addr:0x%x\n", __FUNCTION__, __LINE__, dev->dev_addr[5]);
+	secgmac_debug("addr:0x%x", dev->dev_addr[5]);
 
 	if ((dev->dev_addr[0] == 0x0) &&
 		(dev->dev_addr[1] == 0x0) &&
@@ -8963,7 +8963,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		goto err_out_cnt_6;
 
 	pci_set_drvdata(pdev, dev);
-	printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 	netif_info(tp, probe, dev, "%s at 0x%p, %pM, XID %08x IRQ %d\n",
 		   /*rtl_chip_infos[chipset].name*/"secgmac", ioaddr, dev->dev_addr,
 		   (u32)(RTL_R32(TxConfig) & 0x9cf0f8ff), pdev->irq);
