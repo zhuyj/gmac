@@ -7334,11 +7334,11 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	writel(0x1 << 31, TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4);
 	tp->secgmac_curtx++;
 
-	secgmac_debug(" ");
-	spin_lock(&tp->lock);
+	secgmac_debug("csr6:0x%x ", RTL_R32(csr6));
+//	spin_lock(&tp->lock);
 	/* start transmitting */
-	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
-	spin_unlock(&tp->lock);
+//	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
+//	spin_unlock(&tp->lock);
 	RTL_W32(csr1, 0x1);
 #if 0
 	/* check start status */
