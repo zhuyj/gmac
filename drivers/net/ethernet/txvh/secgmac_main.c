@@ -8754,11 +8754,13 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 			tp->cp_cmd |= PCIDAC;
 		dev->features |= NETIF_F_HIGHDMA;
 	} else {
+		secgmac_debug("set 32 bit DMA mask");
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc < 0) {
 			netif_err(tp, probe, dev, "DMA configuration failed\n");
 			goto err_out_unmap_4;
 		}
+		secgmac_debug("set 32 bit DMA mask successfully!");
 	}
 
 	//rtl_init_rxcfg(tp);
