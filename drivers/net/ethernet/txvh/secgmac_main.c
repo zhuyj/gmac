@@ -7339,7 +7339,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	/* start transmitting */
 //	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
 //	spin_unlock(&tp->lock);
-	RTL_W32(csr1, 0x1);
+//	RTL_W32(csr1, 0x1);
 #if 0
 	/* check start status */
 	while (1) {
