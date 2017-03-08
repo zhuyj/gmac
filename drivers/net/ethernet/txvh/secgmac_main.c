@@ -7326,14 +7326,28 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	int frags;
 
 	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
+
+	tp->secgmac_txdescArray[0].tdesc0 = 0x1 << 31;
+	writel(tp->secgmac_txdescArray[0].tdesc0,
+		TX_DESC_VIRTUAL_BASE);
+	tp->secgmac_txdescArray[0].data_len =
+		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+	writel(tp->secgmac_txdescArray[0].data_len,
+		TX_DESC_VIRTUAL_BASE + 0x4);
+	/* skb data in bar2 address */
+	tp->secgmac_txdescArray[0].bar2_addr = TX_SKB_PHYSICAL_BASE;
+	writel(tp->secgmac_txdescArray[0].bar2_addr,
+		TX_DESC_VIRTUAL_BASE + 0x4 * 2);
+	/* next desc addr in bar2 address */
+	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE;
+	writel(tp->secgmac_txdescArray[0].next_desc,
+		TX_DESC_VIRTUAL_BASE + 0x4 * 3);
+
 	skb_tx_timestamp(skb);
-
-	secgmac_debug(" ");
-	memcpy_toio(TX_SKB_VIRTUAL_BASE + 0x5F2 * secgmac_entry, skb->data, skb->len);
+	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
 	smp_wmb();
-	writel(0x1 << 31, TX_DESC_VIRTUAL_BASE + 0x4 * secgmac_entry * 4);
-	tp->secgmac_curtx++;
 
+	RTL_W32(csr4,TX_DESC_PHYSICAL_BASE);
 	secgmac_debug("csr6:0x%x ", RTL_R32(csr6));
 //	spin_lock(&tp->lock);
 	/* start transmitting */
@@ -8003,7 +8017,7 @@ static int secgmac_open(struct net_device *dev)
 	tp->secgmac_txdescArray = (struct secgmac_txdesc *)kzalloc(
 		NUM_SECGMAC_TXDESC * sizeof(struct secgmac_txdesc), GFP_KERNEL);
 	if (!tp->secgmac_txdescArray) {
-		secgmac_debug(" ");
+		secgmac_debug("secgmac_txdescArray allocated fail!");
 		goto err_free_rx_1;
 	}
 
@@ -8013,7 +8027,7 @@ static int secgmac_open(struct net_device *dev)
 	 * bar2: (top 512 bytes for tx desc) xmit buffers
 	 * bar3: (top 512 bytes for rx desc) rx buffers
 	 */
-
+#if 0
 	/* Initialize tx description */
 	for (i=0; i<NUM_SECGMAC_TXDESC; i++) {
 		/* The MAC-1G will clear this bit when it completes a
@@ -8043,7 +8057,7 @@ static int secgmac_open(struct net_device *dev)
 	tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc = TX_DESC_PHYSICAL_BASE;
 	writel(tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc,
 		TX_DESC_VIRTUAL_BASE + 0x4 * ((NUM_SECGMAC_TXDESC - 1) * 4 + 3));
-
+#endif
 	/* secgmac_curtx */
 	tp->secgmac_curtx = 0;
 
@@ -8088,10 +8102,10 @@ static int secgmac_open(struct net_device *dev)
 
 	secgmac_debug(" ");
 	/* receive addr bar3 */
-	RTL_W32(csr3, RX_SKB_PHYSICAL_BASE);
+	RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
 
 	/* Start of the transmit list address bar2 */
-	RTL_W32(csr4, TX_SKB_PHYSICAL_BASE);
+//	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
 
 	/* timer, tx interrupt(1 frame trigger irq), rx interrupt(1 frame trigger irq) */
 	RTL_W32(csr11, 0x0 | 0x1 << 17 | 0x1 << 24);
