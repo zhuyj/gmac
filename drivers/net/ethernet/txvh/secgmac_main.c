@@ -873,7 +873,7 @@ struct secgmac_private {
 	dma_addr_t RxPhyAddr;
 	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
 	struct ring_info tx_skb[NUM_TX_DESC];	/* Tx data buffers */
-	struct timer_list timer;
+	struct timer_list rx_timer;
 	u16 cp_cmd;
 
 	u16 event_slow;
@@ -4512,20 +4512,20 @@ static void rtl_phy_work(struct secgmac_private *tp)
 out_mod_timer:
 	mod_timer(timer, jiffies + timeout);
 }
-#endif
 
 static void rtl_schedule_task(struct secgmac_private *tp, enum rtl_flag flag)
 {
 	if (!test_and_set_bit(flag, tp->wk.flags))
 		schedule_work(&tp->wk.work);
 }
-
-static void rtl8169_phy_timer(unsigned long __opaque)
+#endif
+static void secgmac_rx_poll_timer(unsigned long __opaque)
 {
 	struct net_device *dev = (struct net_device *)__opaque;
 	struct secgmac_private *tp = netdev_priv(dev);
 
-	rtl_schedule_task(tp, RTL_FLAG_TASK_PHY_PENDING);
+//	rtl_schedule_task(tp, RTL_FLAG_TASK_PHY_PENDING);
+	napi_schedule(&tp->napi);
 }
 
 static void rtl8169_release_board(struct pci_dev *pdev, struct net_device *dev,
@@ -7871,8 +7871,9 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	/* sleep 500ms */
 	//msleep(500);
 	/* Trigger the rx again */
-	napi_schedule(napi);
+//	napi_schedule(napi);
 	mmiowb();
+	mod_timer(&tp->rx_timer, jiffies + (1+HZ/20));
 #if 0
 	status = rtl_get_events(tp);
 	rtl_ack_events(tp, status & ~tp->event_slow);
@@ -7915,7 +7916,7 @@ static void secgmac_down(struct net_device *dev)
 	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 
-	del_timer_sync(&tp->timer);
+	del_timer_sync(&tp->rx_timer);
 
 	napi_disable(&tp->napi);
 	netif_stop_queue(dev);
@@ -8963,9 +8964,10 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->opts1_mask = (tp->mac_version != RTL_GIGA_MAC_VER_01) ?
 		~(RxBOVF | RxFOVF) : ~0;
 #endif
-	init_timer(&tp->timer);
-	tp->timer.data = (unsigned long) dev;
-	tp->timer.function = rtl8169_phy_timer;
+//	init_timer(&tp->rx_timer);
+//	tp->timer.data = (unsigned long) dev;
+//	tp->timer.function = secgmac_rx_poll_timer;
+	setup_timer(&tp->rx_timer, secgmac_rx_poll_timer, (unsigned long) dev);
 	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
 
 	tp->counters = dma_alloc_coherent (&pdev->dev, sizeof(*tp->counters),
