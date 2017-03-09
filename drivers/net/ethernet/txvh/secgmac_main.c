@@ -8150,7 +8150,7 @@ static int secgmac_open(struct net_device *dev)
 
 	napi_enable(&tp->napi);
 	/* Begin to run poll */
-	napi_schedule(&tp->napi);
+//	napi_schedule(&tp->napi);
 	secgmac_debug("napi enable!");
 //	rtl8169_init_phy(dev, tp);
 
