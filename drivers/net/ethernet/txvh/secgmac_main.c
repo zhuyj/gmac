@@ -4525,6 +4525,8 @@ static void secgmac_rx_poll_timer(unsigned long __opaque)
 	struct secgmac_private *tp = netdev_priv(dev);
 
 //	rtl_schedule_task(tp, RTL_FLAG_TASK_PHY_PENDING);
+	secgmac_debug("timer begin!");
+
 	napi_schedule(&tp->napi);
 }
 
@@ -7348,6 +7350,9 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	smp_wmb();
 
 	RTL_W32(csr4,TX_DESC_PHYSICAL_BASE);
+
+	/* begin to transmit poll demand */
+	RTL_W32(csr1, 0x1);
 	secgmac_debug("csr6:0x%x ", RTL_R32(csr6));
 //	spin_lock(&tp->lock);
 	/* start transmitting */
@@ -8152,6 +8157,7 @@ static int secgmac_open(struct net_device *dev)
 	napi_enable(&tp->napi);
 	/* Begin to run poll */
 //	napi_schedule(&tp->napi);
+	mod_timer(&tp->rx_timer, jiffies + (1+HZ/20));
 	secgmac_debug("napi enable!");
 //	rtl8169_init_phy(dev, tp);
 
