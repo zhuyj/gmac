@@ -102,7 +102,7 @@ static void dma_com(struct pci_dev *pdev,
 #define DRAM2_BASE	0x00040000
 #define DRAM3_BASE	0x00070000
 
-int pcie_dma_rw(struct pci_dev *pdev)
+void pcie_dma_rw(struct pci_dev *pdev)
 {
 	//unsigned int i = 0;
 
