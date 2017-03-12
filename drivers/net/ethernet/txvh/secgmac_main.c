@@ -774,6 +774,7 @@ struct secgmac_rxdesc {
 
 /* bar3 bottom for rx skb */
 #define RX_SKB_PHYSICAL_BASE		(BAR3_PHYSICAL_BASE + 512)
+#define RX_SKB_VIRTUAL_BASE		(BAR3_VIRTUAL_BASE + 512)
 
 struct RxDesc {
 	__le32 opts1;
@@ -7802,9 +7803,9 @@ extern int pcie_dma_rw(struct pci_dev *pdev);
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
-	//struct net_device *dev = tp->dev;
+	struct net_device *dev = tp->dev;
 	//u16 enable_mask = RTL_EVENT_NAPI | tp->event_slow;
-	int work_done= 1, i;
+	int work_done= 1;
 	//u16 status;
 	unsigned long status_csr5;
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -7841,6 +7842,32 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 	wmb();
 #endif
+	memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
+
+	/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
+	tp->secgmac_rxdescArray[0].rdesc0 = 0x1 << 31 | 0x1 << 8;
+	writel(tp->secgmac_rxdescArray[0].rdesc0, RX_DESC_VIRTUAL_BASE);
+
+	/* allocated frame length: 1524 bytes, chain linked */
+	tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F4;
+	writel(tp->secgmac_rxdescArray[0].data_len, RX_DESC_VIRTUAL_BASE + 0x4);
+
+	/* received buffer in bar3 address */
+	tp->secgmac_rxdescArray[0].bar3_addr = RX_SKB_PHYSICAL_BASE;
+	writel(tp->secgmac_rxdescArray[0].bar3_addr, RX_DESC_VIRTUAL_BASE + 0x8);
+
+	/* the next desc in bar3 address */
+	tp->secgmac_rxdescArray[0].next_desc = RX_DESC_PHYSICAL_BASE;
+	writel(tp->secgmac_rxdescArray[0].next_desc, RX_DESC_VIRTUAL_BASE + 0xc);
+
+	/* receive addr bar3 */
+	RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
+
+	/*receive poll comand*/
+	RTL_W32(csr2, 0x1);
+
+	secgmac_debug("csr6:0x%x", RTL_R32(csr6));
+#if 0
 	spin_lock(&tp->lock);
 	/*start receiving*/
 	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
@@ -7855,28 +7882,30 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 			writel(0x1 << 31, tp->bar3_addr + 0x4 * 4 * i);	
 		}
 	}
-
+#endif
 	/*check csr5*/
 	status_csr5 = RTL_R32(csr5);
 	secgmac_debug("csr5 status:0x%lx", status_csr5);
 	if (RTL_R32(csr5) & 0x40) {
-//                struct sk_buff *skb;
-//                int pkt_size;
+		struct sk_buff *skb;
+		unsigned int pkt_size;
+		unsigned int skb_len_mask = 0x3FFF0000;
 		secgmac_debug("packet arrives!");
-//                skb = alloc_skb(1024, GFP_ATOMIC);
-//                skb_put(skb, pkt_size);
-//                skb->protocol = eth_type_trans(skb, dev);
-
-//                netif_rx(skb);
-  //    	  }
+		skb = alloc_skb(1024, GFP_ATOMIC);
+//		skb_put(skb, pkt_size);
+//		skb->protocol = eth_type_trans(skb, dev);
 		pcie_dma_rw(tp->pci_dev);
+		secgmac_debug("rdesc0:0x%x", readl(RX_DESC_VIRTUAL_BASE));
+		pkt_size = readl(RX_DESC_VIRTUAL_BASE) & skb_len_mask;
+		memcpy_fromio(skb->data, RX_SKB_VIRTUAL_BASE, pkt_size);
+		skb_put(skb, pkt_size);
+		skb->protocol = eth_type_trans(skb, dev);
+		kfree_skb(skb);
 	}
+
 	/* To inform the rx is complete */
 	napi_complete(napi);
-	/* sleep 500ms */
-	//msleep(500);
-	/* Trigger the rx again */
-//	napi_schedule(napi);
+
 	mmiowb();
 	mod_timer(&tp->rx_timer, jiffies + (1+HZ/20));
 #if 0
@@ -7997,7 +8026,7 @@ static int secgmac_open(struct net_device *dev)
 	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
-	int retval = -ENOMEM, i;
+	int retval = -ENOMEM;
 
 	secgmac_debug(" ");
 	/* soft reset */
@@ -8071,14 +8100,15 @@ static int secgmac_open(struct net_device *dev)
         tp->secgmac_rxdescArray = (struct secgmac_rxdesc *)kzalloc(
 		NUM_SECGMAC_RXDESC * sizeof(struct secgmac_rxdesc), GFP_KERNEL);
         if (!tp->secgmac_rxdescArray) {
-		secgmac_debug(" ");
+		secgmac_debug("rx array alloc fail!");
                 goto err_release_fw_1;
 	}
-	secgmac_debug(" ");
+
 	retval = rtl8169_init_ring(dev);
 	if (retval < 0)
 		goto err_release_fw_2;
 
+#if 0
 	secgmac_debug(" ");
 	/* rx description */
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
@@ -8111,8 +8141,8 @@ static int secgmac_open(struct net_device *dev)
 	RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
 
 	/* Start of the transmit list address bar2 */
-//	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
-
+	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
+#endif
 	/* timer, tx interrupt(1 frame trigger irq), rx interrupt(1 frame trigger irq) */
 	RTL_W32(csr11, 0x0 | 0x1 << 17 | 0x1 << 24);
 
@@ -8973,6 +9003,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 //	init_timer(&tp->rx_timer);
 //	tp->timer.data = (unsigned long) dev;
 //	tp->timer.function = secgmac_rx_poll_timer;
+
 	setup_timer(&tp->rx_timer, secgmac_rx_poll_timer, (unsigned long) dev);
 	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
 
@@ -8982,6 +9013,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		rc = -ENOMEM;
 		goto err_out_msi_5;
 	}
+
 	rc = register_netdev(dev);
 	if (rc < 0)
 		goto err_out_cnt_6;
