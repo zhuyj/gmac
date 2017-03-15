@@ -7329,36 +7329,48 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	int frags;
 
 	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
-	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
-	tp->secgmac_txdescArray[0].tdesc0 = 0x1 << 31;
-	writel(tp->secgmac_txdescArray[0].tdesc0,
-		TX_DESC_VIRTUAL_BASE);
-	tp->secgmac_txdescArray[0].data_len =
-		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-	writel(tp->secgmac_txdescArray[0].data_len,
-		TX_DESC_VIRTUAL_BASE + 0x4);
-	/* skb data in bar2 address */
-	tp->secgmac_txdescArray[0].bar2_addr = TX_SKB_PHYSICAL_BASE;
-	writel(tp->secgmac_txdescArray[0].bar2_addr,
-		TX_DESC_VIRTUAL_BASE + 0x4 * 2);
-	/* next desc addr in bar2 address */
-	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE;
-	writel(tp->secgmac_txdescArray[0].next_desc,
-		TX_DESC_VIRTUAL_BASE + 0x4 * 3);
 
 	skb_tx_timestamp(skb);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
 	smp_wmb();
 
-	RTL_W32(csr4,TX_DESC_PHYSICAL_BASE);
+	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
+
+	tp->secgmac_txdescArray[0].tdesc0 = 0x1 << 31;
+	writel(tp->secgmac_txdescArray[0].tdesc0,
+		TX_DESC_VIRTUAL_BASE);
+
+	tp->secgmac_txdescArray[0].data_len =
+		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+	writel(tp->secgmac_txdescArray[0].data_len,
+		TX_DESC_VIRTUAL_BASE + 0x4);
+
+	/* skb data in bar2 address */
+	tp->secgmac_txdescArray[0].bar2_addr = TX_SKB_PHYSICAL_BASE;
+	writel(tp->secgmac_txdescArray[0].bar2_addr,
+		TX_DESC_VIRTUAL_BASE + 0x4 * 2);
+
+	/* next desc addr in bar2 address */
+	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE;
+	writel(tp->secgmac_txdescArray[0].next_desc,
+		TX_DESC_VIRTUAL_BASE + 0x4 * 3);
+
+	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
+
+	RTL_W32(csr11, 0x0);
+	RTL_W32(csr7, 0xffffffff);
+	smp_wmb();
+	RTL_W32(csr0, (0x1 << 11) | (0x1 << 17));
 
 	/* begin to transmit poll demand */
 	RTL_W32(csr1, 0x1);
+
+	smp_wmb();
 	secgmac_debug("csr6:0x%x ", RTL_R32(csr6));
-//	spin_lock(&tp->lock);
+	spin_lock(&tp->lock);
 	/* start transmitting */
-//	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
-//	spin_unlock(&tp->lock);
+	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
+	spin_unlock(&tp->lock);
 //	RTL_W32(csr1, 0x1);
 #if 0
 	/* check start status */
@@ -7900,6 +7912,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		memcpy_fromio(skb->data, RX_SKB_VIRTUAL_BASE, pkt_size);
 		skb_put(skb, pkt_size);
 		skb->protocol = eth_type_trans(skb, dev);
+//		napi_gro_receive(&tp->napi, skb);
 		kfree_skb(skb);
 	}
 
@@ -9004,7 +9017,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 //	tp->timer.data = (unsigned long) dev;
 //	tp->timer.function = secgmac_rx_poll_timer;
 
-	setup_timer(&tp->rx_timer, secgmac_rx_poll_timer, (unsigned long) dev);
+	setup_timer(&tp->rx_timer, secgmac_rx_poll_timer, (unsigned long)dev);
 	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
 
 	tp->counters = dma_alloc_coherent (&pdev->dev, sizeof(*tp->counters),
