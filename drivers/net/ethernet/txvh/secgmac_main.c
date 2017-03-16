@@ -4526,7 +4526,7 @@ static void secgmac_rx_poll_timer(unsigned long __opaque)
 	struct secgmac_private *tp = netdev_priv(dev);
 
 //	rtl_schedule_task(tp, RTL_FLAG_TASK_PHY_PENDING);
-	secgmac_debug("timer begin!");
+//	secgmac_debug("timer begin!");
 
 	napi_schedule(&tp->napi);
 }
@@ -7327,6 +7327,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	u32 status, len;
 	u32 opts[2];
 	int frags;
+	int count = 0;
 
 	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
 
@@ -7351,9 +7352,30 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		TX_DESC_VIRTUAL_BASE + 0x4 * 2);
 
 	/* next desc addr in bar2 address */
-	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE;
+	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE + sizeof(struct secgmac_txdesc);
 	writel(tp->secgmac_txdescArray[0].next_desc,
 		TX_DESC_VIRTUAL_BASE + 0x4 * 3);
+
+	memset(&tp->secgmac_txdescArray[1], 0, sizeof(struct secgmac_txdesc));
+
+	tp->secgmac_txdescArray[1].tdesc0 = 0x1 << 31;
+	writel(tp->secgmac_txdescArray[1].tdesc0,
+		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc));
+
+	tp->secgmac_txdescArray[1].data_len =
+		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
+	writel(tp->secgmac_txdescArray[1].data_len,
+		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc) + 0x4);
+
+	/* skb data in bar2 address */
+	tp->secgmac_txdescArray[1].bar2_addr = TX_SKB_PHYSICAL_BASE + 0x5F2;
+	writel(tp->secgmac_txdescArray[1].bar2_addr,
+		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc) + 0x4 * 2);
+
+	/* next desc addr in bar2 address */
+	tp->secgmac_txdescArray[1].next_desc = TX_DESC_PHYSICAL_BASE;
+	writel(tp->secgmac_txdescArray[1].next_desc,
+		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc) + 0x4 * 3);
 
 	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
 
@@ -7372,17 +7394,19 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
 //	RTL_W32(csr1, 0x1);
-#if 0
 	/* check start status */
-	while (1) {
-		/* skb is sent */
+	count = 0;
+	while (count<6) {
+		secgmac_debug("csr5:0x%x", RTL_R32(csr5));
+		/* check whether skb is sent or not */
 		if ((RTL_R32(csr5) & 0x1) == 0x1) {
+			secgmac_debug("csr5:0x%x", RTL_R32(csr5));
 			RTL_W32(csr5, 0x1);
 			tp->secgmac_curtx = 0;
 			break;
 		}
+		count++;
 	}
-#endif
 	secgmac_debug("csr5:0x%x", RTL_R32(csr5));
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
