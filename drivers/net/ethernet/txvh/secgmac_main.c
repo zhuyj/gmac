@@ -7333,7 +7333,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	skb_tx_timestamp(skb);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
-	smp_wmb();
+	wmb();
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
@@ -7352,36 +7352,15 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		TX_DESC_VIRTUAL_BASE + 0x4 * 2);
 
 	/* next desc addr in bar2 address */
-	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE + sizeof(struct secgmac_txdesc);
+	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE;
 	writel(tp->secgmac_txdescArray[0].next_desc,
 		TX_DESC_VIRTUAL_BASE + 0x4 * 3);
-
-	memset(&tp->secgmac_txdescArray[1], 0, sizeof(struct secgmac_txdesc));
-
-	tp->secgmac_txdescArray[1].tdesc0 = 0x1 << 31;
-	writel(tp->secgmac_txdescArray[1].tdesc0,
-		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc));
-
-	tp->secgmac_txdescArray[1].data_len =
-		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-	writel(tp->secgmac_txdescArray[1].data_len,
-		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc) + 0x4);
-
-	/* skb data in bar2 address */
-	tp->secgmac_txdescArray[1].bar2_addr = TX_SKB_PHYSICAL_BASE + 0x5F2;
-	writel(tp->secgmac_txdescArray[1].bar2_addr,
-		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc) + 0x4 * 2);
-
-	/* next desc addr in bar2 address */
-	tp->secgmac_txdescArray[1].next_desc = TX_DESC_PHYSICAL_BASE;
-	writel(tp->secgmac_txdescArray[1].next_desc,
-		TX_DESC_VIRTUAL_BASE + sizeof(struct secgmac_txdesc) + 0x4 * 3);
 
 	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
 
 	RTL_W32(csr11, 0x0);
 	RTL_W32(csr7, 0xffffffff);
-	smp_wmb();
+	wmb();
 	RTL_W32(csr0, (0x1 << 11) | (0x1 << 17));
 
 	/* begin to transmit poll demand */
@@ -7393,6 +7372,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	/* start transmitting */
 	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
+	wmb();
+
 //	RTL_W32(csr1, 0x1);
 	/* check start status */
 	count = 0;
