@@ -730,18 +730,18 @@ struct TxDesc {
 
 #define NUM_SECGMAC_TXDESC	10
 struct secgmac_txdesc {
-	unsigned long tdesc0;
-	unsigned long data_len;  /* skb length 1522(0x5F2) bytes */
-	unsigned long bar2_addr; /* data sent addr */ 
-	unsigned long next_desc; /* next desc addr */
+	unsigned int status;
+	unsigned int data_len;  /* skb length 1522(0x5F2) bytes */
+	unsigned int bar2_addr; /* data sent addr */
+	unsigned int next_desc; /* next desc addr */
 };
 
 #define NUM_SECGMAC_RXDESC	10
 struct secgmac_rxdesc {
-        unsigned long rdesc0;
-        unsigned long data_len;    /* frame length 1524(0x5F4) bytes */
-        unsigned long bar3_addr;   /* data received addr  */
-        unsigned long next_desc;   /* next desc addr */
+        unsigned int status;
+        unsigned int data_len;    /* frame length 1524(0x5F4) bytes */
+        unsigned int bar3_addr;   /* data received addr  */
+        unsigned int next_desc;   /* next desc addr */
 };
 
 /* bar1 for pcie configuration */
@@ -7337,8 +7337,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
-	tp->secgmac_txdescArray[0].tdesc0 = 0x1 << 31;
-	writel(tp->secgmac_txdescArray[0].tdesc0,
+	tp->secgmac_txdescArray[0].status = 0x1 << 31;
+	writel(tp->secgmac_txdescArray[0].status,
 		TX_DESC_VIRTUAL_BASE);
 
 	tp->secgmac_txdescArray[0].data_len =
@@ -7368,6 +7368,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	smp_wmb();
 	secgmac_debug("tdesc:0x%x, csr6:0x%x, csr5:0x%x\n", readl(TX_DESC_VIRTUAL_BASE), RTL_R32(csr6), RTL_R32(csr5));
+	secgmac_debug("skb data: 0x%x, next desc:0x%x", readl(TX_DESC_VIRTUAL_BASE + 0x4 * 2), readl(TX_DESC_VIRTUAL_BASE + 0x4 * 3));
 	spin_lock(&tp->lock);
 	/* start transmitting */
 	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
@@ -7862,8 +7863,8 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
 
 	/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
-	tp->secgmac_rxdescArray[0].rdesc0 = 0x1 << 31 | 0x1 << 8;
-	writel(tp->secgmac_rxdescArray[0].rdesc0, RX_DESC_VIRTUAL_BASE);
+	tp->secgmac_rxdescArray[0].status = 0x1 << 31 | 0x1 << 8;
+	writel(tp->secgmac_rxdescArray[0].status, RX_DESC_VIRTUAL_BASE);
 
 	/* allocated frame length: 1524 bytes, chain linked */
 	tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F4;
