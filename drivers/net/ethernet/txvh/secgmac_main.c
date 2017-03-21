@@ -761,8 +761,8 @@ struct secgmac_rxdesc {
 #define TX_DESC_PHYSICAL_BASE		BAR2_PHYSICAL_BASE
 
 /* bar2 bottom for tx skb */
-#define TX_SKB_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
-#define TX_SKB_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
+//#define TX_SKB_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
+//#define TX_SKB_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
 
 /* bar3 is to rx skb data, top 512 bytes for rx desc */
 #define BAR3_VIRTUAL_BASE		(tp->bar3_addr)
@@ -7330,7 +7330,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	int count = 0;
 
 	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
-
+#define TX_SKB_VIRTUAL_BASE		BAR1_VIRTUAL_BASE
 	skb_tx_timestamp(skb);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
 	wmb();
@@ -7345,7 +7345,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
 	writel(tp->secgmac_txdescArray[0].data_len,
 		TX_DESC_VIRTUAL_BASE + 0x4);
-
+#define TX_SKB_PHYSICAL_BASE		BAR1_PHYSICAL_BASE
 	/* skb data in bar2 address */
 	tp->secgmac_txdescArray[0].bar2_addr = TX_SKB_PHYSICAL_BASE;
 	writel(tp->secgmac_txdescArray[0].bar2_addr,
