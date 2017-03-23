@@ -4528,7 +4528,8 @@ static void secgmac_rx_poll_timer(unsigned long __opaque)
 //	rtl_schedule_task(tp, RTL_FLAG_TASK_PHY_PENDING);
 //	secgmac_debug("timer begin!");
 
-	napi_schedule(&tp->napi);
+	/* this will open soon. this is to avoid the recv disturbing the tx */
+//	napi_schedule(&tp->napi);
 }
 
 static void rtl8169_release_board(struct pci_dev *pdev, struct net_device *dev,
