@@ -7372,7 +7372,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	secgmac_debug("skb data: 0x%x, next desc:0x%x", readl(TX_DESC_VIRTUAL_BASE + 0x4 * 2), readl(TX_DESC_VIRTUAL_BASE + 0x4 * 3));
 	spin_lock(&tp->lock);
 	/* start transmitting */
-	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
+	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
 	wmb();
 
