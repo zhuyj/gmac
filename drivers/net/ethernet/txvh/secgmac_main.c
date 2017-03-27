@@ -757,8 +757,8 @@ struct secgmac_rxdesc {
 #define BAR2_PHYSICAL_BASE		(0x00040000)
 
 /* bar2 top 512 for tx desc */
-#define TX_DESC_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
-#define TX_DESC_PHYSICAL_BASE		BAR2_PHYSICAL_BASE
+//#define TX_DESC_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
+//#define TX_DESC_PHYSICAL_BASE		BAR2_PHYSICAL_BASE
 
 /* bar2 bottom for tx skb */
 //#define TX_SKB_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
@@ -1302,7 +1302,6 @@ static void rtl_w0w1_phy(struct secgmac_private *tp, int reg_addr, int p, int m)
 	val = rtl_readphy(tp, reg_addr);
 	rtl_writephy(tp, reg_addr, (val & ~m) | p);
 }
-#endif
 
 static void rtl_mdio_write(struct net_device *dev, int phy_id, int location,
 			   int val)
@@ -1319,7 +1318,6 @@ static int rtl_mdio_read(struct net_device *dev, int phy_id, int location)
 	return rtl_readphy(tp, location);
 }
 
-#if 0
 DECLARE_RTL_COND(rtl_ephyar_cond)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -7331,13 +7329,15 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	int count = 0;
 
 	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
-#define TX_SKB_VIRTUAL_BASE		BAR1_VIRTUAL_BASE
+#define TX_SKB_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
 	skb_tx_timestamp(skb);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
 	wmb();
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
+#define TX_DESC_VIRTUAL_BASE		BAR1_VIRTUAL_BASE
+#define TX_DESC_PHYSICAL_BASE		BAR1_PHYSICAL_BASE
 	tp->secgmac_txdescArray[0].status = 0x1 << 31;
 	writel(tp->secgmac_txdescArray[0].status,
 		TX_DESC_VIRTUAL_BASE);
@@ -7346,7 +7346,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
 	writel(tp->secgmac_txdescArray[0].data_len,
 		TX_DESC_VIRTUAL_BASE + 0x4);
-#define TX_SKB_PHYSICAL_BASE		BAR1_PHYSICAL_BASE
+#define TX_SKB_PHYSICAL_BASE		BAR2_PHYSICAL_BASE
 	/* skb data in bar2 address */
 	tp->secgmac_txdescArray[0].bar2_addr = TX_SKB_PHYSICAL_BASE;
 	writel(tp->secgmac_txdescArray[0].bar2_addr,
@@ -8164,6 +8164,7 @@ static int secgmac_open(struct net_device *dev)
 	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
 #endif
 	/* timer, tx interrupt(1 frame trigger irq), rx interrupt(1 frame trigger irq) */
+#if 0
 	RTL_W32(csr11, 0x0 | 0x1 << 17 | 0x1 << 24);
 
 	/* enable interrupt */
@@ -8183,7 +8184,7 @@ static int secgmac_open(struct net_device *dev)
 
 	/* start receiving and sending */
 	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 13 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
-
+#endif
 //	INIT_WORK(&tp->wk.work, rtl_task);
 
 	/* check the csr9, csr10 value to prepare mdio */
@@ -8695,7 +8696,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	//const struct rtl_cfg_info *cfg = rtl_cfg_infos + ent->driver_data;
 	const unsigned int region = 0; //cfg->region;
 	struct secgmac_private *tp;
-	struct mii_if_info *mii;
+//	struct mii_if_info *mii;
 	struct net_device *dev;
 	void __iomem *ioaddr, *bar1_addr, *bar2_addr, *bar3_addr;
 //	int chipset, i;
@@ -8723,12 +8724,14 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->msg_enable = netif_msg_init(debug.msg_enable, R8169_MSG_DEFAULT);
 	
 	secgmac_debug(" ");
+#if 0
 	mii = &tp->mii;
 	mii->dev = dev;
 	mii->mdio_read = rtl_mdio_read;
 	mii->mdio_write = rtl_mdio_write;
 	mii->phy_id_mask = 0x1f;
 	mii->reg_num_mask = 0x1f;
+#endif
 	//mii->supports_gmii = !!(cfg->features & RTL_FEATURE_GMII);
 
 	/* disable ASPM completely as that cause random device stop working
