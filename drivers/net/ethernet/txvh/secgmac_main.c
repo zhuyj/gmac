@@ -7336,8 +7336,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
-#define TX_DESC_VIRTUAL_BASE		BAR1_VIRTUAL_BASE
-#define TX_DESC_PHYSICAL_BASE		BAR1_PHYSICAL_BASE
+#define TX_DESC_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 16384 - 512)
+#define TX_DESC_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 16384 - 512)
 	tp->secgmac_txdescArray[0].status = 0x1 << 31;
 	writel(tp->secgmac_txdescArray[0].status,
 		TX_DESC_VIRTUAL_BASE);
@@ -7371,8 +7371,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	secgmac_debug("tdesc:0x%x, csr6:0x%x, csr5:0x%x\n", readl(TX_DESC_VIRTUAL_BASE), RTL_R32(csr6), RTL_R32(csr5));
 	secgmac_debug("skb data: 0x%x, next desc:0x%x", readl(TX_DESC_VIRTUAL_BASE + 0x4 * 2), readl(TX_DESC_VIRTUAL_BASE + 0x4 * 3));
 	spin_lock(&tp->lock);
-	/* start transmitting */
-	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 16) | (0x1 << 13) | (0x1 << 9));
+	/* start transmitting, clear bit 16 in csr6, set speed as 100M */
+	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
 	spin_unlock(&tp->lock);
 	wmb();
 
