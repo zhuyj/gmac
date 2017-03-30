@@ -7336,8 +7336,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
-#define TX_DESC_VIRTUAL_BASE		(BAR1_VIRTUAL_BASE + 16384 - 512)
-#define TX_DESC_PHYSICAL_BASE		(BAR1_PHYSICAL_BASE + 16384 - 512)
+#define TX_DESC_VIRTUAL_BASE		(BAR1_VIRTUAL_BASE + 512)
+#define TX_DESC_PHYSICAL_BASE		(BAR1_PHYSICAL_BASE +512)
 	tp->secgmac_txdescArray[0].status = 0x1 << 31;
 	writel(tp->secgmac_txdescArray[0].status,
 		TX_DESC_VIRTUAL_BASE);
