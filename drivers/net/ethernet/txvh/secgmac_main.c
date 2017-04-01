@@ -769,12 +769,12 @@ struct secgmac_rxdesc {
 #define BAR3_PHYSICAL_BASE		(0x00070000)
 
 /* bar3 top 512 for rx desc */
-#define RX_DESC_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
-#define RX_DESC_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
+//#define RX_DESC_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
+//#define RX_DESC_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
 
 /* bar3 bottom for rx skb */
-#define RX_SKB_PHYSICAL_BASE		(BAR3_PHYSICAL_BASE + 512)
-#define RX_SKB_VIRTUAL_BASE		(BAR3_VIRTUAL_BASE + 512)
+//#define RX_SKB_PHYSICAL_BASE		(BAR3_PHYSICAL_BASE + 512)
+//#define RX_SKB_VIRTUAL_BASE		(BAR3_VIRTUAL_BASE + 512)
 
 struct RxDesc {
 	__le32 opts1;
@@ -4527,7 +4527,7 @@ static void secgmac_rx_poll_timer(unsigned long __opaque)
 //	secgmac_debug("timer begin!");
 
 	/* this will open soon. this is to avoid the recv disturbing the tx */
-//	napi_schedule(&tp->napi);
+	napi_schedule(&tp->napi);
 }
 
 static void rtl8169_release_board(struct pci_dev *pdev, struct net_device *dev,
@@ -7331,13 +7331,14 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
 #define TX_SKB_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
 	skb_tx_timestamp(skb);
+	spin_lock(&tp->lock);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
 	wmb();
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
-#define TX_DESC_VIRTUAL_BASE		(BAR1_VIRTUAL_BASE + 512)
-#define TX_DESC_PHYSICAL_BASE		(BAR1_PHYSICAL_BASE +512)
+#define TX_DESC_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
+#define TX_DESC_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
 	tp->secgmac_txdescArray[0].status = 0x1 << 31;
 	writel(tp->secgmac_txdescArray[0].status,
 		TX_DESC_VIRTUAL_BASE);
@@ -7370,16 +7371,14 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	smp_wmb();
 	secgmac_debug("tdesc:0x%x, csr6:0x%x, csr5:0x%x\n", readl(TX_DESC_VIRTUAL_BASE), RTL_R32(csr6), RTL_R32(csr5));
 	secgmac_debug("skb data: 0x%x, next desc:0x%x", readl(TX_DESC_VIRTUAL_BASE + 0x4 * 2), readl(TX_DESC_VIRTUAL_BASE + 0x4 * 3));
-	spin_lock(&tp->lock);
 	/* start transmitting, clear bit 16 in csr6, set speed as 100M */
 	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
-	spin_unlock(&tp->lock);
 	wmb();
 
 //	RTL_W32(csr1, 0x1);
 	/* check start status */
 	count = 0;
-	while (count<6) {
+	while (count<1) {
 		secgmac_debug("csr5:0x%x", RTL_R32(csr5));
 		/* check whether skb is sent or not */
 		if ((RTL_R32(csr5) & 0x1) == 0x1) {
@@ -7390,6 +7389,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		}
 		count++;
 	}
+	spin_unlock(&tp->lock);
 	secgmac_debug("csr5:0x%x", RTL_R32(csr5));
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
@@ -7861,6 +7861,12 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 	wmb();
 #endif
+#define RX_DESC_VIRTUAL_BASE		(BAR3_VIRTUAL_BASE + 8192)
+#define RX_DESC_PHYSICAL_BASE		(BAR3_PHYSICAL_BASE + 8192)
+#define RX_SKB_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 8192)
+#define RX_SKB_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 8192)
+
+	spin_lock(&tp->lock);
 	memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
 
 	/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
@@ -7922,7 +7928,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 //		napi_gro_receive(&tp->napi, skb);
 		kfree_skb(skb);
 	}
-
+	spin_unlock(&tp->lock);
 	/* To inform the rx is complete */
 	napi_complete(napi);
 
