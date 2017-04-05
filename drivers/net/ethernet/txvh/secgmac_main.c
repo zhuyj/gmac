@@ -7337,8 +7337,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
-#define TX_DESC_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
-#define TX_DESC_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
+#define TX_DESC_VIRTUAL_BASE		(BAR3_VIRTUAL_BASE + 8192)
+#define TX_DESC_PHYSICAL_BASE		(BAR3_PHYSICAL_BASE + 8192)
 	tp->secgmac_txdescArray[0].status = 0x1 << 31;
 	writel(tp->secgmac_txdescArray[0].status,
 		TX_DESC_VIRTUAL_BASE);
@@ -7861,16 +7861,16 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 	wmb();
 #endif
-#define RX_DESC_VIRTUAL_BASE		(BAR3_VIRTUAL_BASE + 8192)
-#define RX_DESC_PHYSICAL_BASE		(BAR3_PHYSICAL_BASE + 8192)
-#define RX_SKB_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 8192)
-#define RX_SKB_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 8192)
+#define RX_DESC_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 8192)
+#define RX_DESC_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 8192)
+#define RX_SKB_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
+#define RX_SKB_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
 
 	spin_lock(&tp->lock);
 	memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
 
 	/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
-	tp->secgmac_rxdescArray[0].status = 0x1 << 31 | 0x1 << 8;
+	tp->secgmac_rxdescArray[0].status = 0x1 << 31;
 	writel(tp->secgmac_rxdescArray[0].status, RX_DESC_VIRTUAL_BASE);
 
 	/* allocated frame length: 1524 bytes, chain linked */
@@ -7888,16 +7888,24 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	/* receive addr bar3 */
 	RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
 
+	/* timer */
+	RTL_W32(csr11, 0x0);
+
+	/* interrupt enable */
+	RTL_W32(csr7, 0xFFFFFFFF);
+
+	/* max burst length */
+	RTL_W32(csr0, 0x1 << 11);
+
 	/*receive poll comand*/
 	RTL_W32(csr2, 0x1);
 
 	secgmac_debug("csr6:0x%x", RTL_R32(csr6));
-#if 0
-	spin_lock(&tp->lock);
-	/*start receiving*/
-	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
-	spin_unlock(&tp->lock);
 
+	/*start receiving*/
+	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 21 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
+
+#if 0
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
 		unsigned long tmp_rdesc = readl(tp->bar3_addr + 0x4 * 4 * i);
 
