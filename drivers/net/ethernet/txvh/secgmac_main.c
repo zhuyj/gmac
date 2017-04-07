@@ -7337,8 +7337,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
 
-#define TX_DESC_VIRTUAL_BASE		(BAR1_VIRTUAL_BASE + 512)
-#define TX_DESC_PHYSICAL_BASE		(BAR1_PHYSICAL_BASE + 512)
+#define TX_DESC_VIRTUAL_BASE		(BAR1_VIRTUAL_BASE + 1024)
+#define TX_DESC_PHYSICAL_BASE		(BAR1_PHYSICAL_BASE + 1024)
 	tp->secgmac_txdescArray[0].status = 0x1 << 31;
 	writel(tp->secgmac_txdescArray[0].status,
 		TX_DESC_VIRTUAL_BASE);
@@ -7861,8 +7861,8 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 	wmb();
 #endif
-#define RX_DESC_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 8192)
-#define RX_DESC_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 8192)
+#define RX_DESC_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
+#define RX_DESC_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
 #define RX_SKB_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
 #define RX_SKB_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
 
@@ -8207,6 +8207,13 @@ static int secgmac_open(struct net_device *dev)
 
 	//printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
 //	rtl_request_firmware(tp);
+
+	retval = pci_enable_msi(pdev);
+	if (!retval) {
+		secgmac_debug("msi interrupt is supported!\n");
+	} else {
+		secgmac_debug("msi interrupt is not supported! retval:%d\n", retval);
+	}
 
 	retval = request_irq(pdev->irq, secgmac_interrupt,
 			     (tp->features & RTL_FEATURE_MSI) ? 0 : IRQF_SHARED,
@@ -8625,6 +8632,7 @@ static unsigned rtl_try_msi(struct secgmac_private *tp,
 	return msi;
 }
 #endif
+
 DECLARE_RTL_COND(rtl_link_list_ready_cond)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
