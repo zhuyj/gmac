@@ -7828,6 +7828,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	//u16 status;
 	unsigned long status_csr5;
 	void __iomem *ioaddr = tp->mmio_addr;
+	int count = 0;
 
 	secgmac_debug("netpoll begin!");
 #if 0
@@ -7916,9 +7917,22 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		}
 	}
 #endif
-	/*check csr5*/
-	status_csr5 = RTL_R32(csr5);
-	secgmac_debug("csr5 status:0x%lx", status_csr5);
+	count = 0;
+	while (count < 6) {
+		count++;
+		/*check csr5*/
+		status_csr5 = RTL_R32(csr5);
+		secgmac_debug("csr5 status:0x%lx, status:0x%x\n", status_csr5, readl(RX_DESC_VIRTUAL_BASE));
+		if (!(readl(RX_DESC_VIRTUAL_BASE) & (0x1 << 31))) {
+			secgmac_debug("chain is got!\n");
+			break;
+		}
+		if (status_csr5 & 0x40) {
+			secgmac_debug("csr5 gets it!\n");
+			break;
+		}
+	}
+
 	if (RTL_R32(csr5) & 0x40) {
 		struct sk_buff *skb;
 		unsigned int pkt_size;
