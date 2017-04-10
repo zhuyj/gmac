@@ -7904,7 +7904,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	secgmac_debug("csr6:0x%x", RTL_R32(csr6));
 
 	/*start receiving*/
-	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 21 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
+	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 21 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
 
 #if 0
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
