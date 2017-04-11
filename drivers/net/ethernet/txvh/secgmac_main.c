@@ -7918,7 +7918,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	}
 #endif
 	count = 0;
-	while (count < 6) {
+	while (count < 100) {
 		count++;
 		/*check csr5*/
 		status_csr5 = RTL_R32(csr5);
