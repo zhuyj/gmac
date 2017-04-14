@@ -4620,7 +4620,7 @@ static void rtl_rar_set(struct secgmac_private *tp, u8 *addr)
 }
 #endif
 
-static int rtl_set_mac_address(struct net_device *dev, void *p)
+static int secgmac_set_mac_address(struct net_device *dev, void *p)
 {
 //	struct secgmac_private *tp = netdev_priv(dev);
 //	struct device *d = &tp->pci_dev->dev;
@@ -7818,7 +7818,7 @@ out_unlock:
 #endif
 
 extern int pcie_dma_rw(struct pci_dev *pdev);
-
+static int count = 0;
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
@@ -7828,7 +7828,6 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	//u16 status;
 	unsigned long status_csr5;
 	void __iomem *ioaddr = tp->mmio_addr;
-	int count = 0;
 
 	secgmac_debug("netpoll begin!");
 #if 0
@@ -7862,50 +7861,55 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 	wmb();
 #endif
+
 #define RX_DESC_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
 #define RX_DESC_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
 #define RX_SKB_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
 #define RX_SKB_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
 
 	spin_lock(&tp->lock);
-	memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
 
-	/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
-	tp->secgmac_rxdescArray[0].status = 0x1 << 31;
-	writel(tp->secgmac_rxdescArray[0].status, RX_DESC_VIRTUAL_BASE);
+	if (count == 0) {
+		count++;
+		secgmac_debug("count:0x%x", count);
+		memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
 
-	/* allocated frame length: 1524 bytes, chain linked */
-	tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F4;
-	writel(tp->secgmac_rxdescArray[0].data_len, RX_DESC_VIRTUAL_BASE + 0x4);
+		/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
+		tp->secgmac_rxdescArray[0].status = 0x1 << 31;
+		writel(tp->secgmac_rxdescArray[0].status, RX_DESC_VIRTUAL_BASE);
 
-	/* received buffer in bar3 address */
-	tp->secgmac_rxdescArray[0].bar3_addr = RX_SKB_PHYSICAL_BASE;
-	writel(tp->secgmac_rxdescArray[0].bar3_addr, RX_DESC_VIRTUAL_BASE + 0x8);
+		/* allocated frame length: 1524 bytes, chain linked */
+		tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F4;
+		writel(tp->secgmac_rxdescArray[0].data_len, RX_DESC_VIRTUAL_BASE + 0x4);
 
-	/* the next desc in bar3 address */
-	tp->secgmac_rxdescArray[0].next_desc = RX_DESC_PHYSICAL_BASE;
-	writel(tp->secgmac_rxdescArray[0].next_desc, RX_DESC_VIRTUAL_BASE + 0xc);
+		/* received buffer in bar3 address */
+		tp->secgmac_rxdescArray[0].bar3_addr = RX_SKB_PHYSICAL_BASE;
+		writel(tp->secgmac_rxdescArray[0].bar3_addr, RX_DESC_VIRTUAL_BASE + 0x8);
 
-	/* receive addr bar3 */
-	RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
+		/* the next desc in bar3 address */
+		tp->secgmac_rxdescArray[0].next_desc = RX_DESC_PHYSICAL_BASE;
+		writel(tp->secgmac_rxdescArray[0].next_desc, RX_DESC_VIRTUAL_BASE + 0xc);
 
-	/* timer */
-	RTL_W32(csr11, 0x0);
+		/* receive addr bar3 */
+		RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
 
-	/* interrupt enable */
-	RTL_W32(csr7, 0xFFFFFFFF);
+		/* timer */
+		RTL_W32(csr11, 0x0);
 
-	/* max burst length */
-	RTL_W32(csr0, 0x1 << 11);
+		/* interrupt enable */
+		RTL_W32(csr7, 0xFFFFFFFF);
 
-	/*receive poll comand*/
-	RTL_W32(csr2, 0x1);
+		/* max burst length */
+		RTL_W32(csr0, 0x1 << 11);
 
-	secgmac_debug("csr6:0x%x", RTL_R32(csr6));
+		/*receive poll comand*/
+		RTL_W32(csr2, 0x1);
 
-	/*start receiving*/
-	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 21 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
+		secgmac_debug("csr6:0x%x", RTL_R32(csr6));
 
+		/*start receiving*/
+		RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 21 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
+	}
 #if 0
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
 		unsigned long tmp_rdesc = readl(tp->bar3_addr + 0x4 * 4 * i);
@@ -7917,20 +7921,14 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		}
 	}
 #endif
-	count = 0;
-	while (count < 100) {
-		count++;
-		/*check csr5*/
-		status_csr5 = RTL_R32(csr5);
-		secgmac_debug("csr5 status:0x%lx, status:0x%x\n", status_csr5, readl(RX_DESC_VIRTUAL_BASE));
-		if (!(readl(RX_DESC_VIRTUAL_BASE) & (0x1 << 31))) {
-			secgmac_debug("chain is got!\n");
-			break;
-		}
-		if (status_csr5 & 0x40) {
-			secgmac_debug("csr5 gets it!\n");
-			break;
-		}
+	/*check csr5*/
+	status_csr5 = RTL_R32(csr5);
+	secgmac_debug("csr5 status:0x%lx, status:0x%x\n", status_csr5, readl(RX_DESC_VIRTUAL_BASE));
+	if (!(readl(RX_DESC_VIRTUAL_BASE) & (0x1 << 31))) {
+		secgmac_debug("chain is got!\n");
+	}
+	if (status_csr5 & 0x40) {
+		secgmac_debug("csr5 gets it!\n");
 	}
 
 	if (RTL_R32(csr5) & 0x40) {
@@ -8577,7 +8575,7 @@ static const struct net_device_ops secgmac_netdev_ops = {
 	.ndo_change_mtu		= rtl8169_change_mtu,
 	.ndo_fix_features	= rtl8169_fix_features,
 	.ndo_set_features	= rtl8169_set_features,
-	.ndo_set_mac_address	= rtl_set_mac_address,
+	.ndo_set_mac_address	= secgmac_set_mac_address,
 	.ndo_do_ioctl		= secgmac_ioctl,
 	.ndo_set_rx_mode	= rtl_set_rx_mode,
 #ifdef CONFIG_NET_POLL_CONTROLLER
