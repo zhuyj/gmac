@@ -7818,7 +7818,6 @@ out_unlock:
 #endif
 
 extern int pcie_dma_rw(struct pci_dev *pdev);
-static int count = 0;
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
@@ -7869,47 +7868,44 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 	spin_lock(&tp->lock);
 
-	if (count == 0) {
-		count++;
-		secgmac_debug("count:0x%x", count);
-		memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
+	memset(&tp->secgmac_rxdescArray[0], 0, sizeof(struct secgmac_rxdesc));
 
-		/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
-		tp->secgmac_rxdescArray[0].status = 0x1 << 31;
-		writel(tp->secgmac_rxdescArray[0].status, RX_DESC_VIRTUAL_BASE);
+	/* rdesc0.8 makes the frame length is stored in RDES0.(29..16)  */
+	tp->secgmac_rxdescArray[0].status = 0x1 << 31;
+	writel(tp->secgmac_rxdescArray[0].status, RX_DESC_VIRTUAL_BASE);
 
-		/* allocated frame length: 1524 bytes, chain linked */
-		tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F4;
-		writel(tp->secgmac_rxdescArray[0].data_len, RX_DESC_VIRTUAL_BASE + 0x4);
+	/* allocated frame length: 1524 bytes, chain linked */
+	tp->secgmac_rxdescArray[0].data_len = 0x1 << 24 | 0x5F4;
+	writel(tp->secgmac_rxdescArray[0].data_len, RX_DESC_VIRTUAL_BASE + 0x4);
 
-		/* received buffer in bar3 address */
-		tp->secgmac_rxdescArray[0].bar3_addr = RX_SKB_PHYSICAL_BASE;
-		writel(tp->secgmac_rxdescArray[0].bar3_addr, RX_DESC_VIRTUAL_BASE + 0x8);
+	/* received buffer in bar3 address */
+	tp->secgmac_rxdescArray[0].bar3_addr = RX_SKB_PHYSICAL_BASE;
+	writel(tp->secgmac_rxdescArray[0].bar3_addr, RX_DESC_VIRTUAL_BASE + 0x8);
 
-		/* the next desc in bar3 address */
-		tp->secgmac_rxdescArray[0].next_desc = RX_DESC_PHYSICAL_BASE;
-		writel(tp->secgmac_rxdescArray[0].next_desc, RX_DESC_VIRTUAL_BASE + 0xc);
+	/* the next desc in bar3 address */
+	tp->secgmac_rxdescArray[0].next_desc = RX_DESC_PHYSICAL_BASE;
+	writel(tp->secgmac_rxdescArray[0].next_desc, RX_DESC_VIRTUAL_BASE + 0xc);
 
-		/* receive addr bar3 */
-		RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
+	/* receive addr bar3 */
+	RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
+	smp_wmb();
+	/* timer */
+	RTL_W32(csr11, 0x0);
 
-		/* timer */
-		RTL_W32(csr11, 0x0);
+	/* interrupt enable */
+	RTL_W32(csr7, 0xFFFFFFFF);
 
-		/* interrupt enable */
-		RTL_W32(csr7, 0xFFFFFFFF);
+	/* max burst length */
+	RTL_W32(csr0, 0x1 << 11);
 
-		/* max burst length */
-		RTL_W32(csr0, 0x1 << 11);
+	/*receive poll comand*/
+	RTL_W32(csr2, 0x1);
+	smp_wmb();
+	secgmac_debug("csr6:0x%x", RTL_R32(csr6));
 
-		/*receive poll comand*/
-		RTL_W32(csr2, 0x1);
-
-		secgmac_debug("csr6:0x%x", RTL_R32(csr6));
-
-		/*start receiving*/
-		RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 21 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
-	}
+	/*start receiving*/
+	RTL_W32(csr6, RTL_R32(csr6) | 0x1 << 30 | 0x1 << 21 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
+	smp_wmb();
 #if 0
 	for (i=0; i<NUM_SECGMAC_RXDESC; i++) {
 		unsigned long tmp_rdesc = readl(tp->bar3_addr + 0x4 * 4 * i);
