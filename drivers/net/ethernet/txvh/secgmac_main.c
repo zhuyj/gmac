@@ -7360,8 +7360,21 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
 
-	RTL_W32(csr11, 0x0);
-	RTL_W32(csr7, 0xffffffff);
+//	RTL_W32(csr11, 0x0);
+//	RTL_W32(csr7, 0xffffffff);
+
+	/* check csr11 */
+	if ((RTL_R32(csr11) & 0x1) != 0x0) {
+		secgmac_debug("csr11 error!");
+		RTL_W32(csr11, 0x0);
+	}
+
+	/* check csr7  */
+	if ((RTL_R32(csr7) & 0xFFFFFFFF) != 0xFFFFFFFF) {
+		secgmac_debug("csr7 error!");
+		RTL_W32(csr7, 0xFFFFFFFF);
+	}
+
 	wmb();
 	RTL_W32(csr0, (0x1 << 11) | (0x1 << 17));
 
@@ -7889,11 +7902,24 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	/* receive addr bar3 */
 	RTL_W32(csr3, RX_DESC_PHYSICAL_BASE);
 	smp_wmb();
+
 	/* timer */
-	RTL_W32(csr11, 0x0);
+//	RTL_W32(csr11, 0x0);
 
 	/* interrupt enable */
-	RTL_W32(csr7, 0xFFFFFFFF);
+//	RTL_W32(csr7, 0xFFFFFFFF);
+
+	/* check csr11 */
+	if ((RTL_R32(csr11) & 0x1) != 0x0) {
+		secgmac_debug("csr11 error!");
+		RTL_W32(csr11, 0x0);
+	}
+
+	/* check csr7  */
+	if ((RTL_R32(csr7) & 0xFFFFFFFF) != 0xFFFFFFFF) {
+		secgmac_debug("csr7 error!");
+		RTL_W32(csr7, 0xffffffff);
+	}
 
 	/* max burst length */
 	RTL_W32(csr0, 0x1 << 11);
@@ -8185,13 +8211,13 @@ static int secgmac_open(struct net_device *dev)
 	/* Start of the transmit list address bar2 */
 	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
 #endif
-	/* timer, tx interrupt(1 frame trigger irq), rx interrupt(1 frame trigger irq) */
-#if 0
-	RTL_W32(csr11, 0x0 | 0x1 << 17 | 0x1 << 24);
+	/* timer */
+	RTL_W32(csr11, 0x0);
 
 	/* enable interrupt */
-	RTL_W32(csr7, 0xffffffff);
+	RTL_W32(csr7, 0xFFFFFFFF);
 
+#if 0
 	/* automatic polling */
 	RTL_W32(csr0, (0x1 << 11) | (0x1 << 17));
 
