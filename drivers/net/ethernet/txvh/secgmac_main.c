@@ -28,6 +28,8 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 
+#include "secgmac.h"
+
 #define TXVH_VERSION "0.1"
 #define MODULENAME "txvh_secgmac"
 #define PFX MODULENAME ": "
