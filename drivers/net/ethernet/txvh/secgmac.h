@@ -75,7 +75,7 @@ typ_desc *MAC_tx_desc[MAC_TX_desc_cnt];
 //"0" 清除中断 驱动 clr
 #define		PCIE_apply_read_init		((unsigned int *)(BAR1_RAM+0X28))
 
-#define		PCIE_apply_write_init		((unsigned int *)(BAR1_RAM+0X2c))
+//#define		PCIE_apply_write_init		((unsigned int *)(BAR1_RAM+0X2c))
 //"1" 产生中断 FIMWARE set
 //"0" 清除中断 驱动 clr
 

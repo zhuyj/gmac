@@ -7315,6 +7315,8 @@ static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 }
 #endif
 
+#define  PCIE_apply_write_init		(tp->bar3_addr+0x2c)
+
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
@@ -7330,15 +7332,17 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	int frags;
 	int count = 0;
 
-	secgmac_debug("secgmac_entry:0x%x", secgmac_entry);
-#define TX_SKB_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
-	skb_tx_timestamp(skb);
+	status = readl(PCIE_apply_write_init);
+	secgmac_debug("status:0x%x", status);
+	if (status == 0x1) {
+		skb_tx_timestamp(skb);
+#if 0
 	spin_lock(&tp->lock);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
 	wmb();
 
 	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
-
+#define TX_SKB_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
 #define TX_DESC_VIRTUAL_BASE		(BAR1_VIRTUAL_BASE + 1024)
 #define TX_DESC_PHYSICAL_BASE		(BAR1_PHYSICAL_BASE + 1024)
 	tp->secgmac_txdescArray[0].status = 0x1 << 31;
@@ -7406,6 +7410,9 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	}
 	spin_unlock(&tp->lock);
 	secgmac_debug("csr5:0x%x", RTL_R32(csr5));
+	dev_kfree_skb_any(skb);
+#endif
+	}
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
 
@@ -7874,7 +7881,6 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	RTL_W32(csr6, 0x1 << 30 | 0x1 << 16 | 0x1 << 9 | 0x1 << 6 | 0x1 << 1);
 
 	wmb();
-#endif
 
 #define RX_DESC_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
 #define RX_DESC_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
@@ -7973,6 +7979,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		kfree_skb(skb);
 	}
 	spin_unlock(&tp->lock);
+#endif
 	/* To inform the rx is complete */
 	napi_complete(napi);
 
@@ -8212,14 +8219,13 @@ static int secgmac_open(struct net_device *dev)
 
 	/* Start of the transmit list address bar2 */
 	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
-#endif
+
 	/* timer */
 	RTL_W32(csr11, 0x0);
 
 	/* enable interrupt */
 	RTL_W32(csr7, 0xFFFFFFFF);
 
-#if 0
 	/* automatic polling */
 	RTL_W32(csr0, (0x1 << 11) | (0x1 << 17));
 
