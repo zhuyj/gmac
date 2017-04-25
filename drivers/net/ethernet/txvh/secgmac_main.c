@@ -7336,6 +7336,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	secgmac_debug("status:0x%x", status);
 	if (status == 0x1) {
 		skb_tx_timestamp(skb);
+		writel(0x0, PCIE_apply_write_init);
 #if 0
 	spin_lock(&tp->lock);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
