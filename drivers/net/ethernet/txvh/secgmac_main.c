@@ -8099,6 +8099,7 @@ static void rtl8169_netpoll(struct net_device *dev)
 }
 #endif
 
+#define  MAC_Function_SIGN	(tp->bar3_addr+0X00)
 static int secgmac_open(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -8108,7 +8109,8 @@ static int secgmac_open(struct net_device *dev)
 
 	secgmac_debug(" ");
 	/* soft reset */
-	RTL_W8(csr0, 0x1);
+	writel(0x1, MAC_Function_SIGN);
+//	RTL_W8(csr0, 0x1);
 
 //	pm_runtime_get_sync(&pdev->dev);
 
@@ -8245,7 +8247,7 @@ static int secgmac_open(struct net_device *dev)
 //	INIT_WORK(&tp->wk.work, rtl_task);
 
 	/* check the csr9, csr10 value to prepare mdio */
-	secgmac_debug("csr9: 0x%x, csr10: 0x%x", RTL_R32(csr9), RTL_R32(csr10));
+//	secgmac_debug("csr9: 0x%x, csr10: 0x%x", RTL_R32(csr9), RTL_R32(csr10));
 	smp_mb();
 
 	//printk("txvh func:%s, line:%d\n", __FUNCTION__, __LINE__);
@@ -9018,7 +9020,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		if (is_valid_ether_addr((u8 *)mac_addr))
 			rtl_rar_set(tp, (u8 *)mac_addr);
 	}
-#endif
+
 	/* set gmac mac address in csr16 and csr17 */
 	secgmac_debug("ioaddr:0x%p", ioaddr);
 	RTL_W32(csr16, 0x55443322);
@@ -9045,7 +9047,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		(dev->dev_addr[5] == 0x0)) {
 		eth_random_addr(dev->dev_addr);
 	}
-
+#endif
 	dev->ethtool_ops = &secgmac_ethtool_ops;
 	dev->watchdog_timeo = SECGMAC_TX_TIMEOUT;
 	netif_napi_add(dev, &tp->napi, secgmac_poll, SECGMAC_NAPI_WEIGHT);
