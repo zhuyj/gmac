@@ -53,7 +53,7 @@ typedef struct desc
 typ_desc *MAC_rx_desc[MAC_RX_desc_cnt];
 typ_desc *MAC_tx_desc[MAC_TX_desc_cnt];
 
-#define  MAC_Function_SIGN			((unsigned int *)(BAR1_RAM+0X00))
+//#define  MAC_Function_SIGN			((unsigned int *)(BAR1_RAM+0X00))
 #define  FIMWARE_WORK_STATE			((unsigned int *)(BAR1_RAM+0X04))
 #define  MAC_addr_buf_H 			((unsigned int *)(BAR1_RAM+0X08))
 #define  MAC_addr_buf_L 			((unsigned int *)(BAR1_RAM+0X0c))
