@@ -870,8 +870,8 @@ struct secgmac_private {
 	struct rtl8169_stats tx_stats;
 	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
 	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
-	struct secgmac_txdesc *secgmac_txdescArray;	/* TXVH TX description now 10 */
-	struct secgmac_rxdesc *secgmac_rxdescArray;	/* TXVH RX description now 10 */
+//	struct secgmac_txdesc *secgmac_txdescArray;	/* TXVH TX description now 10 */
+//	struct secgmac_rxdesc *secgmac_rxdescArray;	/* TXVH RX description now 10 */
 	dma_addr_t TxPhyAddr;
 	dma_addr_t RxPhyAddr;
 	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
@@ -8078,13 +8078,13 @@ static int secgmac_close(struct net_device *dev)
 			  tp->TxPhyAddr);
 	tp->TxDescArray = NULL;
 	tp->RxDescArray = NULL;
-
+#if 0
 	kfree(tp->secgmac_txdescArray);
 	tp->secgmac_txdescArray = NULL;
 
 	kfree(tp->secgmac_rxdescArray);
 	tp->secgmac_rxdescArray = NULL;
-
+#endif
 	pm_runtime_put_sync(&pdev->dev);
 
 	return 0;
@@ -8125,7 +8125,7 @@ static int secgmac_open(struct net_device *dev)
 					     &tp->RxPhyAddr, GFP_KERNEL);
 	if (!tp->RxDescArray)
 		goto err_free_tx_0;
-
+#if 0
 	/* TXVH TX desc prepare */
 	tp->secgmac_txdescArray = (struct secgmac_txdesc *)kzalloc(
 		NUM_SECGMAC_TXDESC * sizeof(struct secgmac_txdesc), GFP_KERNEL);
@@ -8133,7 +8133,7 @@ static int secgmac_open(struct net_device *dev)
 		secgmac_debug("secgmac_txdescArray allocated fail!");
 		goto err_free_rx_1;
 	}
-
+#endif
 	/*
 	 * bar0: gmac registers
 	 * bar1: pcie configurations registers
@@ -8170,7 +8170,7 @@ static int secgmac_open(struct net_device *dev)
 	tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc = TX_DESC_PHYSICAL_BASE;
 	writel(tp->secgmac_txdescArray[NUM_SECGMAC_TXDESC - 1].next_desc,
 		TX_DESC_VIRTUAL_BASE + 0x4 * ((NUM_SECGMAC_TXDESC - 1) * 4 + 3));
-#endif
+
 	/* secgmac_curtx */
 	tp->secgmac_curtx = 0;
 
@@ -8181,6 +8181,7 @@ static int secgmac_open(struct net_device *dev)
 		secgmac_debug("rx array alloc fail!");
                 goto err_release_fw_1;
 	}
+#endif
 
 	retval = rtl8169_init_ring(dev);
 	if (retval < 0)
@@ -8301,9 +8302,9 @@ out:
 err_release_fw_2:
 	rtl_release_firmware(tp);
 	rtl8169_rx_clear(tp);
-	kfree(tp->secgmac_rxdescArray);
-err_release_fw_1:
-	kfree(tp->secgmac_txdescArray);
+//	kfree(tp->secgmac_rxdescArray);
+//err_release_fw_1:
+//	kfree(tp->secgmac_txdescArray);
 err_free_rx_1:
 	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
 			  tp->RxPhyAddr);
