@@ -7326,6 +7326,8 @@ static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 #define  PCIE_BAR_WRITE_CNT		(tp->bar3_addr+0X3c)
 
 #define  PCIE_write_over		(tp->bar3_addr+0X34)
+#define  PCIE_RX_BUF			(tp->mmio_addr)
+#define  PCIE_RX_BUF_LEN		1536
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
@@ -7358,27 +7360,14 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 		if(readl(PCIE_BAR_WRITE_CNT) != 0) {
 			if(readl(PCIE_write_over) == 0) {
-#if 0
 				//BAR写入数据
-				if(REG32(MAC_tx_desc[*PCIE_RX_BUF_W_SP]->buf1_addr+0x5FC)==0X00) {
-					//判断缓存长度是否为0，0代表本缓存目前没数据（无可发送数据）
-					read_ddr = (unsigned int *)(PCIE_RX_BUF+PCIE_RX_BUF_LEN*(*PCIE_RX_BUF_W_SP));
+				//写入数据长度
+				memcpy_toio(PCIE_RX_BUF, skb->data, skb->len);
+				writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5fc);//长度
 
-					*read_ddr = 0x11223344;
-					read_ddr++;
-					for(i=1;i<0x100;i++)
-					{
-						*read_ddr = 0x87654321;
-						read_ddr++;
-					}
-					//写入数据长度
-					REG32(PCIE_RX_BUF+PCIE_RX_BUF_LEN*(*PCIE_RX_BUF_W_SP)+0x5fc)= 0x400;//长度
-
-					//写入完成标志置位
-					*PCIE_write_over =1;
-					(*PCIE_BAR_WRITE_CNT)--;
-				}
-#endif
+				//写入完成标志置位
+				writel(0x1, PCIE_write_over);
+				writel(readl(PCIE_BAR_WRITE_CNT)-1, PCIE_BAR_WRITE_CNT);
 			}
 		}
 #if 0
