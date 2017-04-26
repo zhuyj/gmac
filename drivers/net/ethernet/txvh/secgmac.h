@@ -48,7 +48,7 @@ typedef struct desc
 }typ_desc;
 
 ///////////////////////////////////////////////////DRAM0
-#define		BAR1_RAM			DRAM2_BASE
+#define		BAR1_RAM			DRAM2_BASE //0x70000
 
 typ_desc *MAC_rx_desc[MAC_RX_desc_cnt];
 typ_desc *MAC_tx_desc[MAC_TX_desc_cnt];
@@ -63,12 +63,12 @@ typ_desc *MAC_tx_desc[MAC_TX_desc_cnt];
 #define	deal_MAC_tx_desc_numb			((unsigned int *)(BAR1_RAM+0X14))
 
 //PCIE_TX_BUF==MAC_RX_BUF
-#define  PCIE_TX_BUF_W_SP 			((unsigned int *)(BAR1_RAM+0X18))
-#define  PCIE_TX_BUF_R_SP 			((unsigned int *)(BAR1_RAM+0X1C))
+//#define  PCIE_TX_BUF_W_SP 			((unsigned int *)(BAR1_RAM+0X18))
+//#define  PCIE_TX_BUF_R_SP 			((unsigned int *)(BAR1_RAM+0X1C))
 
 //PCIE_RX_BUF==MAC_TX_BUF
-#define  PCIE_RX_BUF_W_SP 			((unsigned int *)(BAR1_RAM+0X20))
-#define  PCIE_RX_BUF_R_SP 			((unsigned int *)(BAR1_RAM+0X24))
+//#define  PCIE_RX_BUF_W_SP 			((unsigned int *)(BAR1_RAM+0X20))
+//#define  PCIE_RX_BUF_R_SP 			((unsigned int *)(BAR1_RAM+0X24))
 
 //申请读取PCIE_TX_BUF 
 //"1" 产生中断 FIMWARE SET
@@ -87,7 +87,7 @@ typ_desc *MAC_tx_desc[MAC_TX_desc_cnt];
 //写入PCIE_RX_BUF 1包ing
 //"1" 产生中断 驱动 SET 
 //"0" 清除中断 FIMWARE clr
-#define		PCIE_write_over			((unsigned int *)(BAR1_RAM+0X34))
+//#define		PCIE_write_over			((unsigned int *)(BAR1_RAM+0X34))
 
 //可读取PCIE_TX_BUF个数
 #define		PCIE_BAR_READ_CNT		((unsigned int *)(BAR1_RAM+0X38))

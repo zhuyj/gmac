@@ -7317,6 +7317,15 @@ static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 
 #define  PCIE_apply_write_init		(tp->bar3_addr+0x2c)
 
+#define  PCIE_TX_BUF_W_SP		(tp->bar3_addr+0X18)
+#define  PCIE_TX_BUF_R_SP		(tp->bar3_addr+0X1C)
+
+#define  PCIE_RX_BUF_W_SP		(tp->bar3_addr+0X20)
+#define  PCIE_RX_BUF_R_SP		(tp->bar3_addr+0X24)
+
+#define  PCIE_BAR_WRITE_CNT		(tp->bar3_addr+0X3c)
+
+#define  PCIE_write_over		(tp->bar3_addr+0X34)
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
@@ -7337,6 +7346,41 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	if (status == 0x1) {
 		skb_tx_timestamp(skb);
 		writel(0x0, PCIE_apply_write_init);
+		if (readl(PCIE_RX_BUF_R_SP) == readl(PCIE_RX_BUF_W_SP)) {
+			writel(10, PCIE_BAR_WRITE_CNT);
+		} else if (readl(PCIE_RX_BUF_R_SP) == readl(PCIE_RX_BUF_W_SP)) {
+			if(readl(PCIE_RX_BUF_R_SP)<readl(PCIE_RX_BUF_W_SP)) {
+				writel(10-readl(PCIE_RX_BUF_W_SP)+readl(PCIE_RX_BUF_R_SP), PCIE_BAR_WRITE_CNT);
+			} else {
+				writel(readl(PCIE_RX_BUF_R_SP)-readl(PCIE_RX_BUF_W_SP), PCIE_BAR_WRITE_CNT);
+			}
+		}
+
+		if(readl(PCIE_BAR_WRITE_CNT) != 0) {
+			if(readl(PCIE_write_over) == 0) {
+#if 0
+				//BAR写入数据
+				if(REG32(MAC_tx_desc[*PCIE_RX_BUF_W_SP]->buf1_addr+0x5FC)==0X00) {
+					//判断缓存长度是否为0，0代表本缓存目前没数据（无可发送数据）
+					read_ddr = (unsigned int *)(PCIE_RX_BUF+PCIE_RX_BUF_LEN*(*PCIE_RX_BUF_W_SP));
+
+					*read_ddr = 0x11223344;
+					read_ddr++;
+					for(i=1;i<0x100;i++)
+					{
+						*read_ddr = 0x87654321;
+						read_ddr++;
+					}
+					//写入数据长度
+					REG32(PCIE_RX_BUF+PCIE_RX_BUF_LEN*(*PCIE_RX_BUF_W_SP)+0x5fc)= 0x400;//长度
+
+					//写入完成标志置位
+					*PCIE_write_over =1;
+					(*PCIE_BAR_WRITE_CNT)--;
+				}
+#endif
+			}
+		}
 #if 0
 	spin_lock(&tp->lock);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
