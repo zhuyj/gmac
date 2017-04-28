@@ -9137,6 +9137,8 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		eth_random_addr(dev->dev_addr);
 	}
 #endif
+	eth_random_addr(dev->dev_addr);
+
 	dev->ethtool_ops = &secgmac_ethtool_ops;
 	dev->watchdog_timeo = SECGMAC_TX_TIMEOUT;
 	netif_napi_add(dev, &tp->napi, secgmac_poll, SECGMAC_NAPI_WEIGHT);
