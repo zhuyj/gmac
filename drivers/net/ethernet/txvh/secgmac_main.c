@@ -7351,15 +7351,16 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		skb_tx_timestamp(skb);
 		writel(0x0, PCIE_apply_write_init);
 		if (readl(PCIE_RX_BUF_R_SP) == readl(PCIE_RX_BUF_W_SP)) {
-			writel(10, PCIE_BAR_WRITE_CNT);
-		} else if (readl(PCIE_RX_BUF_R_SP) == readl(PCIE_RX_BUF_W_SP)) {
+			writel(0xa, PCIE_BAR_WRITE_CNT);
+		} else if (readl(PCIE_RX_BUF_R_SP) != readl(PCIE_RX_BUF_W_SP)) {
 			if(readl(PCIE_RX_BUF_R_SP) < readl(PCIE_RX_BUF_W_SP)) {
-				writel(10-readl(PCIE_RX_BUF_W_SP)+readl(PCIE_RX_BUF_R_SP), PCIE_BAR_WRITE_CNT);
+				writel(0xa-readl(PCIE_RX_BUF_W_SP)+readl(PCIE_RX_BUF_R_SP), PCIE_BAR_WRITE_CNT);
 			} else {
 				writel(readl(PCIE_RX_BUF_R_SP)-readl(PCIE_RX_BUF_W_SP), PCIE_BAR_WRITE_CNT);
 			}
 		}
-
+		secgmac_debug("count:0x%x", readl(PCIE_BAR_WRITE_CNT));
+#if 0
 		if(readl(PCIE_BAR_WRITE_CNT) != 0) {
 			if(readl(PCIE_write_over) == 0) {
 				u32 pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);
@@ -7377,6 +7378,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				writel(readl(PCIE_BAR_WRITE_CNT)-1, PCIE_BAR_WRITE_CNT);
 			}
 		}
+#endif
 #if 0
 	spin_lock(&tp->lock);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
@@ -8194,7 +8196,7 @@ static void rtl8169_netpoll(struct net_device *dev)
 }
 #endif
 
-#define  MAC_Function_SIGN	(tp->bar3_addr+0X00)
+#define  MAC_Function_SIGN	(tp->bar1_addr+0X00)
 static int secgmac_open(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
