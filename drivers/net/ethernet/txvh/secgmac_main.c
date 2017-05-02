@@ -4529,7 +4529,7 @@ static void secgmac_rx_poll_timer(unsigned long __opaque)
 //	secgmac_debug("timer begin!");
 
 	/* this will open soon. this is to avoid the recv disturbing the tx */
-	napi_schedule(&tp->napi);
+	//napi_schedule(&tp->napi);
 }
 
 static void rtl8169_release_board(struct pci_dev *pdev, struct net_device *dev,
@@ -7344,6 +7344,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	u32 volatile status;
 	//int count = 0;
 
+	spin_lock(&tp->lock);
 	status = readl(PCIE_apply_write_init);
 	secgmac_debug("status:0x%x", status);
 	if ((status & 0x1) == 0x1) {
@@ -7454,6 +7455,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 #endif
 	}
 	dev_kfree_skb_any(skb);
+	spin_unlock(&tp->lock);
 	return NETDEV_TX_OK;
 
 	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
@@ -7900,6 +7902,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	//void __iomem *ioaddr = tp->mmio_addr;
 
 	secgmac_debug("netpoll begin!");
+	spin_lock(&tp->lock);
 	status = readl(PCIE_apply_read_init);
 	secgmac_debug("PCIE_apply_read_init status 0x%x", status);
 	if ((readl(PCIE_apply_read_init) & 0x1) == 0x1)	{
@@ -7943,6 +7946,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 			writel(readl(PCIE_BAR_READ_CNT) - 1, PCIE_BAR_READ_CNT);
 		}
 	}
+	spin_lock(&tp->lock);
 #if 0
 	/* rx description */
 	rdesc.rdesc0 = 0x1 << 31;
@@ -8940,8 +8944,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 	tp->mmio_addr = ioaddr;
 
-	/* ioremap bar1, top half of bar1 for tx,
-	 * bottom half of bar1 for rx 
+	/* ioremap bar1,
 	 */
 	bar1_addr = ioremap(pci_resource_start(pdev, 1), SECGMAC_REGS_SIZE * 4);
 	if (bar1_addr == NULL) {
