@@ -7360,14 +7360,17 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 			}
 		}
 		secgmac_debug("count:0x%x", readl(PCIE_BAR_WRITE_CNT));
-#if 0
+
 		if(readl(PCIE_BAR_WRITE_CNT) != 0) {
+			secgmac_debug("PCIE_write_over:0x%x", readl(PCIE_write_over));
 			if(readl(PCIE_write_over) == 0) {
 				u32 pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);
+				secgmac_debug("pkt_size:0x%x", pkt_size);
 				if (pkt_size !=0) {
 					dev_kfree_skb_any(skb);
 					return NETDEV_TX_OK;
 				}
+
 				//BAR写入数据
 				//写入数据长度
 				memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP), skb->data, skb->len);
@@ -7378,7 +7381,6 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				writel(readl(PCIE_BAR_WRITE_CNT)-1, PCIE_BAR_WRITE_CNT);
 			}
 		}
-#endif
 #if 0
 	spin_lock(&tp->lock);
 	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
