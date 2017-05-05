@@ -7365,6 +7365,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 			secgmac_debug("PCIE_write_over:0x%x", readl(PCIE_write_over));
 			if(readl(PCIE_write_over) == 0) {
 				u32 pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);
+				int count = 0;
 				secgmac_debug("pkt_size:0x%x", pkt_size);
 				if (pkt_size != 0) {
 					dev_kfree_skb_any(skb);
@@ -7373,12 +7374,20 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 				//BAR写入数据
 				//写入数据长度
-//				memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP), skb->data, skb->len);
-//				writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);//长度
+				while ((readl(PCIE_write_over) != 0) && (count < 6)) {
+					count ++;
+					msleep(2);
+				}
+				memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP), skb->data, skb->len);
+				wmb();
+				writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);//长度
+				wmb();
 
 				//写入完成标志置位
-//				writel(0x1, PCIE_write_over);
-//				writel(readl(PCIE_BAR_WRITE_CNT)-1, PCIE_BAR_WRITE_CNT);
+				writel(0x1, PCIE_write_over);
+				smp_wmb();
+				writel(readl(PCIE_BAR_WRITE_CNT)-1, PCIE_BAR_WRITE_CNT);
+				smp_wmb();
 			}
 		}
 #if 0
