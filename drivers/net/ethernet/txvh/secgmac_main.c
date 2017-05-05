@@ -7936,6 +7936,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 //			unsigned int skb_len_mask = 0x3FFF0000;
 			secgmac_debug("packet arrives!");
 			skb = alloc_skb(0x5FC, GFP_ATOMIC);
+			skb->dev = dev;
 			skb_reserve(skb, 2);
 //              skb_put(skb, pkt_size);
 //              skb->protocol = eth_type_trans(skb, dev);
