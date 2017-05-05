@@ -7366,7 +7366,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 			if(readl(PCIE_write_over) == 0) {
 				u32 pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);
 				secgmac_debug("pkt_size:0x%x", pkt_size);
-				if (pkt_size !=0) {
+				if (pkt_size != 0) {
 					dev_kfree_skb_any(skb);
 					return NETDEV_TX_OK;
 				}
@@ -9210,8 +9210,8 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		goto err_out_cnt_6;
 
 	pci_set_drvdata(pdev, dev);
-	netif_info(tp, probe, dev, "%s at 0x%p, %pM, XID %08x IRQ %d\n",
-		   /*rtl_chip_infos[chipset].name*/"secgmac", ioaddr, dev->dev_addr,
+	netif_info(tp, probe, dev, "%s at 0x%p, 0x%p, 0x%p, 0x%p, %pM, XID %08x IRQ %d\n",
+		   /*rtl_chip_infos[chipset].name*/"secgmac", ioaddr, bar1_addr, bar2_addr, bar3_addr, dev->dev_addr,
 		   (u32)(RTL_R32(TxConfig) & 0x9cf0f8ff), pdev->irq);
 #if 0	
 	if (rtl_chip_infos[chipset].jumbo_max != JUMBO_1K) {
