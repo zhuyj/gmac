@@ -7373,8 +7373,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 				//BAR写入数据
 				//写入数据长度
-				memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP), skb->data, skb->len);
-				writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);//长度
+//				memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP), skb->data, skb->len);
+//				writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);//长度
 
 				//写入完成标志置位
 				writel(0x1, PCIE_write_over);
