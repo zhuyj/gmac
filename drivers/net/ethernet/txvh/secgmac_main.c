@@ -7326,14 +7326,16 @@ static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 #define  PCIE_BAR_WRITE_CNT		(tp->bar1_addr+0x3c)
 
 #define  PCIE_write_over		(tp->bar1_addr+0x34)
-#define  PCIE_RX_BUF			(tp->bar3_addr)
+#define  PCIE_RX_BUF			(tp->bar2_addr)
 #define  PCIE_RX_BUF_LEN		1536
+
+#define  PCIE_apply_read_init           (tp->bar1_addr+0x28)
+
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
-	unsigned int entry = tp->cur_tx % NUM_TX_DESC;
-	//unsigned int secgmac_entry = tp->secgmac_curtx % NUM_SECGMAC_TXDESC;
+	unsigned int entry = tp->cur_tx % 2;
 	struct TxDesc *txd = tp->TxDescArray + entry;
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct device *d = &tp->pci_dev->dev;
@@ -7342,139 +7344,27 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	u32 opts[2];
 	int frags;
 	u32 volatile status;
-	//int count = 0;
+	u32 pkt_size;
 
 	spin_lock(&tp->lock);
-	status = readl(PCIE_apply_write_init);
-	secgmac_debug("status:0x%x", status);
-	if ((status & 0x1) == 0x1) {
-		skb_tx_timestamp(skb);
-		writel(0x0, PCIE_apply_write_init);
-		if (readl(PCIE_RX_BUF_R_SP) == readl(PCIE_RX_BUF_W_SP)) {
-			writel(0xa, PCIE_BAR_WRITE_CNT);
-		} else if (readl(PCIE_RX_BUF_R_SP) != readl(PCIE_RX_BUF_W_SP)) {
-			if(readl(PCIE_RX_BUF_R_SP) < readl(PCIE_RX_BUF_W_SP)) {
-				writel(0xa-readl(PCIE_RX_BUF_W_SP)+readl(PCIE_RX_BUF_R_SP), PCIE_BAR_WRITE_CNT);
-			} else {
-				writel(readl(PCIE_RX_BUF_R_SP)-readl(PCIE_RX_BUF_W_SP), PCIE_BAR_WRITE_CNT);
-			}
-		}
-		secgmac_debug("count:0x%x", readl(PCIE_BAR_WRITE_CNT));
+	pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);
+	secgmac_debug("pkt_size:0x%x", pkt_size);
+	if (pkt_size != 0) {
+		dev_kfree_skb_any(skb);
+		spin_unlock(&tp->lock);
+		return NETDEV_TX_OK;
+	}
 
-		if(readl(PCIE_BAR_WRITE_CNT) != 0) {
-			secgmac_debug("PCIE_write_over:0x%x", readl(PCIE_write_over));
-			if(readl(PCIE_write_over) == 0) {
-				secgmac_debug("PCIE_RX_BUF_W_SP:0x%x", readl(PCIE_RX_BUF_W_SP));
-				u32 pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);
-				int count = 0;
-				secgmac_debug("pkt_size:0x%x", pkt_size);
-				if (pkt_size != 0) {
-					dev_kfree_skb_any(skb);
-					return NETDEV_TX_OK;
-				}
-
-				//BAR写入数据
-				//写入数据长度
-				while ((readl(PCIE_write_over) != 0) && (count < 6)) {
-					count ++;
-					msleep(2);
-				}
-
-				secgmac_debug("skb->len:0x%x, readl(PCIE_RX_BUF_W_SP): 0x%x", skb->len, readl(PCIE_RX_BUF_W_SP));
-				secgmac_debug("data:0x%x,0x%x,0x%x", skb->data[10], skb->data[12], skb->data[14]);
-
-				memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP), skb->data, skb->len);
-				wmb();
-				secgmac_debug("readl(PCIE_RX_BUF_W_SP): 0x%x", readl(PCIE_RX_BUF_W_SP));
-				writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * readl(PCIE_RX_BUF_W_SP) + 0x5FC);//长度
-				wmb();
-
-				//写入完成标志置位
-				writel(0x1, PCIE_write_over);
-				smp_wmb();
-				secgmac_debug("readl(PCIE_write_over): 0x%x", readl(PCIE_write_over));
-				writel(readl(PCIE_BAR_WRITE_CNT)-1, PCIE_BAR_WRITE_CNT);
-				smp_wmb();
-				secgmac_debug("readl(PCIE_BAR_WRITE_CNT): 0x%x", readl(PCIE_BAR_WRITE_CNT));
-			}
-		}
-#if 0
-	spin_lock(&tp->lock);
-	memcpy_toio(TX_SKB_VIRTUAL_BASE, skb->data, skb->len);
+	//BAR写入数据
+	//写入数据长度
+	memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, skb->data, skb->len);
+	wmb();
+	secgmac_debug("readl(PCIE_RX_BUF_W_SP): 0x%x", readl(PCIE_RX_BUF_W_SP));
+	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//长度
 	wmb();
 
-	memset(&tp->secgmac_txdescArray[0], 0, sizeof(struct secgmac_txdesc));
-#define TX_SKB_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
-#define TX_DESC_VIRTUAL_BASE		(BAR1_VIRTUAL_BASE + 1024)
-#define TX_DESC_PHYSICAL_BASE		(BAR1_PHYSICAL_BASE + 1024)
-	tp->secgmac_txdescArray[0].status = 0x1 << 31;
-	writel(tp->secgmac_txdescArray[0].status,
-		TX_DESC_VIRTUAL_BASE);
+	tp->cur_tx = entry + 1;
 
-	tp->secgmac_txdescArray[0].data_len =
-		0x1 << 31 | 0x1 << 30 | 0x1 << 29 | 0x1 << 24 | 0x5F2;
-	writel(tp->secgmac_txdescArray[0].data_len,
-		TX_DESC_VIRTUAL_BASE + 0x4);
-#define TX_SKB_PHYSICAL_BASE		BAR2_PHYSICAL_BASE
-	/* skb data in bar2 address */
-	tp->secgmac_txdescArray[0].bar2_addr = TX_SKB_PHYSICAL_BASE;
-	writel(tp->secgmac_txdescArray[0].bar2_addr,
-		TX_DESC_VIRTUAL_BASE + 0x4 * 2);
-
-	/* next desc addr in bar2 address */
-	tp->secgmac_txdescArray[0].next_desc = TX_DESC_PHYSICAL_BASE;
-	writel(tp->secgmac_txdescArray[0].next_desc,
-		TX_DESC_VIRTUAL_BASE + 0x4 * 3);
-
-	RTL_W32(csr4, TX_DESC_PHYSICAL_BASE);
-
-//	RTL_W32(csr11, 0x0);
-//	RTL_W32(csr7, 0xffffffff);
-
-	/* check csr11 */
-	if ((RTL_R32(csr11) & 0x1) != 0x0) {
-		secgmac_debug("csr11 error!");
-		RTL_W32(csr11, 0x0);
-	}
-
-	/* check csr7  */
-	if ((RTL_R32(csr7) & 0xFFFFFFFF) != 0xFFFFFFFF) {
-		secgmac_debug("csr7 error!");
-		RTL_W32(csr7, 0xFFFFFFFF);
-	}
-
-	wmb();
-	RTL_W32(csr0, (0x1 << 11) | (0x1 << 17));
-
-	/* begin to transmit poll demand */
-	RTL_W32(csr1, 0x1);
-
-	smp_wmb();
-	secgmac_debug("tdesc:0x%x, csr6:0x%x, csr5:0x%x\n", readl(TX_DESC_VIRTUAL_BASE), RTL_R32(csr6), RTL_R32(csr5));
-	secgmac_debug("skb data: 0x%x, next desc:0x%x", readl(TX_DESC_VIRTUAL_BASE + 0x4 * 2), readl(TX_DESC_VIRTUAL_BASE + 0x4 * 3));
-	/* start transmitting, clear bit 16 in csr6, set speed as 100M */
-	RTL_W32(csr6, RTL_R32(csr6) | (0x1 << 30) | (0x1 << 13) | (0x1 << 9));
-	wmb();
-
-//	RTL_W32(csr1, 0x1);
-	/* check start status */
-	count = 0;
-	while (count<1) {
-		secgmac_debug("csr5:0x%x", RTL_R32(csr5));
-		/* check whether skb is sent or not */
-		if ((RTL_R32(csr5) & 0x1) == 0x1) {
-			secgmac_debug("csr5:0x%x", RTL_R32(csr5));
-			RTL_W32(csr5, 0x1);
-			tp->secgmac_curtx = 0;
-			break;
-		}
-		count++;
-	}
-	spin_unlock(&tp->lock);
-	secgmac_debug("csr5:0x%x", RTL_R32(csr5));
-	dev_kfree_skb_any(skb);
-#endif
-	}
 	dev_kfree_skb_any(skb);
 	spin_unlock(&tp->lock);
 	return NETDEV_TX_OK;
@@ -7907,7 +7797,7 @@ extern int pcie_dma_rw(struct pci_dev *pdev);
 //可读取PCIE_TX_BUF个数
 #define  PCIE_BAR_READ_CNT		(tp->bar1_addr+0x38)
 
-#define  PCIE_apply_read_init 		(tp->bar1_addr+0x28)
+//#define  PCIE_apply_read_init 		(tp->bar1_addr+0x28)
 
 #define  PCIE_read_over		 	(tp->bar1_addr+0x30)
 
@@ -8303,6 +8193,7 @@ static int secgmac_open(struct net_device *dev)
 #endif
 
 	retval = rtl8169_init_ring(dev);
+	tp->cur_tx = 0;
 	if (retval < 0)
 		goto err_release_fw_2;
 
