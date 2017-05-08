@@ -4529,7 +4529,7 @@ static void secgmac_rx_poll_timer(unsigned long __opaque)
 //	secgmac_debug("timer begin!");
 
 	/* this will open soon. this is to avoid the recv disturbing the tx */
-	//napi_schedule(&tp->napi);
+	napi_schedule(&tp->napi);
 }
 
 static void rtl8169_release_board(struct pci_dev *pdev, struct net_device *dev,
@@ -7329,8 +7329,6 @@ static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 #define  PCIE_RX_BUF			(tp->bar2_addr)
 #define  PCIE_RX_BUF_LEN		1536
 
-#define  PCIE_apply_read_init           (tp->bar1_addr+0x28)
-
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
@@ -7797,68 +7795,46 @@ extern int pcie_dma_rw(struct pci_dev *pdev);
 //可读取PCIE_TX_BUF个数
 #define  PCIE_BAR_READ_CNT		(tp->bar1_addr+0x38)
 
-//#define  PCIE_apply_read_init 		(tp->bar1_addr+0x28)
+#define  PCIE_apply_read_init 		(tp->bar1_addr+0x28)
 
 #define  PCIE_read_over		 	(tp->bar1_addr+0x30)
 
-#define  PCIE_TX_BUF			(tp->bar2_addr)
+#define  PCIE_TX_BUF			(tp->bar3_addr)
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
 	struct net_device *dev = tp->dev;
 	//u16 enable_mask = RTL_EVENT_NAPI | tp->event_slow;
-	int work_done= 1;
-	u32 status;
+	int work_done= 1, i;
 //	unsigned long status_csr5;
 	//void __iomem *ioaddr = tp->mmio_addr;
 
 	secgmac_debug("netpoll begin!");
-	spin_lock(&tp->lock);
-	status = readl(PCIE_apply_read_init);
-	secgmac_debug("PCIE_apply_read_init status 0x%x", status);
-	if ((readl(PCIE_apply_read_init) & 0x1) == 0x1)	{
-		writel(0x0, PCIE_apply_read_init);
 
-		if(readl(PCIE_TX_BUF_R_SP) != readl(PCIE_TX_BUF_W_SP)) {
-
-			//计算需要读取包数
-			if(readl(PCIE_TX_BUF_R_SP) < readl(PCIE_TX_BUF_W_SP)) {
-				writel(readl(PCIE_TX_BUF_W_SP) - readl(PCIE_TX_BUF_R_SP), PCIE_BAR_READ_CNT);
-			} else {
-				writel(readl(PCIE_TX_BUF_W_SP) - readl(PCIE_TX_BUF_R_SP) + 10, PCIE_BAR_READ_CNT);
-			}
+	for (i=0; i<2; i++) {
+		struct sk_buff *skb;
+		u32 pkt_size;
+		spin_lock(&tp->lock);
+		pkt_size = readl(PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
+		if (pkt_size == 0) {
+			secgmac_debug("pkt_size is 0");
+			spin_lock(&tp->lock);
+			continue;
 		}
-	}
+		secgmac_debug("packet arrives!");
+		skb = alloc_skb(0x5FC, GFP_ATOMIC);
+		skb->dev = dev;
+		skb_reserve(skb, 2);
+		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
+		skb_put(skb, pkt_size);
+		skb->protocol = eth_type_trans(skb, dev);
+		secgmac_debug("protocol:0x%x", skb->protocol);
+//      napi_gro_receive(&tp->napi, skb);
+		kfree_skb(skb);
 
-	if (readl(PCIE_BAR_READ_CNT) != 0) {
-		if (readl(PCIE_read_over) == 0) {
-		//	REG32(MAC_rx_desc[*PCIE_TX_BUF_R_SP]->buf1_addr+0x5FC)=0;//搬移结束缓存长度=0
-			//读取完成标志置位
-			//memcpy_fromio
-			struct sk_buff *skb;
-			u32 pkt_size = readl(PCIE_TX_BUF + PCIE_TX_BUF_LEN * readl(PCIE_TX_BUF_R_SP) + 0x5FC);
-			if (pkt_size == 0) {
-				secgmac_debug("pkt_size is 0");
-			}
-//			unsigned int skb_len_mask = 0x3FFF0000;
-			secgmac_debug("packet arrives!");
-			skb = alloc_skb(0x5FC, GFP_ATOMIC);
-			skb->dev = dev;
-			skb_reserve(skb, 2);
-//              skb_put(skb, pkt_size);
-//              skb->protocol = eth_type_trans(skb, dev);
-			memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * readl(PCIE_TX_BUF_R_SP), pkt_size);
-			skb_put(skb, pkt_size);
-			skb->protocol = eth_type_trans(skb, dev);
-//              napi_gro_receive(&tp->napi, skb);
-			kfree_skb(skb);
-
-			writel(0x0, PCIE_TX_BUF + PCIE_TX_BUF_LEN * readl(PCIE_TX_BUF_R_SP) + 0x5FC);
-			writel(0x1, PCIE_read_over);
-			writel(readl(PCIE_BAR_READ_CNT) - 1, PCIE_BAR_READ_CNT);
-		}
+		writel(0x0, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
+		spin_unlock(&tp->lock);
 	}
-	spin_lock(&tp->lock);
 #if 0
 	/* rx description */
 	rdesc.rdesc0 = 0x1 << 31;
