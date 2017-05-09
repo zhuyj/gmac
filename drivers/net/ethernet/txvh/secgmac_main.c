@@ -7818,7 +7818,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		pkt_size = readl(PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
 		if (pkt_size == 0) {
 			secgmac_debug("pkt_size is 0");
-			spin_lock(&tp->lock);
+			spin_unlock(&tp->lock);
 			continue;
 		}
 		secgmac_debug("packet arrives!");
