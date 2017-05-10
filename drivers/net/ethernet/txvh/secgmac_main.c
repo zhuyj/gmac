@@ -7313,19 +7313,15 @@ static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 }
 #endif
 
-#define  PCIE_apply_write_init		(tp->bar1_addr+0x2c)
-
-#define  PCIE_TX_BUF_W_SP		(tp->bar1_addr+0x18)
-#define  PCIE_TX_BUF_R_SP		(tp->bar1_addr+0x1C)
-
-#define  PCIE_RX_BUF_W_SP		(tp->bar1_addr+0x20)
-#define  PCIE_RX_BUF_R_SP		(tp->bar1_addr+0x24)
-
-#define  PCIE_BAR_WRITE_CNT		(tp->bar1_addr+0x3c)
-
-#define  PCIE_write_over		(tp->bar1_addr+0x34)
+//#define  PCIE_apply_write_init		(tp->bar1_addr+0x2c)
+//#define  PCIE_TX_BUF_W_SP		(tp->bar1_addr+0x18)
+//#define  PCIE_TX_BUF_R_SP		(tp->bar1_addr+0x1C)
+//#define  PCIE_RX_BUF_W_SP		(tp->bar1_addr+0x20)
+//#define  PCIE_RX_BUF_R_SP		(tp->bar1_addr+0x24)
+//#define  PCIE_BAR_WRITE_CNT		(tp->bar1_addr+0x3c)
+//#define  PCIE_write_over		(tp->bar1_addr+0x34)
 #define  PCIE_RX_BUF			(tp->bar2_addr)
-#define  PCIE_RX_BUF_LEN		1536
+#define  PCIE_RX_BUF_LEN		0x600
 
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
@@ -7353,8 +7349,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, skb->data, skb->len);
 	wmb();
-	secgmac_debug("readl(PCIE_RX_BUF_W_SP): 0x%x", readl(PCIE_RX_BUF_W_SP));
-	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//长度
+	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//skb length
 	wmb();
 
 	tp->cur_tx = entry + 1;
@@ -7790,15 +7785,14 @@ out_unlock:
 
 extern int pcie_dma_rw(struct pci_dev *pdev);
 
-//可读取PCIE_TX_BUF个数
-#define  PCIE_BAR_READ_CNT		(tp->bar1_addr+0x38)
+//#define  PCIE_BAR_READ_CNT		(tp->bar1_addr+0x38)
 
-#define  PCIE_apply_read_init 		(tp->bar1_addr+0x28)
+//#define  PCIE_apply_read_init 		(tp->bar1_addr+0x28)
 
-#define  PCIE_read_over		 	(tp->bar1_addr+0x30)
+//#define  PCIE_read_over		 	(tp->bar1_addr+0x30)
 
 #define  PCIE_TX_BUF			(tp->bar3_addr)
-#define  PCIE_TX_BUF_LEN		1536
+#define  PCIE_TX_BUF_LEN		0x600
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
