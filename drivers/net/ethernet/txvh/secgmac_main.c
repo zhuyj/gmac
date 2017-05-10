@@ -28,8 +28,6 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 
-#include "secgmac.h"
-
 #define TXVH_VERSION "0.1"
 #define MODULENAME "txvh_secgmac"
 #define PFX MODULENAME ": "
@@ -7800,6 +7798,7 @@ extern int pcie_dma_rw(struct pci_dev *pdev);
 #define  PCIE_read_over		 	(tp->bar1_addr+0x30)
 
 #define  PCIE_TX_BUF			(tp->bar3_addr)
+#define  PCIE_TX_BUF_LEN		1536
 static int secgmac_poll(struct napi_struct *napi, int budget)
 {
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
