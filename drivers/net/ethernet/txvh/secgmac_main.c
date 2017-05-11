@@ -7348,13 +7348,12 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	}
 
 	memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, skb->data, skb->len);
-	wmb();
 	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//skb length
-	wmb();
 
 	tp->cur_tx = entry + 1;
 
 	dev->stats.tx_packets++;
+	dev->stats.tx_bytes += skb->len;
 
 	dev_kfree_skb_any(skb);
 	spin_unlock(&tp->lock);
@@ -7811,19 +7810,21 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 			spin_unlock(&tp->lock);
 			continue;
 		}
-		secgmac_debug("packet arrives!");
+		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
 		skb = alloc_skb(0x5FC, GFP_ATOMIC);
 		skb->dev = dev;
 		skb_reserve(skb, 2);
 		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
 		skb_put(skb, pkt_size);
 		skb->protocol = eth_type_trans(skb, dev);
-		secgmac_debug("protocol:0x%x", skb->protocol);
-		napi_gro_receive(&tp->napi, skb);
-//		kfree_skb(skb);
+		secgmac_debug("protocol:0x%04x", skb->protocol);
+		//napi_gro_receive(&tp->napi, skb);
+		dev_kfree_skb(skb);
 
 		writel(0x0, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
-		dev->stats.rx_packets ++;
+
+		dev->stats.rx_packets++;
+		dev->stats.rx_bytes += pkt_size;
 
 		spin_unlock(&tp->lock);
 	}
@@ -8030,6 +8031,8 @@ static int secgmac_open(struct net_device *dev)
 	dev->stats.tx_packets = 0;
 	dev->stats.rx_packets = 0;
 
+	dev->stats.tx_bytes = 0;
+	dev->stats.rx_bytes = 0;
 out:
 	return retval;
 
