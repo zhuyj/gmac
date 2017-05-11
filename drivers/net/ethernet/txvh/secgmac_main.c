@@ -7821,6 +7821,9 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		//napi_gro_receive(&tp->napi, skb);
 		dev_kfree_skb(skb);
 
+		if (skb->pkt_type == PACKET_MULTICAST)
+			dev->stats.multicast++;
+
 		writel(0x0, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
 
 		dev->stats.rx_packets++;
@@ -8033,6 +8036,8 @@ static int secgmac_open(struct net_device *dev)
 
 	dev->stats.tx_bytes = 0;
 	dev->stats.rx_bytes = 0;
+
+	dev->stats.multicast = 0;
 out:
 	return retval;
 
