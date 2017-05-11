@@ -7797,6 +7797,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	struct secgmac_private *tp = container_of(napi, struct secgmac_private, napi);
 	struct net_device *dev = tp->dev;
 	int work_done= 1, i;
+	struct ethhdr *eth;
 
 	secgmac_debug("netpoll begin!");
 
@@ -7812,12 +7813,15 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		}
 		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
 		skb = alloc_skb(0x5FC, GFP_ATOMIC);
-		skb->dev = dev;
 		skb_reserve(skb, 2);
 		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
 		skb_put(skb, pkt_size);
 		skb->protocol = eth_type_trans(skb, dev);
-		secgmac_debug("protocol:0x%04x", skb->protocol);
+		secgmac_debug("protocol:0x%04x, pkt_type:0x%x", ntohs(skb->protocol), skb->pkt_type);
+		eth = (struct ethhdr *)skb->data;
+		secgmac_debug("Dst MAC addr: %pM\n", eth->h_dest);
+		secgmac_debug("Src MAC addr: %pM\n", eth->h_source);
+		secgmac_debug("Protocol: %#06hx\n", ntohs(eth->h_proto));
 		//napi_gro_receive(&tp->napi, skb);
 		dev_kfree_skb(skb);
 
