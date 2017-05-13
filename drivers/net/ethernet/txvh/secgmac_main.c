@@ -59,9 +59,6 @@
 		printk("secgmac func:%s, line:%d, %s\n", \
 			__FUNCTION__, __LINE__, tmp);} }while (0);
 
-#define debug(fmt, args...) \
-        do { char tmp[256] = {0}; sprintf(tmp, fmt, ## args);printf("%s\n", tmp);}while(0)
-
 #ifdef RTL8169_DEBUG
 #define assert(expr) \
 	if (!(expr)) {					\
