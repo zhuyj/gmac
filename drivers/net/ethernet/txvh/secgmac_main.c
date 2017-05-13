@@ -8418,7 +8418,6 @@ static unsigned rtl_try_msi(struct secgmac_private *tp,
 
 	return msi;
 }
-#endif
 
 DECLARE_RTL_COND(rtl_link_list_ready_cond)
 {
@@ -8434,7 +8433,6 @@ DECLARE_RTL_COND(rtl_rxtx_empty_cond)
 	return (RTL_R8(MCU) & RXTX_EMPTY) == RXTX_EMPTY;
 }
 
-#if 0
 static void rtl_hw_init_8168g(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
