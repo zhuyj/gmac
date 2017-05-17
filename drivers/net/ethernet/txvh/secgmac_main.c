@@ -4527,10 +4527,18 @@ static void secgmac_rx_poll_timer(unsigned long __opaque)
 	napi_schedule(&tp->napi);
 }
 
-static void rtl8169_release_board(struct pci_dev *pdev, struct net_device *dev,
-				  void __iomem *ioaddr)
+static void secgmac_release_board(struct pci_dev *pdev, struct net_device *dev)
 {
-	iounmap(ioaddr);
+	struct secgmac_private *tp = netdev_priv(dev);
+
+	iounmap(tp->mmio_addr);
+	tp->mmio_addr = NULL;
+	iounmap(tp->bar1_addr);
+	tp->bar1_addr = NULL;
+	iounmap(tp->bar2_addr);
+	tp->bar2_addr = NULL;
+	iounmap(tp->bar3_addr);
+	tp->bar3_addr = NULL;
 	pci_release_regions(pdev);
 	pci_clear_mwi(pdev);
 	pci_disable_device(pdev);
@@ -8337,7 +8345,7 @@ static void secgmac_remove_one(struct pci_dev *pdev)
 	//rtl_rar_set(tp, dev->perm_addr);
 
 	rtl_disable_msi(pdev, tp);
-	rtl8169_release_board(pdev, dev, tp->mmio_addr);
+	secgmac_release_board(pdev, dev);
 }
 
 static const struct net_device_ops secgmac_netdev_ops = {
