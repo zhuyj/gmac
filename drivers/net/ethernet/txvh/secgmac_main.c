@@ -279,7 +279,6 @@ static const struct pci_device_id secgmac_pci_tbl[] = {
 MODULE_DEVICE_TABLE(pci, secgmac_pci_tbl);
 
 static int rx_buf_sz = 16383;
-static int use_dac = -1;
 static struct {
 	u32 msg_enable;
 } debug = { -1 };
@@ -864,8 +863,6 @@ struct secgmac_private {
 
 MODULE_AUTHOR("TXVH gmac crew <netdev@vger.kernel.org>");
 MODULE_DESCRIPTION("TXVH gmac Gigabit Ethernet driver");
-module_param(use_dac, int, 0);
-MODULE_PARM_DESC(use_dac, "Enable PCI DAC. Unsafe on 32 bit PCI slot.");
 module_param_named(debug, debug.msg_enable, int, 0);
 MODULE_PARM_DESC(debug, "Debug verbosity level (0=none, ..., 16=all)");
 MODULE_LICENSE("GPL");
@@ -8536,8 +8533,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->cp_cmd = 0;
 
 	if ((sizeof(dma_addr_t) > 4) &&
-	    (use_dac == 1 || (use_dac == -1 && pci_is_pcie(pdev)/* &&
-			      tp->mac_version >= RTL_GIGA_MAC_VER_18*/)) &&
+	    (pci_is_pcie(pdev)) &&
 	    !pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
 
 		/* CPlusCmd Dual Access Cycle is only needed for non-PCIe */
