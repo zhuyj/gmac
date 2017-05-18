@@ -31,27 +31,7 @@
 #define TXVH_VERSION "0.1"
 #define MODULENAME "txvh_secgmac"
 #define PFX MODULENAME ": "
-#if 0
-#define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-1.fw"
-#define FIRMWARE_8168D_2	"rtl_nic/rtl8168d-2.fw"
-#define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-1.fw"
-#define FIRMWARE_8168E_2	"rtl_nic/rtl8168e-2.fw"
-#define FIRMWARE_8168E_3	"rtl_nic/rtl8168e-3.fw"
-#define FIRMWARE_8168F_1	"rtl_nic/rtl8168f-1.fw"
-#define FIRMWARE_8168F_2	"rtl_nic/rtl8168f-2.fw"
-#define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
-#define FIRMWARE_8402_1		"rtl_nic/rtl8402-1.fw"
-#define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
-#define FIRMWARE_8411_2		"rtl_nic/rtl8411-2.fw"
-#define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
-#define FIRMWARE_8106E_2	"rtl_nic/rtl8106e-2.fw"
-#define FIRMWARE_8168G_2	"rtl_nic/rtl8168g-2.fw"
-#define FIRMWARE_8168G_3	"rtl_nic/rtl8168g-3.fw"
-#define FIRMWARE_8168H_1	"rtl_nic/rtl8168h-1.fw"
-#define FIRMWARE_8168H_2	"rtl_nic/rtl8168h-2.fw"
-#define FIRMWARE_8107E_1	"rtl_nic/rtl8107e-1.fw"
-#define FIRMWARE_8107E_2	"rtl_nic/rtl8107e-2.fw"
-#endif
+
 #define secgmac_debug(fmt, args...) \
 	do { if (printk_ratelimit()) { \
 		char tmp[256] = {0}; \
@@ -107,62 +87,7 @@ static const int multicast_filter_limit = 32;
 #define RTL_R8(reg)		readb (ioaddr + (reg))
 #define RTL_R16(reg)		readw (ioaddr + (reg))
 #define RTL_R32(reg)		readl (ioaddr + (reg))
-#if 0
-enum mac_version {
-	RTL_GIGA_MAC_VER_01 = 0,
-	RTL_GIGA_MAC_VER_02,
-	RTL_GIGA_MAC_VER_03,
-	RTL_GIGA_MAC_VER_04,
-	RTL_GIGA_MAC_VER_05,
-	RTL_GIGA_MAC_VER_06,
-	RTL_GIGA_MAC_VER_07,
-	RTL_GIGA_MAC_VER_08,
-	RTL_GIGA_MAC_VER_09,
-	RTL_GIGA_MAC_VER_10,
-	RTL_GIGA_MAC_VER_11,
-	RTL_GIGA_MAC_VER_12,
-	RTL_GIGA_MAC_VER_13,
-	RTL_GIGA_MAC_VER_14,
-	RTL_GIGA_MAC_VER_15,
-	RTL_GIGA_MAC_VER_16,
-	RTL_GIGA_MAC_VER_17,
-	RTL_GIGA_MAC_VER_18,
-	RTL_GIGA_MAC_VER_19,
-	RTL_GIGA_MAC_VER_20,
-	RTL_GIGA_MAC_VER_21,
-	RTL_GIGA_MAC_VER_22,
-	RTL_GIGA_MAC_VER_23,
-	RTL_GIGA_MAC_VER_24,
-	RTL_GIGA_MAC_VER_25,
-	RTL_GIGA_MAC_VER_26,
-	RTL_GIGA_MAC_VER_27,
-	RTL_GIGA_MAC_VER_28,
-	RTL_GIGA_MAC_VER_29,
-	RTL_GIGA_MAC_VER_30,
-	RTL_GIGA_MAC_VER_31,
-	RTL_GIGA_MAC_VER_32,
-	RTL_GIGA_MAC_VER_33,
-	RTL_GIGA_MAC_VER_34,
-	RTL_GIGA_MAC_VER_35,
-	RTL_GIGA_MAC_VER_36,
-	RTL_GIGA_MAC_VER_37,
-	RTL_GIGA_MAC_VER_38,
-	RTL_GIGA_MAC_VER_39,
-	RTL_GIGA_MAC_VER_40,
-	RTL_GIGA_MAC_VER_41,
-	RTL_GIGA_MAC_VER_42,
-	RTL_GIGA_MAC_VER_43,
-	RTL_GIGA_MAC_VER_44,
-	RTL_GIGA_MAC_VER_45,
-	RTL_GIGA_MAC_VER_46,
-	RTL_GIGA_MAC_VER_47,
-	RTL_GIGA_MAC_VER_48,
-	RTL_GIGA_MAC_VER_49,
-	RTL_GIGA_MAC_VER_50,
-	RTL_GIGA_MAC_VER_51,
-	RTL_GIGA_MAC_NONE   = 0xff,
-};
-#endif
+
 enum rtl_tx_desc_version {
 	RTL_TD_0	= 0,
 	RTL_TD_1	= 1,
@@ -945,27 +870,7 @@ module_param_named(debug, debug.msg_enable, int, 0);
 MODULE_PARM_DESC(debug, "Debug verbosity level (0=none, ..., 16=all)");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(TXVH_VERSION);
-#if 0
-MODULE_FIRMWARE(FIRMWARE_8168D_1);
-MODULE_FIRMWARE(FIRMWARE_8168D_2);
-MODULE_FIRMWARE(FIRMWARE_8168E_1);
-MODULE_FIRMWARE(FIRMWARE_8168E_2);
-MODULE_FIRMWARE(FIRMWARE_8168E_3);
-MODULE_FIRMWARE(FIRMWARE_8105E_1);
-MODULE_FIRMWARE(FIRMWARE_8168F_1);
-MODULE_FIRMWARE(FIRMWARE_8168F_2);
-MODULE_FIRMWARE(FIRMWARE_8402_1);
-MODULE_FIRMWARE(FIRMWARE_8411_1);
-MODULE_FIRMWARE(FIRMWARE_8411_2);
-MODULE_FIRMWARE(FIRMWARE_8106E_1);
-MODULE_FIRMWARE(FIRMWARE_8106E_2);
-MODULE_FIRMWARE(FIRMWARE_8168G_2);
-MODULE_FIRMWARE(FIRMWARE_8168G_3);
-MODULE_FIRMWARE(FIRMWARE_8168H_1);
-MODULE_FIRMWARE(FIRMWARE_8168H_2);
-MODULE_FIRMWARE(FIRMWARE_8107E_1);
-MODULE_FIRMWARE(FIRMWARE_8107E_2);
-#endif
+
 static void rtl_lock_work(struct secgmac_private *tp)
 {
 	mutex_lock(&tp->wk.mutex);
@@ -1458,13 +1363,11 @@ static void rtl8168_oob_notify(struct secgmac_private *tp, u8 cmd)
 
 	ocp_write(tp, 0x1, 0x30, 0x00000001);
 }
-#endif
 
 #define OOB_CMD_RESET		0x00
 #define OOB_CMD_DRIVER_START	0x05
 #define OOB_CMD_DRIVER_STOP	0x06
 
-#if 0
 static u16 rtl8168_get_ocp_reg(struct secgmac_private *tp)
 {
 	//return (tp->mac_version == RTL_GIGA_MAC_VER_31) ? 0xb8 : 0x10;
