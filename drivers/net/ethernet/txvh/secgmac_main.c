@@ -99,178 +99,7 @@ enum rtl_tx_desc_version {
 #define JUMBO_7K	(7*1024 - ETH_HLEN - 2)
 #define JUMBO_9K	(9*1024 - ETH_HLEN - 2)
 
-#define _R(NAME,TD,FW,SZ,B) {	\
-	.name = NAME,		\
-	.txd_version = TD,	\
-	.fw_name = FW,		\
-	.jumbo_max = SZ,	\
-	.jumbo_tx_csum = B	\
-}
-#if 0
-static const struct {
-	const char *name;
-	enum rtl_tx_desc_version txd_version;
-	const char *fw_name;
-	u16 jumbo_max;
-	bool jumbo_tx_csum;
-} rtl_chip_infos[] = {
-	/* PCI devices. */
-	[RTL_GIGA_MAC_VER_01] =
-		_R("RTL8169",		RTL_TD_0, NULL, JUMBO_7K, true),
-	[RTL_GIGA_MAC_VER_02] =
-		_R("RTL8169s",		RTL_TD_0, NULL, JUMBO_7K, true),
-	[RTL_GIGA_MAC_VER_03] =
-		_R("RTL8110s",		RTL_TD_0, NULL, JUMBO_7K, true),
-	[RTL_GIGA_MAC_VER_04] =
-		_R("RTL8169sb/8110sb",	RTL_TD_0, NULL, JUMBO_7K, true),
-	[RTL_GIGA_MAC_VER_05] =
-		_R("RTL8169sc/8110sc",	RTL_TD_0, NULL, JUMBO_7K, true),
-	[RTL_GIGA_MAC_VER_06] =
-		_R("RTL8169sc/8110sc",	RTL_TD_0, NULL, JUMBO_7K, true),
-	/* PCI-E devices. */
-	[RTL_GIGA_MAC_VER_07] =
-		_R("RTL8102e",		RTL_TD_1, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_08] =
-		_R("RTL8102e",		RTL_TD_1, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_09] =
-		_R("RTL8102e",		RTL_TD_1, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_10] =
-		_R("RTL8101e",		RTL_TD_0, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_11] =
-		_R("RTL8168b/8111b",	RTL_TD_0, NULL, JUMBO_4K, false),
-	[RTL_GIGA_MAC_VER_12] =
-		_R("RTL8168b/8111b",	RTL_TD_0, NULL, JUMBO_4K, false),
-	[RTL_GIGA_MAC_VER_13] =
-		_R("RTL8101e",		RTL_TD_0, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_14] =
-		_R("RTL8100e",		RTL_TD_0, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_15] =
-		_R("RTL8100e",		RTL_TD_0, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_16] =
-		_R("RTL8101e",		RTL_TD_0, NULL, JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_17] =
-		_R("RTL8168b/8111b",	RTL_TD_0, NULL, JUMBO_4K, false),
-	[RTL_GIGA_MAC_VER_18] =
-		_R("RTL8168cp/8111cp",	RTL_TD_1, NULL, JUMBO_6K, false),
-	[RTL_GIGA_MAC_VER_19] =
-		_R("RTL8168c/8111c",	RTL_TD_1, NULL, JUMBO_6K, false),
-	[RTL_GIGA_MAC_VER_20] =
-		_R("RTL8168c/8111c",	RTL_TD_1, NULL, JUMBO_6K, false),
-	[RTL_GIGA_MAC_VER_21] =
-		_R("RTL8168c/8111c",	RTL_TD_1, NULL, JUMBO_6K, false),
-	[RTL_GIGA_MAC_VER_22] =
-		_R("RTL8168c/8111c",	RTL_TD_1, NULL, JUMBO_6K, false),
-	[RTL_GIGA_MAC_VER_23] =
-		_R("RTL8168cp/8111cp",	RTL_TD_1, NULL, JUMBO_6K, false),
-	[RTL_GIGA_MAC_VER_24] =
-		_R("RTL8168cp/8111cp",	RTL_TD_1, NULL, JUMBO_6K, false),
-	[RTL_GIGA_MAC_VER_25] =
-		_R("RTL8168d/8111d",	RTL_TD_1, FIRMWARE_8168D_1,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_26] =
-		_R("RTL8168d/8111d",	RTL_TD_1, FIRMWARE_8168D_2,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_27] =
-		_R("RTL8168dp/8111dp",	RTL_TD_1, NULL, JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_28] =
-		_R("RTL8168dp/8111dp",	RTL_TD_1, NULL, JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_29] =
-		_R("RTL8105e",		RTL_TD_1, FIRMWARE_8105E_1,
-							JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_30] =
-		_R("RTL8105e",		RTL_TD_1, FIRMWARE_8105E_1,
-							JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_31] =
-		_R("RTL8168dp/8111dp",	RTL_TD_1, NULL, JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_32] =
-		_R("RTL8168e/8111e",	RTL_TD_1, FIRMWARE_8168E_1,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_33] =
-		_R("RTL8168e/8111e",	RTL_TD_1, FIRMWARE_8168E_2,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_34] =
-		_R("RTL8168evl/8111evl",RTL_TD_1, FIRMWARE_8168E_3,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_35] =
-		_R("RTL8168f/8111f",	RTL_TD_1, FIRMWARE_8168F_1,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_36] =
-		_R("RTL8168f/8111f",	RTL_TD_1, FIRMWARE_8168F_2,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_37] =
-		_R("RTL8402",		RTL_TD_1, FIRMWARE_8402_1,
-							JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_38] =
-		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_1,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_39] =
-		_R("RTL8106e",		RTL_TD_1, FIRMWARE_8106E_1,
-							JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_40] =
-		_R("RTL8168g/8111g",	RTL_TD_1, FIRMWARE_8168G_2,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_41] =
-		_R("RTL8168g/8111g",	RTL_TD_1, NULL, JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_42] =
-		_R("RTL8168g/8111g",	RTL_TD_1, FIRMWARE_8168G_3,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_43] =
-		_R("RTL8106e",		RTL_TD_1, FIRMWARE_8106E_2,
-							JUMBO_1K, true),
-	[RTL_GIGA_MAC_VER_44] =
-		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_2,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_45] =
-		_R("RTL8168h/8111h",	RTL_TD_1, FIRMWARE_8168H_1,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_46] =
-		_R("RTL8168h/8111h",	RTL_TD_1, FIRMWARE_8168H_2,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_47] =
-		_R("RTL8107e",		RTL_TD_1, FIRMWARE_8107E_1,
-							JUMBO_1K, false),
-	[RTL_GIGA_MAC_VER_48] =
-		_R("RTL8107e",		RTL_TD_1, FIRMWARE_8107E_2,
-							JUMBO_1K, false),
-	[RTL_GIGA_MAC_VER_49] =
-		_R("RTL8168ep/8111ep",	RTL_TD_1, NULL,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_50] =
-		_R("RTL8168ep/8111ep",	RTL_TD_1, NULL,
-							JUMBO_9K, false),
-	[RTL_GIGA_MAC_VER_51] =
-		_R("RTL8168ep/8111ep",	RTL_TD_1, NULL,
-							JUMBO_9K, false),
-};
-#endif
-#undef _R
-
-#if 0
-enum cfg_version {
-	RTL_CFG_0 = 0x00,
-	RTL_CFG_1,
-	RTL_CFG_2
-};
-#endif
-
 static const struct pci_device_id secgmac_pci_tbl[] = {
-#if 0
-	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	0x8129), 0, 0, RTL_CFG_0 },
-	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	0x8136), 0, 0, RTL_CFG_2 },
-	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	0x8167), 0, 0, RTL_CFG_0 },
-	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	0x8168), 0, 0, RTL_CFG_1 },
-	{ PCI_DEVICE(PCI_VENDOR_ID_REALTEK,	0x8169), 0, 0, RTL_CFG_0 },
-	{ PCI_VENDOR_ID_DLINK,			0x4300,
-		PCI_VENDOR_ID_DLINK, 0x4b10,		 0, 0, RTL_CFG_1 },
-	{ PCI_DEVICE(PCI_VENDOR_ID_DLINK,	0x4300), 0, 0, RTL_CFG_0 },
-	{ PCI_DEVICE(PCI_VENDOR_ID_DLINK,	0x4302), 0, 0, RTL_CFG_0 },
-	{ PCI_DEVICE(PCI_VENDOR_ID_AT,		0xc107), 0, 0, RTL_CFG_0 },
-	{ PCI_DEVICE(0x16ec,			0x0116), 0, 0, RTL_CFG_0 },
-	{ PCI_VENDOR_ID_LINKSYS,		0x1032,
-		PCI_ANY_ID, 0x0024, 0, 0, RTL_CFG_0 },
-	{ 0x0001,				0x8168,
-		PCI_ANY_ID, 0x2410, 0, 0, RTL_CFG_2 },
-#endif
 	{ PCI_DEVICE(0x16c3, 0xabcd), },
 	{ PCI_VENDOR_ID_DLINK, 0xabcd, 0xabcd, 0xabcd,},
 	{0,},
@@ -649,6 +478,7 @@ struct TxDesc {
 	__le64 addr;
 };
 
+#if 0
 #define NUM_SECGMAC_TXDESC	10
 struct secgmac_txdesc {
 	unsigned int status;
@@ -664,6 +494,7 @@ struct secgmac_rxdesc {
         unsigned int bar3_addr;   /* data received addr  */
         unsigned int next_desc;   /* next desc addr */
 };
+#endif
 
 /* bar1 for pcie configuration */
 #define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
@@ -1057,7 +888,6 @@ static int mac_mcu_read(struct secgmac_private *tp, int reg)
 {
 	return r8168_mac_ocp_read(tp, tp->ocp_base + reg);
 }
-#endif
 
 DECLARE_RTL_COND(rtl_phyar_cond)
 {
@@ -1066,7 +896,6 @@ DECLARE_RTL_COND(rtl_phyar_cond)
 	return RTL_R32(PHYAR) & 0x80000000;
 }
 
-#if 0
 static void r8169_mdio_write(struct secgmac_private *tp, int reg, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1511,7 +1340,6 @@ static void rtl_write_exgmac_batch(struct secgmac_private *tp,
 		r++;
 	}
 }
-#endif
 
 DECLARE_RTL_COND(rtl_efusear_cond)
 {
@@ -1520,7 +1348,6 @@ DECLARE_RTL_COND(rtl_efusear_cond)
 	return RTL_R32(EFUSEAR) & EFUSEAR_FLAG;
 }
 
-#if 0
 static u8 rtl8168d_efuse_read(struct secgmac_private *tp, int reg_addr)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1530,7 +1357,6 @@ static u8 rtl8168d_efuse_read(struct secgmac_private *tp, int reg_addr)
 	return rtl_udelay_loop_wait_high(tp, &rtl_efusear_cond, 100, 300) ?
 		RTL_R32(EFUSEAR) & EFUSEAR_DATA_MASK : ~0;
 }
-#endif
 
 static u16 rtl_get_events(struct secgmac_private *tp)
 {
@@ -1538,6 +1364,7 @@ static u16 rtl_get_events(struct secgmac_private *tp)
 
 	return RTL_R16(IntrStatus);
 }
+#endif
 
 static void rtl_ack_events(struct secgmac_private *tp, u16 bits)
 {
@@ -7602,12 +7429,13 @@ release_descriptor:
 
 static irqreturn_t secgmac_interrupt(int irq, void *dev_instance)
 {
-	struct net_device *dev = dev_instance;
-	struct secgmac_private *tp = netdev_priv(dev);
+//	struct net_device *dev = dev_instance;
+//	struct secgmac_private *tp = netdev_priv(dev);
 	int handled = 0;
-	u16 status;
+	//u16 status;
 
 	secgmac_debug(" ");
+#if 0
 	status = rtl_get_events(tp);
 	if (status && status != 0xffff) {
 		status &= RTL_EVENT_NAPI | tp->event_slow;
@@ -7618,6 +7446,7 @@ static irqreturn_t secgmac_interrupt(int irq, void *dev_instance)
 			napi_schedule(&tp->napi);
 		}
 	}
+#endif
 	return IRQ_RETVAL(handled);
 }
 
