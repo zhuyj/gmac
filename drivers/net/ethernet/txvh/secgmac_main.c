@@ -5040,13 +5040,13 @@ DECLARE_RTL_COND(rtl_chipcmd_cond)
 	return RTL_R8(ChipCmd) & CmdReset;
 }
 
+#define	MAC_Function_SIGN	(tp->bar1_addr+0X00)
 static void secgmac_hw_reset(struct secgmac_private *tp)
 {
-	void __iomem *ioaddr = tp->mmio_addr;
+	//void __iomem *ioaddr = tp->mmio_addr;
 
 	/* soft reset */
-	RTL_W8(csr0, 0x1);
-//	RTL_W8(ChipCmd, CmdReset);
+	writel(0x1, MAC_Function_SIGN);
 
 //	rtl_udelay_loop_wait_low(tp, &rtl_chipcmd_cond, 100, 100);
 }
@@ -6795,7 +6795,7 @@ static void secgmac_tx_timeout(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 
-	secgmac_debug(" ");
+	secgmac_debug(" tx time out! ");
         napi_disable(&tp->napi);
         netif_stop_queue(dev);
         synchronize_sched();
@@ -7688,7 +7688,7 @@ static void rtl8169_netpoll(struct net_device *dev)
 }
 #endif
 
-#define  MAC_Function_SIGN	(tp->bar1_addr+0X00)
+//#define  MAC_Function_SIGN	(tp->bar1_addr+0X00)
 
 static int secgmac_open(struct net_device *dev)
 {
