@@ -6326,7 +6326,6 @@ static void rtl_hw_start_8168(struct net_device *dev)
 
 	RTL_W16(MultiIntr, RTL_R16(MultiIntr) & 0xf000);
 }
-#endif
 
 #define R810X_CPCMD_QUIRK_MASK (\
 	EnableBist | \
@@ -6338,7 +6337,7 @@ static void rtl_hw_start_8168(struct net_device *dev)
 	ASF | \
 	PktCntrDisable | \
 	Mac_dbgo_sel)
-#if 0
+
 static void rtl_hw_start_8102e_1(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -6425,9 +6424,7 @@ static void rtl_hw_start_8105e_2(struct secgmac_private *tp)
 	rtl_hw_start_8105e_1(tp);
 	rtl_ephy_write(tp, 0x1e, rtl_ephy_read(tp, 0x1e) | 0x8000);
 }
-#endif
 
-#if 0
 static void rtl_hw_start_8402(struct secgmac_private *tp)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -6907,7 +6904,6 @@ static int msdn_giant_send_check(struct sk_buff *skb)
 
 	return ret;
 }
-#endif
 
 static inline __be16 get_protocol(struct sk_buff *skb)
 {
@@ -6921,7 +6917,6 @@ static inline __be16 get_protocol(struct sk_buff *skb)
 	return protocol;
 }
 
-#if 0
 static bool rtl8169_tso_csum_v1(struct secgmac_private *tp,
 				struct sk_buff *skb, u32 *opts)
 {
@@ -7023,13 +7018,6 @@ static bool rtl8169_tso_csum_v2(struct secgmac_private *tp,
 }
 #endif
 
-//#define  PCIE_apply_write_init		(tp->bar1_addr+0x2c)
-//#define  PCIE_TX_BUF_W_SP		(tp->bar1_addr+0x18)
-//#define  PCIE_TX_BUF_R_SP		(tp->bar1_addr+0x1C)
-//#define  PCIE_RX_BUF_W_SP		(tp->bar1_addr+0x20)
-//#define  PCIE_RX_BUF_R_SP		(tp->bar1_addr+0x24)
-//#define  PCIE_BAR_WRITE_CNT		(tp->bar1_addr+0x3c)
-//#define  PCIE_write_over		(tp->bar1_addr+0x34)
 #define  PCIE_RX_BUF			(tp->bar2_addr)
 #define  PCIE_RX_BUF_LEN		0x600
 
@@ -7058,14 +7046,13 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, skb->data, skb->len);
 	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//skb length
-
+	spin_unlock(&tp->lock);
 	tp->cur_tx = entry + 1;
 
 	dev->stats.tx_packets++;
 	dev->stats.tx_bytes += skb->len;
 
 	dev_kfree_skb_any(skb);
-	spin_unlock(&tp->lock);
 	return NETDEV_TX_OK;
 
 	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
@@ -7540,7 +7527,8 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		skb->protocol = eth_type_trans(skb, dev);
 		secgmac_debug("protocol:0x%04x, pkt_type:0x%x", ntohs(skb->protocol), skb->pkt_type);
 
-		netif_rx(skb);
+//		netif_rx(skb);
+		napi_gro_receive(&tp->napi, skb);
 
 		if (skb->pkt_type == PACKET_MULTICAST)
 			dev->stats.multicast++;
@@ -7549,7 +7537,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 		dev->stats.rx_packets++;
 		dev->stats.rx_bytes += pkt_size;
-		dev_kfree_skb(skb);
+//		dev_kfree_skb(skb);
 	}
 
 	/* To inform the rx is complete */
