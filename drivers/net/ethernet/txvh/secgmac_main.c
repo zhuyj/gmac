@@ -7537,26 +7537,38 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	for (i=0; i<2; i++) {
 		struct sk_buff *skb;
 		u32 pkt_size;
-		spin_lock(&tp->lock);
+
 		pkt_size = readl(PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
 		if (pkt_size == 0) {
-			secgmac_debug("pkt_size is 0");
 			spin_unlock(&tp->lock);
 			continue;
 		}
 		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
 		skb = alloc_skb(0x5FC, GFP_ATOMIC);
 		skb_reserve(skb, 2);
+
+		spin_lock(&tp->lock);
 		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
-		skb_put(skb, pkt_size);
-		skb->protocol = eth_type_trans(skb, dev);
-		secgmac_debug("protocol:0x%04x, pkt_type:0x%x", ntohs(skb->protocol), skb->pkt_type);
+		spin_unlock(&tp->lock);
+
+		secgmac_debug("0-5: 0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
+			skb->data[0], skb->data[1], skb->data[2], skb->data[3], skb->data[4], skb->data[5]);
+
+		secgmac_debug("6-11:0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
+			skb->data[6], skb->data[7], skb->data[8], skb->data[9], skb->data[10], skb->data[11]);
+
+		secgmac_debug("12,13:0x%x:0x%x", skb->data[12], skb->data[13]);
+
 		eth = (struct ethhdr *)skb->data;
 		secgmac_debug("Dst MAC addr: %pM", eth->h_dest);
 		secgmac_debug("Src MAC addr: %pM", eth->h_source);
 		secgmac_debug("Protocol: %#06hx", ntohs(eth->h_proto));
-		//napi_gro_receive(&tp->napi, skb);
-		dev_kfree_skb(skb);
+
+		skb_put(skb, pkt_size);
+		skb->protocol = eth_type_trans(skb, dev);
+		secgmac_debug("protocol:0x%04x, pkt_type:0x%x", ntohs(skb->protocol), skb->pkt_type);
+
+		netif_rx(skb);
 
 		if (skb->pkt_type == PACKET_MULTICAST)
 			dev->stats.multicast++;
@@ -7565,8 +7577,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 		dev->stats.rx_packets++;
 		dev->stats.rx_bytes += pkt_size;
-
-		spin_unlock(&tp->lock);
+		dev_kfree_skb(skb);
 	}
 
 	/* To inform the rx is complete */
