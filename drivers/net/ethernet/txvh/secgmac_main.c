@@ -478,24 +478,6 @@ struct TxDesc {
 	__le64 addr;
 };
 
-#if 0
-#define NUM_SECGMAC_TXDESC	10
-struct secgmac_txdesc {
-	unsigned int status;
-	unsigned int data_len;  /* skb length 1522(0x5F2) bytes */
-	unsigned int bar2_addr; /* data sent addr */
-	unsigned int next_desc; /* next desc addr */
-};
-
-#define NUM_SECGMAC_RXDESC	10
-struct secgmac_rxdesc {
-        unsigned int status;
-        unsigned int data_len;    /* frame length 1524(0x5F4) bytes */
-        unsigned int bar3_addr;   /* data received addr  */
-        unsigned int next_desc;   /* next desc addr */
-};
-#endif
-
 /* bar1 for pcie configuration */
 //#define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
 //#define BAR1_PHYSICAL_BASE		(0x00070000)
@@ -620,8 +602,6 @@ struct secgmac_private {
 	struct rtl8169_stats tx_stats;
 	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
 	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
-//	struct secgmac_txdesc *secgmac_txdescArray;	/* TXVH TX description now 10 */
-//	struct secgmac_rxdesc *secgmac_rxdescArray;	/* TXVH RX description now 10 */
 	dma_addr_t TxPhyAddr;
 	dma_addr_t RxPhyAddr;
 	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
@@ -928,7 +908,6 @@ static int r8169_mdio_read(struct secgmac_private *tp, int reg)
 
 	return value;
 }
-#endif
 
 DECLARE_RTL_COND(rtl_ocpar_cond)
 {
@@ -937,7 +916,6 @@ DECLARE_RTL_COND(rtl_ocpar_cond)
 	return RTL_R32(OCPAR) & OCPAR_FLAG;
 }
 
-#if 0
 static void r8168dp_1_mdio_access(struct secgmac_private *tp, int reg, u32 data)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -7517,12 +7495,6 @@ out_unlock:
 
 extern int pcie_dma_rw(struct pci_dev *pdev);
 
-//#define  PCIE_BAR_READ_CNT		(tp->bar1_addr+0x38)
-
-//#define  PCIE_apply_read_init 		(tp->bar1_addr+0x28)
-
-//#define  PCIE_read_over		 	(tp->bar1_addr+0x30)
-
 #define  PCIE_TX_BUF			(tp->bar3_addr)
 #define  PCIE_TX_BUF_LEN		0x600
 static int secgmac_poll(struct napi_struct *napi, int budget)
@@ -7697,8 +7669,6 @@ static void rtl8169_netpoll(struct net_device *dev)
 	secgmac_interrupt(tp->pci_dev->irq, dev);
 }
 #endif
-
-//#define  MAC_Function_SIGN	(tp->bar1_addr+0X00)
 
 static int secgmac_open(struct net_device *dev)
 {
