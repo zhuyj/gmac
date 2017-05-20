@@ -497,16 +497,16 @@ struct secgmac_rxdesc {
 #endif
 
 /* bar1 for pcie configuration */
-#define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
-#define BAR1_PHYSICAL_BASE		(0x00070000)
+//#define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
+//#define BAR1_PHYSICAL_BASE		(0x00070000)
 
 /* bar1 for pcie configuration */
 //#define BAR1_VIRTUAL_8K_OFFSET		(tp->bar1_addr  + 8 * 0x400)
 //#define BAR1_PHYSICAL_8K_OFFSET		(0x00010000  + 8 * 0x400)
 
 /* bar2 is to tx skb data, top 512 bytes for tx desc */
-#define BAR2_VIRTUAL_BASE		(tp->bar2_addr)
-#define BAR2_PHYSICAL_BASE		(0x00040000)
+//#define BAR2_VIRTUAL_BASE		(tp->bar2_addr)
+//#define BAR2_PHYSICAL_BASE		(0x00040000)
 
 /* bar2 top 512 for tx desc */
 //#define TX_DESC_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
@@ -517,8 +517,8 @@ struct secgmac_rxdesc {
 //#define TX_SKB_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
 
 /* bar3 is to rx skb data, top 512 bytes for rx desc */
-#define BAR3_VIRTUAL_BASE		(tp->bar3_addr)
-#define BAR3_PHYSICAL_BASE		(0x00010000)
+//#define BAR3_VIRTUAL_BASE		(tp->bar3_addr)
+//#define BAR3_PHYSICAL_BASE		(0x00010000)
 
 /* bar3 top 512 for rx desc */
 //#define RX_DESC_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
@@ -7072,7 +7072,6 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	spin_lock(&tp->lock);
 	pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);
-	secgmac_debug("pkt_size:0x%x", pkt_size);
 	if (pkt_size != 0) {
 		dev_kfree_skb_any(skb);
 		spin_unlock(&tp->lock);
@@ -7548,7 +7547,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
 		skb = alloc_skb(0x5FC, GFP_ATOMIC);
 		skb_reserve(skb, 2);
-		memcpy_fromio(skb->data, PCIE_TX_BUF + 2 + PCIE_TX_BUF_LEN * i, pkt_size);
+		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
 		skb_put(skb, pkt_size);
 		skb->protocol = eth_type_trans(skb, dev);
 		secgmac_debug("protocol:0x%04x, pkt_type:0x%x", ntohs(skb->protocol), skb->pkt_type);
@@ -8400,47 +8399,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	//rtl8169_print_mac_version(tp);
 
-//	chipset = tp->mac_version;
-//	tp->txd_version = 1; //rtl_chip_infos[chipset].txd_version;
-
-//	RTL_W8(Cfg9346, Cfg9346_Unlock);
-//	RTL_W8(Config1, RTL_R8(Config1) | PMEnable);
-//	RTL_W8(Config5, RTL_R8(Config5) & (BWF | MWF | UWF | LanWake | PMEStatus));
 #if 0
-	switch (tp->mac_version) {
-	case RTL_GIGA_MAC_VER_34:
-	case RTL_GIGA_MAC_VER_35:
-	case RTL_GIGA_MAC_VER_36:
-	case RTL_GIGA_MAC_VER_37:
-	case RTL_GIGA_MAC_VER_38:
-	case RTL_GIGA_MAC_VER_40:
-	case RTL_GIGA_MAC_VER_41:
-	case RTL_GIGA_MAC_VER_42:
-	case RTL_GIGA_MAC_VER_43:
-	case RTL_GIGA_MAC_VER_44:
-	case RTL_GIGA_MAC_VER_45:
-	case RTL_GIGA_MAC_VER_46:
-	case RTL_GIGA_MAC_VER_47:
-	case RTL_GIGA_MAC_VER_48:
-	case RTL_GIGA_MAC_VER_49:
-	case RTL_GIGA_MAC_VER_50:
-	case RTL_GIGA_MAC_VER_51:
-		if (rtl_eri_read(tp, 0xdc, ERIAR_EXGMAC) & MagicPacket_v2)
-			tp->features |= RTL_FEATURE_WOL;
-		if ((RTL_R8(Config3) & LinkUp) != 0)
-			tp->features |= RTL_FEATURE_WOL;
-		break;
-	default:
-		if ((RTL_R8(Config3) & (LinkUp | MagicPacket)) != 0)
-			tp->features |= RTL_FEATURE_WOL;
-		break;
-	}
-
-	if ((RTL_R8(Config5) & (UWF | BWF | MWF)) != 0)
-		tp->features |= RTL_FEATURE_WOL;
-	//tp->features |= rtl_try_msi(tp, cfg);
-	RTL_W8(Cfg9346, Cfg9346_Lock);
-
 	if (rtl_tbi_enabled(tp)) {
 		tp->set_speed = rtl8169_set_speed_tbi;
 		tp->get_settings = rtl8169_gset_tbi;
@@ -8470,32 +8429,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	u64_stats_init(&tp->tx_stats.syncp);
 
 #if 0
-	/* Get MAC address */
-	if (tp->mac_version == RTL_GIGA_MAC_VER_35 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_36 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_37 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_38 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_40 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_41 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_42 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_43 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_44 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_45 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_46 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_47 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_48 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_49 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_50 ||
-	    tp->mac_version == RTL_GIGA_MAC_VER_51) {
-		u16 mac_addr[3];
-
-		*(u32 *)&mac_addr[0] = rtl_eri_read(tp, 0xe0, ERIAR_EXGMAC);
-		*(u16 *)&mac_addr[2] = rtl_eri_read(tp, 0xe4, ERIAR_EXGMAC);
-
-		if (is_valid_ether_addr((u8 *)mac_addr))
-			rtl_rar_set(tp, (u8 *)mac_addr);
-	}
-
 	/* set gmac mac address in csr16 and csr17 */
 	secgmac_debug("ioaddr:0x%p", ioaddr);
 	RTL_W32(csr16, 0x55443322);
