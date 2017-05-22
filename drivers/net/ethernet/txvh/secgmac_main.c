@@ -7530,7 +7530,9 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		if (skb->pkt_type == PACKET_MULTICAST)
 			dev->stats.multicast++;
 
+		spin_lock(&tp->lock);
 		writel(0x0, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
+		spin_unlock(&tp->lock);
 
 		dev->stats.rx_packets++;
 		dev->stats.rx_bytes += pkt_size;
