@@ -7480,8 +7480,6 @@ out_unlock:
 }
 #endif
 
-extern int pcie_dma_rw(struct pci_dev *pdev);
-
 #define  PCIE_TX_BUF			(tp->bar3_addr)
 #define  PCIE_TX_BUF_LEN		0x600
 static int secgmac_poll(struct napi_struct *napi, int budget)
@@ -7499,7 +7497,6 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 		pkt_size = readl(PCIE_TX_BUF + PCIE_TX_BUF_LEN * i + 0x5FC);
 		if (pkt_size == 0) {
-			spin_unlock(&tp->lock);
 			continue;
 		}
 		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
