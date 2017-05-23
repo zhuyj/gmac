@@ -5080,7 +5080,6 @@ static void rtl_rx_close(struct secgmac_private *tp)
 
 	RTL_W32(RxConfig, RTL_R32(RxConfig) & ~RX_CONFIG_ACCEPT_MASK);
 }
-#endif
 
 DECLARE_RTL_COND(rtl_npq_cond)
 {
@@ -5095,6 +5094,7 @@ DECLARE_RTL_COND(rtl_txcfg_empty_cond)
 
 	return RTL_R32(TxConfig) & TXCFG_EMPTY;
 }
+#endif
 
 static void rtl8169_hw_reset(struct secgmac_private *tp)
 {
