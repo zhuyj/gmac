@@ -180,7 +180,7 @@ enum rtl_registers {
 	IBISR0          = 0xfb,
 	FuncForceEvent	= 0xfc,
 };
-
+#if 0
 enum rtl8110_registers {
 	TBICSR			= 0x64,
 	TBI_ANAR		= 0x68,
@@ -231,7 +231,7 @@ enum rtl8168_8101_registers {
 	MISC_1			= 0xf2,
 #define	PFM_D3COLD_EN			(1 << 6)
 };
-
+#endif
 enum rtl8168_registers {
 	LED_FREQ		= 0x1a,
 	EEE_LED			= 0x1b,
@@ -5366,7 +5366,7 @@ static void rtl_csi_access_enable_2(struct secgmac_private *tp)
 {
 	rtl_csi_access_enable(tp, 0x27000000);
 }
-#endif
+
 
 DECLARE_RTL_COND(rtl_csiar_cond)
 {
@@ -5375,7 +5375,6 @@ DECLARE_RTL_COND(rtl_csiar_cond)
 	return RTL_R32(CSIAR) & CSIAR_FLAG;
 }
 
-#if 0
 static void r8169_csi_write(struct secgmac_private *tp, int addr, int value)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
