@@ -7492,8 +7492,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 	int work_done= 1, i;
 	struct ethhdr *eth;
 
-	secgmac_debug("netpoll begin!");
-
+//	secgmac_debug("netpoll begin!");
 	for (i=0; i<2; i++) {
 		struct sk_buff *skb;
 		u32 pkt_size;
@@ -7510,18 +7509,18 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
 		spin_unlock(&tp->lock);
 
-		secgmac_debug("0-5: 0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
-			skb->data[0], skb->data[1], skb->data[2], skb->data[3], skb->data[4], skb->data[5]);
+//		secgmac_debug("0-5: 0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
+//			skb->data[0], skb->data[1], skb->data[2], skb->data[3], skb->data[4], skb->data[5]);
 
-		secgmac_debug("6-11:0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
-			skb->data[6], skb->data[7], skb->data[8], skb->data[9], skb->data[10], skb->data[11]);
+//		secgmac_debug("6-11:0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
+//			skb->data[6], skb->data[7], skb->data[8], skb->data[9], skb->data[10], skb->data[11]);
 
-		secgmac_debug("12,13:0x%x:0x%x", skb->data[12], skb->data[13]);
+//		secgmac_debug("12,13:0x%x:0x%x", skb->data[12], skb->data[13]);
 
 		eth = (struct ethhdr *)skb->data;
-		secgmac_debug("Dst MAC addr: %pM", eth->h_dest);
-		secgmac_debug("Src MAC addr: %pM", eth->h_source);
-		secgmac_debug("Protocol: %#06hx", ntohs(eth->h_proto));
+		secgmac_debug("Dst MAC addr: %pM\nSrc MAC addr: %pM\nProtocol: %#06hx", eth->h_dest, eth->h_source, ntohs(eth->h_proto));
+//		secgmac_debug("Src MAC addr: %pM", eth->h_source);
+//		secgmac_debug("Protocol: %#06hx", ntohs(eth->h_proto));
 
 		skb_put(skb, pkt_size);
 		skb->protocol = eth_type_trans(skb, dev);
