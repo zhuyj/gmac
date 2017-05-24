@@ -5009,7 +5009,6 @@ static void rtl_init_jumbo_ops(struct secgmac_private *tp)
 		break;
 	}
 }
-#endif
 
 DECLARE_RTL_COND(rtl_chipcmd_cond)
 {
@@ -5017,6 +5016,7 @@ DECLARE_RTL_COND(rtl_chipcmd_cond)
 
 	return RTL_R8(ChipCmd) & CmdReset;
 }
+#endif
 
 #define	MAC_Function_SIGN	(tp->bar1_addr+0X00)
 static void secgmac_hw_reset(struct secgmac_private *tp)
