@@ -70,7 +70,7 @@ static const int multicast_filter_limit = 32;
 #define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
 #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
 
-#define SECGMAC_REGS_SIZE		256
+#define SECGMAC_BAR_SIZE		0x4000
 #define SECGMAC_NAPI_WEIGHT	64
 #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
 #define NUM_RX_DESC	256U	/* Number of Rx descriptor registers */
@@ -1722,10 +1722,12 @@ static void secgmac_get_drvinfo(struct net_device *dev,
 			sizeof(info->fw_version));
 }
 
+#if 0
 static int secgmac_get_regs_len(struct net_device *dev)
 {
-	return SECGMAC_REGS_SIZE;
+	return SECGMAC_BAR_SIZE;
 }
+#endif
 
 static int secgmac_set_speed_gmii(struct net_device *dev,
 				 u8 autoneg, u16 speed, u8 duplex, u32 ignored)
@@ -1984,6 +1986,7 @@ static int secgmac_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 	return rc;
 }
 
+#if 0
 static void rtl8169_get_regs(struct net_device *dev, struct ethtool_regs *regs,
 			     void *p)
 {
@@ -1997,6 +2000,7 @@ static void rtl8169_get_regs(struct net_device *dev, struct ethtool_regs *regs,
 		memcpy_fromio(dw++, data++, 4);
 	rtl_unlock_work(tp);
 }
+#endif
 
 static u32 rtl8169_get_msglevel(struct net_device *dev)
 {
@@ -2178,13 +2182,13 @@ static void rtl8169_get_strings(struct net_device *dev, u32 stringset, u8 *data)
 
 static const struct ethtool_ops secgmac_ethtool_ops = {
 	.get_drvinfo		= secgmac_get_drvinfo,
-	.get_regs_len		= secgmac_get_regs_len,
+//	.get_regs_len		= secgmac_get_regs_len,
 	.get_link		= ethtool_op_get_link,
 	.get_settings		= secgmac_get_settings,
 	//.set_settings		= secgmac_set_settings,
 	.get_msglevel		= rtl8169_get_msglevel,
 	.set_msglevel		= rtl8169_set_msglevel,
-	.get_regs		= rtl8169_get_regs,
+//	.get_regs		= rtl8169_get_regs,
 //	.get_wol		= rtl8169_get_wol,
 //	.set_wol		= rtl8169_set_wol,
 	.get_strings		= rtl8169_get_strings,
@@ -8269,12 +8273,13 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 
 	/* check for weird/broken PCI region reporting */
-	if (pci_resource_len(pdev, region) < SECGMAC_REGS_SIZE) {
+	if (pci_resource_len(pdev, region) < SECGMAC_BAR_SIZE) {
 		netif_err(tp, probe, dev,
 			  "Invalid PCI region size(s), aborting\n");
 		rc = -ENODEV;
 		goto err_out_mwi_2;
 	}
+	secgmac_debug("bar 0 length:0x%llx", pci_resource_len(pdev, 0));
 
 	rc = pci_request_regions(pdev, MODULENAME);
 	if (rc < 0) {
@@ -8283,7 +8288,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 
 	/* ioremap MMIO region bar0 */
-	ioaddr = ioremap(pci_resource_start(pdev, 0), SECGMAC_REGS_SIZE);
+	ioaddr = ioremap(pci_resource_start(pdev, 0), pci_resource_len(pdev, 0));
 	if (!ioaddr) {
 		netif_err(tp, probe, dev, "cannot remap MMIO, aborting\n");
 		rc = -EIO;
@@ -8293,7 +8298,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	/* ioremap bar1,
 	 */
-	bar1_addr = ioremap(pci_resource_start(pdev, 1), SECGMAC_REGS_SIZE * 4);
+	bar1_addr = ioremap(pci_resource_start(pdev, 1), pci_resource_len(pdev, 1));
 	if (bar1_addr == NULL) {
 		rc = -EIO;
 		secgmac_debug("bar1_addr error!");
@@ -8302,7 +8307,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->bar1_addr = bar1_addr;
 
 	/* ioremap bar2, bar2 for data */
-	bar2_addr = ioremap(pci_resource_start(pdev, 2), SECGMAC_REGS_SIZE * 4);
+	bar2_addr = ioremap(pci_resource_start(pdev, 2), pci_resource_len(pdev, 2));
 	if (bar2_addr == NULL) {
 		rc = -EIO;
 		secgmac_debug("bar2_addr error!");
@@ -8311,7 +8316,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp->bar2_addr = bar2_addr;
 
 	/* ioremap bar3, bar3 for data */
-	bar3_addr = ioremap(pci_resource_start(pdev, 3), SECGMAC_REGS_SIZE * 4);
+	bar3_addr = ioremap(pci_resource_start(pdev, 3), pci_resource_len(pdev, 3));
 	if (bar3_addr == NULL) {
 		rc = -EIO;
 		secgmac_debug("bar3_addr error!");
