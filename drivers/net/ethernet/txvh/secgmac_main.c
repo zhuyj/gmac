@@ -7038,6 +7038,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	int frags;
 	u32 volatile status;
 	u32 pkt_size;
+	struct ethhdr *eth;
 
 	spin_lock(&tp->lock);
 	pkt_size = readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);
@@ -7046,6 +7047,9 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 		spin_unlock(&tp->lock);
 		return NETDEV_TX_OK;
 	}
+
+	eth = (struct ethhdr *)skb->data;
+	secgmac_debug("Dst MAC addr: %pM\nSrc MAC addr: %pM\nProtocol: %#06hx", eth->h_dest, eth->h_source, ntohs(eth->h_proto));
 
 	memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, skb->data, skb->len);
 	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//skb length
