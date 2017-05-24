@@ -7499,8 +7499,8 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 			continue;
 		}
 		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
-		skb = alloc_skb(0x5FC, GFP_ATOMIC);
-		skb_reserve(skb, 2);
+		skb = napi_alloc_skb(napi, 0x5FC);
+//		skb_reserve(skb, 2);
 
 		spin_lock(&tp->lock);
 		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
