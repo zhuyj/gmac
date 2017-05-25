@@ -111,7 +111,7 @@ static int rx_buf_sz = 16383;
 static struct {
 	u32 msg_enable;
 } debug = { -1 };
-
+#if 0
 enum rtl_registers {
 	MAC0		= 0,	/* Ethernet hardware address. */
 	MAC4		= 4,
@@ -180,7 +180,7 @@ enum rtl_registers {
 	IBISR0          = 0xfb,
 	FuncForceEvent	= 0xfc,
 };
-#if 0
+
 enum rtl8110_registers {
 	TBICSR			= 0x64,
 	TBI_ANAR		= 0x68,
@@ -1888,14 +1888,14 @@ static void __rtl8169_set_features(struct net_device *dev,
 				   netdev_features_t features)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
-	void __iomem *ioaddr = tp->mmio_addr;
-	u32 rx_config;
+	//void __iomem *ioaddr = tp->mmio_addr;
+//	u32 rx_config;
 
-	rx_config = RTL_R32(RxConfig);
-	if (features & NETIF_F_RXALL)
-		rx_config |= (AcceptErr | AcceptRunt);
-	else
-		rx_config &= ~(AcceptErr | AcceptRunt);
+	//rx_config = RTL_R32(RxConfig);
+	//if (features & NETIF_F_RXALL)
+	//	rx_config |= (AcceptErr | AcceptRunt);
+	//else
+	//	rx_config &= ~(AcceptErr | AcceptRunt);
 
 	//RTL_W32(RxConfig, rx_config);
 
@@ -1909,7 +1909,7 @@ static void __rtl8169_set_features(struct net_device *dev,
 	else
 		tp->cp_cmd &= ~RxVlan;
 
-	tp->cp_cmd |= RTL_R16(CPlusCmd) & ~(RxVlan | RxChkSum);
+//	tp->cp_cmd |= RTL_R16(CPlusCmd) & ~(RxVlan | RxChkSum);
 
 	//RTL_W16(CPlusCmd, tp->cp_cmd);
 	//RTL_R16(CPlusCmd);
@@ -2042,6 +2042,7 @@ static int rtl8169_get_sset_count(struct net_device *dev, int sset)
 	}
 }
 
+#if 0
 DECLARE_RTL_COND(rtl_counters_cond)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -2049,7 +2050,6 @@ DECLARE_RTL_COND(rtl_counters_cond)
 	return RTL_R32(CounterAddrLow) & (CounterReset | CounterDump);
 }
 
-#if 0
 static bool rtl8169_do_counters(struct net_device *dev, u32 counter_cmd)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
@@ -5219,10 +5219,10 @@ static void rtl8169_set_magic_reg(void __iomem *ioaddr, unsigned mac_version)
 static void rtl_set_rx_mode(struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
-	void __iomem *ioaddr = tp->mmio_addr;
+	//void __iomem *ioaddr = tp->mmio_addr;
 	u32 mc_filter[2];	/* Multicast hash filter */
 	int rx_mode;
-	u32 tmp = 0;
+	//u32 tmp = 0;
 
 	if (dev->flags & IFF_PROMISC) {
 		/* Unconditionally log net taps. */
@@ -5250,9 +5250,9 @@ static void rtl_set_rx_mode(struct net_device *dev)
 
 	if (dev->features & NETIF_F_RXALL)
 		rx_mode |= (AcceptErr | AcceptRunt);
-
-	tmp = (RTL_R32(RxConfig) & ~RX_CONFIG_ACCEPT_MASK) | rx_mode;
 #if 0
+	tmp = (RTL_R32(RxConfig) & ~RX_CONFIG_ACCEPT_MASK) | rx_mode;
+
 	if (tp->mac_version > RTL_GIGA_MAC_VER_06) {
 		u32 data = mc_filter[0];
 
@@ -5265,8 +5265,9 @@ static void rtl_set_rx_mode(struct net_device *dev)
 
 	RTL_W32(MAR0 + 4, mc_filter[1]);
 	RTL_W32(MAR0 + 0, mc_filter[0]);
-#endif
+
 	RTL_W32(RxConfig, tmp);
+#endif
 }
 
 #if 0
@@ -7030,7 +7031,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	struct secgmac_private *tp = netdev_priv(dev);
 	unsigned int entry = tp->cur_tx % 2;
 	struct TxDesc *txd = tp->TxDescArray + entry;
-	void __iomem *ioaddr = tp->mmio_addr;
+	//void __iomem *ioaddr = tp->mmio_addr;
 	struct device *d = &tp->pci_dev->dev;
 	dma_addr_t mapping;
 	u32 len;
@@ -7116,7 +7117,7 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	tp->cur_tx += frags + 1;
 
-	RTL_W8(TxPoll, NPQ);
+	//RTL_W8(TxPoll, NPQ);
 
 	mmiowb();
 
@@ -7577,7 +7578,7 @@ static void rtl8169_rx_missed(struct net_device *dev, void __iomem *ioaddr)
 //	if (tp->mac_version > RTL_GIGA_MAC_VER_06)
 //		return;
 
-	dev->stats.rx_missed_errors += (RTL_R32(RxMissed) & 0xffffff);
+	//dev->stats.rx_missed_errors += (RTL_R32(RxMissed) & 0xffffff);
 //	RTL_W32(RxMissed, 0);
 }
 
@@ -8484,9 +8485,9 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		goto err_out_cnt_6;
 
 	pci_set_drvdata(pdev, dev);
-	netif_info(tp, probe, dev, "%s at 0x%p, 0x%p, 0x%p, 0x%p, %pM, XID %08x IRQ %d\n",
-		   /*rtl_chip_infos[chipset].name*/"secgmac", ioaddr, bar1_addr, bar2_addr, bar3_addr, dev->dev_addr,
-		   (u32)(RTL_R32(TxConfig) & 0x9cf0f8ff), pdev->irq);
+	netif_info(tp, probe, dev, "%s at 0x%p, 0x%p, 0x%p, 0x%p, %pM, IRQ %d\n",
+		   "secgmac", ioaddr, bar1_addr, bar2_addr, bar3_addr, dev->dev_addr,
+		   pdev->irq);
 #if 0	
 	if (rtl_chip_infos[chipset].jumbo_max != JUMBO_1K) {
 		netif_info(tp, probe, dev, "jumbo features [frames: %d bytes, "
