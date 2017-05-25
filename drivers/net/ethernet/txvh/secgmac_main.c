@@ -7049,7 +7049,8 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	}
 
 	eth = (struct ethhdr *)skb->data;
-	secgmac_debug("Dst MAC addr: %pM\nSrc MAC addr: %pM\nProtocol: %#06hx", eth->h_dest, eth->h_source, ntohs(eth->h_proto));
+	secgmac_debug("Dst MAC addr: %pM\nSrc MAC addr: %pM\nProtocol: %#06hx",
+		       eth->h_dest, eth->h_source, ntohs(eth->h_proto));
 
 	memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, skb->data, skb->len);
 	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//skb length
@@ -7505,6 +7506,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		if (pkt_size == 0) {
 			continue;
 		}
+
 		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
 		skb = napi_alloc_skb(napi, 0x5FC);
 //		skb_reserve(skb, 2);
@@ -7513,16 +7515,9 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
 		spin_unlock(&tp->lock);
 
-//		secgmac_debug("0-5: 0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
-//			skb->data[0], skb->data[1], skb->data[2], skb->data[3], skb->data[4], skb->data[5]);
-
-//		secgmac_debug("6-11:0x%x:0x%x:0x%x:0x%x:0x%x:0x%x",
-//			skb->data[6], skb->data[7], skb->data[8], skb->data[9], skb->data[10], skb->data[11]);
-
-//		secgmac_debug("12,13:0x%x:0x%x", skb->data[12], skb->data[13]);
-
 		eth = (struct ethhdr *)skb->data;
-		secgmac_debug("Dst MAC addr: %pM\nSrc MAC addr: %pM\nProtocol: %#06hx", eth->h_dest, eth->h_source, ntohs(eth->h_proto));
+		secgmac_debug("Dst MAC addr: %pM\nSrc MAC addr: %pM\nProtocol: %#06hx",
+			       eth->h_dest, eth->h_source, ntohs(eth->h_proto));
 //		secgmac_debug("Src MAC addr: %pM", eth->h_source);
 //		secgmac_debug("Protocol: %#06hx", ntohs(eth->h_proto));
 
@@ -7542,7 +7537,6 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 		dev->stats.rx_packets++;
 		dev->stats.rx_bytes += pkt_size;
-//		dev_kfree_skb(skb);
 	}
 
 	/* To inform the rx is complete */
