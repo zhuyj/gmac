@@ -7512,7 +7512,6 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 		secgmac_debug("packet arrives! pkt_size:0x%08x", pkt_size);
 		skb = napi_alloc_skb(napi, 0x5FC);
-//		skb_reserve(skb, 2);
 
 		spin_lock(&tp->lock);
 		memcpy_fromio(skb->data, PCIE_TX_BUF + PCIE_TX_BUF_LEN * i, pkt_size);
@@ -7521,14 +7520,11 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 		eth = (struct ethhdr *)skb->data;
 		secgmac_debug("Dst MAC addr: %pM\nSrc MAC addr: %pM\nProtocol: %#06hx",
 			       eth->h_dest, eth->h_source, ntohs(eth->h_proto));
-//		secgmac_debug("Src MAC addr: %pM", eth->h_source);
-//		secgmac_debug("Protocol: %#06hx", ntohs(eth->h_proto));
 
 		skb_put(skb, pkt_size);
 		skb->protocol = eth_type_trans(skb, dev);
 		secgmac_debug("protocol:0x%04x, pkt_type:0x%x", ntohs(skb->protocol), skb->pkt_type);
 
-//		netif_rx(skb);
 		napi_gro_receive(&tp->napi, skb);
 
 		if (skb->pkt_type == PACKET_MULTICAST)
