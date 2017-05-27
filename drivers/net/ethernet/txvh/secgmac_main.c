@@ -7056,12 +7056,14 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	memset_io(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, 0, PCIE_RX_BUF_LEN);
 	memcpy_toio(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry, skb->data, skb->len);
 	writeb(skb->data[0], PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FB);
-	secgmac_debug("0-3 bytes:0x%4x, 4-7 bytes:0x%4x,8-11 bytes:0x%4x,12-15 bytes:0x%4x, 0x5FB:0x%x",
+	writeb((skb->data[64], PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FA);
+	secgmac_debug("0-3 bytes:0x%4x, 4-7 bytes:0x%4x,8-11 bytes:0x%4x,12-15 bytes:0x%4x, 0x5FB:0x%x, 0x5FA:0x%x",
 		      readl(PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry),
 		      readl(4+PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry),
 		      readl(8+PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry),
 		      readl(12+PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry),
-		      readb(0x5FB+PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry));
+		      readb(0x5FB+PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry),
+		      readb(0x5FA+PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry);
 	writel(skb->len, PCIE_RX_BUF + PCIE_RX_BUF_LEN * entry + 0x5FC);//skb length
 	spin_unlock(&tp->lock);
 	tp->cur_tx = entry + 1;
