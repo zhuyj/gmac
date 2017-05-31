@@ -231,7 +231,7 @@ enum rtl8168_8101_registers {
 	MISC_1			= 0xf2,
 #define	PFM_D3COLD_EN			(1 << 6)
 };
-#endif
+
 enum rtl8168_registers {
 	LED_FREQ		= 0x1a,
 	EEE_LED			= 0x1b,
@@ -272,6 +272,7 @@ enum rtl8168_registers {
 #define RXDV_GATED_EN			(1 << 19)
 #define EARLY_TALLY_EN			(1 << 16)
 };
+#endif
 
 enum rtl_register_content {
 	/* InterruptStatusBits */
@@ -772,7 +773,6 @@ static bool rtl_ocp_reg_failure(struct secgmac_private *tp, u32 reg)
 	}
 	return false;
 }
-#endif
 
 DECLARE_RTL_COND(rtl_ocp_gphy_cond)
 {
@@ -781,7 +781,6 @@ DECLARE_RTL_COND(rtl_ocp_gphy_cond)
 	return RTL_R32(GPHY_OCP) & OCPAR_FLAG;
 }
 
-#if 0
 static void r8168_phy_ocp_write(struct secgmac_private *tp, u32 reg, u32 data)
 {
 	void __iomem *ioaddr = tp->mmio_addr;
@@ -1052,7 +1051,6 @@ static u16 rtl_ephy_read(struct secgmac_private *tp, int reg_addr)
 	return rtl_udelay_loop_wait_high(tp, &rtl_ephyar_cond, 10, 100) ?
 		RTL_R32(EPHYAR) & EPHYAR_DATA_MASK : ~0;
 }
-#endif
 
 DECLARE_RTL_COND(rtl_eriar_cond)
 {
@@ -1061,7 +1059,6 @@ DECLARE_RTL_COND(rtl_eriar_cond)
 	return RTL_R32(ERIAR) & ERIAR_FLAG;
 }
 
-#if 0
 static void rtl_eri_write(struct secgmac_private *tp, int addr, u32 mask,
 			  u32 val, int type)
 {
