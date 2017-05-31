@@ -566,6 +566,7 @@ struct rtl8169_stats {
 	struct u64_stats_sync	syncp;
 };
 
+#if 0
 enum secgmac_registers {
         csr0 = 0x000,
         csr1 = 0x008,
@@ -585,6 +586,9 @@ enum secgmac_registers {
         csr19 = 0x098,
         csr20 = 0x0a0,
 };
+#endif
+
+#define MAC_Function_SIGN	(tp->bar1_addr+0X00)
 
 struct secgmac_private {
 	void __iomem *mmio_addr, *bar1_addr, *bar2_addr, *bar3_addr;	/* memory map physical address */
@@ -1389,9 +1393,11 @@ static void rtl8169_irq_mask_and_ack(struct secgmac_private *tp)
 #endif
 static unsigned int secgmac_gmii_reset_pending(struct secgmac_private *tp)
 {
-	void __iomem *ioaddr = tp->mmio_addr;
+	//void __iomem *ioaddr = tp->mmio_addr;
 
-	return (RTL_R32(csr0) & 0x1) == 0x1;
+	//return (RTL_R32(csr0) & 0x1) == 0x1;
+	writel(0x1, MAC_Function_SIGN);
+	return 1;
 }
 #if 0
 static unsigned int rtl8169_xmii_reset_pending(struct secgmac_private *tp)
@@ -1411,9 +1417,10 @@ static unsigned int secgmac_gmii_link_ok(void __iomem *ioaddr)
 
 static void secgmac_gmii_reset_enable(struct secgmac_private *tp)
 {
-	void __iomem *ioaddr = tp->mmio_addr;
+	//void __iomem *ioaddr = tp->mmio_addr;
 
-	RTL_W32(csr0, RTL_R32(csr0) | 0x1);
+	//RTL_W32(csr0, RTL_R32(csr0) | 0x1);
+	writel(0x1, MAC_Function_SIGN);
 }
 
 #if 0
@@ -1729,13 +1736,13 @@ static int secgmac_get_regs_len(struct net_device *dev)
 static int secgmac_set_speed_gmii(struct net_device *dev,
 				 u8 autoneg, u16 speed, u8 duplex, u32 ignored)
 {
-	struct secgmac_private *tp = netdev_priv(dev);
-	void __iomem *ioaddr = tp->mmio_addr;
+	//struct secgmac_private *tp = netdev_priv(dev);
+	//void __iomem *ioaddr = tp->mmio_addr;
 	int ret = 0;
 	/* speed at 100M, set csr6.16 and csr6.17 to zero, to make
 	 * speed as 100M
 	 */
-	RTL_W32(csr6, RTL_R32(csr6) & ~(0x1 << 16 | 0x1 << 17));
+	//RTL_W32(csr6, RTL_R32(csr6) & ~(0x1 << 16 | 0x1 << 17));
 //	u32 reg;
 #if 0
 	reg = RTL_R32(TBICSR);
@@ -5019,7 +5026,7 @@ DECLARE_RTL_COND(rtl_chipcmd_cond)
 }
 #endif
 
-#define	MAC_Function_SIGN	(tp->bar1_addr+0X00)
+//#define	MAC_Function_SIGN	(tp->bar1_addr+0X00)
 static void secgmac_hw_reset(struct secgmac_private *tp)
 {
 	//void __iomem *ioaddr = tp->mmio_addr;
