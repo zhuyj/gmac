@@ -39,6 +39,7 @@
 		printk("secgmac func:%s, line:%d, %s\n", \
 			__FUNCTION__, __LINE__, tmp);} }while (0);
 
+#if 0
 #ifdef RTL8169_DEBUG
 #define assert(expr) \
 	if (!(expr)) {					\
@@ -51,8 +52,9 @@
 #define assert(expr) do {} while (0)
 #define dprintk(fmt, args...)	do {} while (0)
 #endif /* RTL8169_DEBUG */
+#endif
 
-#define R8169_MSG_DEFAULT \
+#define SECGMAC_MSG_DEFAULT \
 	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
 
 #define TX_SLOTS_AVAIL(tp) \
@@ -8254,7 +8256,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	tp = netdev_priv(dev);
 	tp->dev = dev;
 	tp->pci_dev = pdev;
-	tp->msg_enable = netif_msg_init(debug.msg_enable, R8169_MSG_DEFAULT);
+	tp->msg_enable = netif_msg_init(debug.msg_enable, SECGMAC_MSG_DEFAULT);
 	
 	secgmac_debug(" ");
 #if 0
