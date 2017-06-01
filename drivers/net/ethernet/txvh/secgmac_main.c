@@ -7088,6 +7088,10 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	dev->stats.tx_packets++;
 	dev->stats.tx_bytes += pkt_size;
 
+	if (skb_is_nonlinear(skb)) {
+		secgmac_debug("This is the non linear skb!");
+	}
+
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
 
