@@ -39,21 +39,6 @@
 		printk("secgmac func:%s, line:%d, %s\n", \
 			__FUNCTION__, __LINE__, tmp);} }while (0);
 
-#if 0
-#ifdef RTL8169_DEBUG
-#define assert(expr) \
-	if (!(expr)) {					\
-		printk( "Assertion failed! %s,%s,%s,line=%d\n",	\
-		#expr,__FILE__,__func__,__LINE__);		\
-	}
-#define dprintk(fmt, args...) \
-	do { printk(KERN_DEBUG PFX fmt, ## args); } while (0)
-#else
-#define assert(expr) do {} while (0)
-#define dprintk(fmt, args...)	do {} while (0)
-#endif /* RTL8169_DEBUG */
-#endif
-
 #define SECGMAC_MSG_DEFAULT \
 	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
 
@@ -113,168 +98,6 @@ static int rx_buf_sz = 16383;
 static struct {
 	u32 msg_enable;
 } debug = { -1 };
-#if 0
-enum rtl_registers {
-	MAC0		= 0,	/* Ethernet hardware address. */
-	MAC4		= 4,
-	MAR0		= 8,	/* Multicast filter. */
-	CounterAddrLow		= 0x10,
-	CounterAddrHigh		= 0x14,
-	TxDescStartAddrLow	= 0x20,
-	TxDescStartAddrHigh	= 0x24,
-	TxHDescStartAddrLow	= 0x28,
-	TxHDescStartAddrHigh	= 0x2c,
-	FLASH		= 0x30,
-	ERSR		= 0x36,
-	ChipCmd		= 0x37,
-	TxPoll		= 0x38,
-	IntrMask	= 0x3c,
-	IntrStatus	= 0x3e,
-
-	TxConfig	= 0x40,
-#define	TXCFG_AUTO_FIFO			(1 << 7)	/* 8111e-vl */
-#define	TXCFG_EMPTY			(1 << 11)	/* 8111e-vl */
-
-	RxConfig	= 0x44,
-#define	RX128_INT_EN			(1 << 15)	/* 8111c and later */
-#define	RX_MULTI_EN			(1 << 14)	/* 8111c only */
-#define	RXCFG_FIFO_SHIFT		13
-					/* No threshold before first PCI xfer */
-#define	RX_FIFO_THRESH			(7 << RXCFG_FIFO_SHIFT)
-#define	RX_EARLY_OFF			(1 << 11)
-#define	RXCFG_DMA_SHIFT			8
-					/* Unlimited maximum PCI burst. */
-#define	RX_DMA_BURST			(7 << RXCFG_DMA_SHIFT)
-
-	RxMissed	= 0x4c,
-	Cfg9346		= 0x50,
-	Config0		= 0x51,
-	Config1		= 0x52,
-	Config2		= 0x53,
-#define PME_SIGNAL			(1 << 5)	/* 8168c and later */
-
-	Config3		= 0x54,
-	Config4		= 0x55,
-	Config5		= 0x56,
-	MultiIntr	= 0x5c,
-	PHYAR		= 0x60,
-	PHYstatus	= 0x6c,
-	RxMaxSize	= 0xda,
-	CPlusCmd	= 0xe0,
-	IntrMitigate	= 0xe2,
-	RxDescAddrLow	= 0xe4,
-	RxDescAddrHigh	= 0xe8,
-	EarlyTxThres	= 0xec,	/* 8169. Unit of 32 bytes. */
-
-#define NoEarlyTx	0x3f	/* Max value : no early transmit. */
-
-	MaxTxPacketSize	= 0xec,	/* 8101/8168. Unit of 128 bytes. */
-
-#define TxPacketMax	(8064 >> 7)
-#define EarlySize	0x27
-
-	FuncEvent	= 0xf0,
-	FuncEventMask	= 0xf4,
-	FuncPresetState	= 0xf8,
-	IBCR0           = 0xf8,
-	IBCR2           = 0xf9,
-	IBIMR0          = 0xfa,
-	IBISR0          = 0xfb,
-	FuncForceEvent	= 0xfc,
-};
-
-enum rtl8110_registers {
-	TBICSR			= 0x64,
-	TBI_ANAR		= 0x68,
-	TBI_LPAR		= 0x6a,
-};
-
-enum rtl8168_8101_registers {
-	CSIDR			= 0x64,
-	CSIAR			= 0x68,
-#define	CSIAR_FLAG			0x80000000
-#define	CSIAR_WRITE_CMD			0x80000000
-#define	CSIAR_BYTE_ENABLE		0x0f
-#define	CSIAR_BYTE_ENABLE_SHIFT		12
-#define	CSIAR_ADDR_MASK			0x0fff
-#define CSIAR_FUNC_CARD			0x00000000
-#define CSIAR_FUNC_SDIO			0x00010000
-#define CSIAR_FUNC_NIC			0x00020000
-#define CSIAR_FUNC_NIC2			0x00010000
-	PMCH			= 0x6f,
-	EPHYAR			= 0x80,
-#define	EPHYAR_FLAG			0x80000000
-#define	EPHYAR_WRITE_CMD		0x80000000
-#define	EPHYAR_REG_MASK			0x1f
-#define	EPHYAR_REG_SHIFT		16
-#define	EPHYAR_DATA_MASK		0xffff
-	DLLPR			= 0xd0,
-#define	PFM_EN				(1 << 6)
-#define	TX_10M_PS_EN			(1 << 7)
-	DBG_REG			= 0xd1,
-#define	FIX_NAK_1			(1 << 4)
-#define	FIX_NAK_2			(1 << 3)
-	TWSI			= 0xd2,
-	MCU			= 0xd3,
-#define	NOW_IS_OOB			(1 << 7)
-#define	TX_EMPTY			(1 << 5)
-#define	RX_EMPTY			(1 << 4)
-#define	RXTX_EMPTY			(TX_EMPTY | RX_EMPTY)
-#define	EN_NDP				(1 << 3)
-#define	EN_OOB_RESET			(1 << 2)
-#define	LINK_LIST_RDY			(1 << 1)
-	EFUSEAR			= 0xdc,
-#define	EFUSEAR_FLAG			0x80000000
-#define	EFUSEAR_WRITE_CMD		0x80000000
-#define	EFUSEAR_READ_CMD		0x00000000
-#define	EFUSEAR_REG_MASK		0x03ff
-#define	EFUSEAR_REG_SHIFT		8
-#define	EFUSEAR_DATA_MASK		0xff
-	MISC_1			= 0xf2,
-#define	PFM_D3COLD_EN			(1 << 6)
-};
-
-enum rtl8168_registers {
-	LED_FREQ		= 0x1a,
-	EEE_LED			= 0x1b,
-	ERIDR			= 0x70,
-	ERIAR			= 0x74,
-#define ERIAR_FLAG			0x80000000
-#define ERIAR_WRITE_CMD			0x80000000
-#define ERIAR_READ_CMD			0x00000000
-#define ERIAR_ADDR_BYTE_ALIGN		4
-#define ERIAR_TYPE_SHIFT		16
-#define ERIAR_EXGMAC			(0x00 << ERIAR_TYPE_SHIFT)
-#define ERIAR_MSIX			(0x01 << ERIAR_TYPE_SHIFT)
-#define ERIAR_ASF			(0x02 << ERIAR_TYPE_SHIFT)
-#define ERIAR_OOB			(0x02 << ERIAR_TYPE_SHIFT)
-#define ERIAR_MASK_SHIFT		12
-#define ERIAR_MASK_0001			(0x1 << ERIAR_MASK_SHIFT)
-#define ERIAR_MASK_0011			(0x3 << ERIAR_MASK_SHIFT)
-#define ERIAR_MASK_0100			(0x4 << ERIAR_MASK_SHIFT)
-#define ERIAR_MASK_0101			(0x5 << ERIAR_MASK_SHIFT)
-#define ERIAR_MASK_1111			(0xf << ERIAR_MASK_SHIFT)
-	EPHY_RXER_NUM		= 0x7c,
-	OCPDR			= 0xb0,	/* OCP GPHY access */
-#define OCPDR_WRITE_CMD			0x80000000
-#define OCPDR_READ_CMD			0x00000000
-#define OCPDR_REG_MASK			0x7f
-#define OCPDR_GPHY_REG_SHIFT		16
-#define OCPDR_DATA_MASK			0xffff
-	OCPAR			= 0xb4,
-#define OCPAR_FLAG			0x80000000
-#define OCPAR_GPHY_WRITE_CMD		0x8000f060
-#define OCPAR_GPHY_READ_CMD		0x0000f060
-	GPHY_OCP		= 0xb8,
-	RDSAR1			= 0xd0,	/* 8168c only. Undocumented on 8168dp */
-	MISC			= 0xf0,	/* 8168e only. */
-#define TXPLA_RST			(1 << 29)
-#define DISABLE_LAN_EN			(1 << 23) /* Enable GPIO pin */
-#define PWM_EN				(1 << 22)
-#define RXDV_GATED_EN			(1 << 19)
-#define EARLY_TALLY_EN			(1 << 16)
-};
-#endif
 
 enum rtl_register_content {
 	/* InterruptStatusBits */
@@ -8092,41 +7915,6 @@ static const struct net_device_ops secgmac_netdev_ops = {
 };
 
 #if 0
-static const struct rtl_cfg_info {
-	void (*hw_start)(struct net_device *);
-	unsigned int region;
-	unsigned int align;
-	u16 event_slow;
-	unsigned features;
-	u8 default_ver;
-} rtl_cfg_infos [] = {
-	[RTL_CFG_0] = {
-		.hw_start	= rtl_hw_start_8169,
-		.region		= 1,
-		.align		= 0,
-		.event_slow	= SYSErr | LinkChg | RxOverflow | RxFIFOOver,
-		.features	= RTL_FEATURE_GMII,
-		.default_ver	= RTL_GIGA_MAC_VER_01,
-	},
-	[RTL_CFG_1] = {
-		.hw_start	= rtl_hw_start_8168,
-		.region		= 2,
-		.align		= 8,
-		.event_slow	= SYSErr | LinkChg | RxOverflow,
-		.features	= RTL_FEATURE_GMII | RTL_FEATURE_MSI,
-		.default_ver	= RTL_GIGA_MAC_VER_11,
-	},
-	[RTL_CFG_2] = {
-		.hw_start	= rtl_hw_start_8101,
-		.region		= 2,
-		.align		= 8,
-		.event_slow	= SYSErr | LinkChg | RxOverflow | RxFIFOOver |
-				  PCSTimeout,
-		.features	= RTL_FEATURE_MSI,
-		.default_ver	= RTL_GIGA_MAC_VER_13,
-	}
-};
-
 /* Cfg9346_Unlock assumed. */
 static unsigned rtl_try_msi(struct secgmac_private *tp,
 			    const struct rtl_cfg_info *cfg)
@@ -8205,29 +7993,6 @@ static void rtl_hw_init_8168ep(struct secgmac_private *tp)
 	rtl_hw_init_8168g(tp);
 }
 
-static void rtl_hw_initialize(struct secgmac_private *tp)
-{
-	switch (tp->mac_version) {
-	case RTL_GIGA_MAC_VER_40:
-	case RTL_GIGA_MAC_VER_41:
-	case RTL_GIGA_MAC_VER_42:
-	case RTL_GIGA_MAC_VER_43:
-	case RTL_GIGA_MAC_VER_44:
-	case RTL_GIGA_MAC_VER_45:
-	case RTL_GIGA_MAC_VER_46:
-	case RTL_GIGA_MAC_VER_47:
-	case RTL_GIGA_MAC_VER_48:
-		rtl_hw_init_8168g(tp);
-		break;
-	case RTL_GIGA_MAC_VER_49:
-	case RTL_GIGA_MAC_VER_50:
-	case RTL_GIGA_MAC_VER_51:
-		rtl_hw_init_8168ep(tp);
-		break;
-	default:
-		break;
-	}
-}
 #endif
 
 static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
