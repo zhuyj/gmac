@@ -98,7 +98,7 @@ static int rx_buf_sz = 16383;
 static struct {
 	u32 msg_enable;
 } debug = { -1 };
-
+#if 0
 enum rtl_register_content {
 	/* InterruptStatusBits */
 	SYSErr		= 0x8000,
@@ -234,6 +234,7 @@ enum rtl_register_content {
 	/* magic enable v2 */
 	MagicPacket_v2	= (1 << 16),	/* Wake up when receives a Magic Packet */
 };
+#endif
 
 enum rtl_desc_bit {
 	/* First doubleword. */
@@ -304,38 +305,6 @@ struct TxDesc {
 	__le64 addr;
 };
 
-/* bar1 for pcie configuration */
-//#define BAR1_VIRTUAL_BASE		(tp->bar1_addr)
-//#define BAR1_PHYSICAL_BASE		(0x00070000)
-
-/* bar1 for pcie configuration */
-//#define BAR1_VIRTUAL_8K_OFFSET		(tp->bar1_addr  + 8 * 0x400)
-//#define BAR1_PHYSICAL_8K_OFFSET		(0x00010000  + 8 * 0x400)
-
-/* bar2 is to tx skb data, top 512 bytes for tx desc */
-//#define BAR2_VIRTUAL_BASE		(tp->bar2_addr)
-//#define BAR2_PHYSICAL_BASE		(0x00040000)
-
-/* bar2 top 512 for tx desc */
-//#define TX_DESC_VIRTUAL_BASE		BAR2_VIRTUAL_BASE
-//#define TX_DESC_PHYSICAL_BASE		BAR2_PHYSICAL_BASE
-
-/* bar2 bottom for tx skb */
-//#define TX_SKB_PHYSICAL_BASE		(BAR2_PHYSICAL_BASE + 512)
-//#define TX_SKB_VIRTUAL_BASE		(BAR2_VIRTUAL_BASE + 512)
-
-/* bar3 is to rx skb data, top 512 bytes for rx desc */
-//#define BAR3_VIRTUAL_BASE		(tp->bar3_addr)
-//#define BAR3_PHYSICAL_BASE		(0x00010000)
-
-/* bar3 top 512 for rx desc */
-//#define RX_DESC_VIRTUAL_BASE		BAR3_VIRTUAL_BASE
-//#define RX_DESC_PHYSICAL_BASE		BAR3_PHYSICAL_BASE
-
-/* bar3 bottom for rx skb */
-//#define RX_SKB_PHYSICAL_BASE		(BAR3_PHYSICAL_BASE + 512)
-//#define RX_SKB_VIRTUAL_BASE		(BAR3_VIRTUAL_BASE + 512)
-
 struct RxDesc {
 	__le32 opts1;
 	__le32 opts2;
@@ -391,28 +360,6 @@ struct rtl8169_stats {
 	struct u64_stats_sync	syncp;
 };
 
-#if 0
-enum secgmac_registers {
-        csr0 = 0x000,
-        csr1 = 0x008,
-        csr2 = 0x010,
-        csr3 = 0x018,
-        csr4 = 0x020,
-        csr5 = 0x028,
-        csr6 = 0x030,
-        csr7 = 0x038,
-        csr8 = 0x040,
-        csr9 = 0x048,
-        csr10 = 0x050,
-        csr11 = 0x058,
-        csr16 = 0x080,
-        csr17 = 0x088,
-        csr18 = 0x090,
-        csr19 = 0x098,
-        csr20 = 0x0a0,
-};
-#endif
-
 #define MAC_Function_SIGN	(tp->bar1_addr+0X00)
 
 struct secgmac_private {
@@ -422,8 +369,6 @@ struct secgmac_private {
 	struct net_device *dev;
 	struct napi_struct napi;
 	u32 msg_enable;
-//	u16 txd_version;
-//	u16 mac_version;
 	u32 cur_rx; /* Index into the Rx descriptor buffer of next Rx pkt. */
 	u32 cur_tx; /* Index into the Tx descriptor buffer of next Rx pkt. */
 	u32 secgmac_curtx;
@@ -482,7 +427,6 @@ struct secgmac_private {
 	dma_addr_t counters_phys_addr;
 	struct rtl8169_counters *counters;
 	struct rtl8169_tc_offsets tc_offset;
-//	u32 saved_wolopts;
 	u32 opts1_mask;
 
 	struct rtl_fw {
@@ -519,69 +463,10 @@ static void rtl_unlock_work(struct secgmac_private *tp)
 	mutex_unlock(&tp->wk.mutex);
 }
 
-#if 0
-static void rtl_tx_performance_tweak(struct pci_dev *pdev, u16 force)
-{
-	pcie_capability_clear_and_set_word(pdev, PCI_EXP_DEVCTL,
-					   PCI_EXP_DEVCTL_READRQ, force);
-}
-#endif
-
 struct rtl_cond {
 	bool (*check)(struct secgmac_private *);
 	const char *msg;
 };
-
-#if 0
-static void rtl_udelay(unsigned int d)
-{
-	udelay(d);
-}
-
-static bool rtl_loop_wait(struct secgmac_private *tp, const struct rtl_cond *c,
-			  void (*delay)(unsigned int), unsigned int d, int n,
-			  bool high)
-{
-	int i;
-
-	for (i = 0; i < n; i++) {
-		delay(d);
-		if (c->check(tp) == high)
-			return true;
-	}
-	netif_err(tp, drv, tp->dev, "%s == %d (loop: %d, delay: %d).\n",
-		  c->msg, !high, n, d);
-	return false;
-}
-
-static bool rtl_udelay_loop_wait_high(struct secgmac_private *tp,
-				      const struct rtl_cond *c,
-				      unsigned int d, int n)
-{
-	return rtl_loop_wait(tp, c, rtl_udelay, d, n, true);
-}
-
-static bool rtl_udelay_loop_wait_low(struct secgmac_private *tp,
-				     const struct rtl_cond *c,
-				     unsigned int d, int n)
-{
-	return rtl_loop_wait(tp, c, rtl_udelay, d, n, false);
-}
-
-static bool rtl_msleep_loop_wait_high(struct secgmac_private *tp,
-				      const struct rtl_cond *c,
-				      unsigned int d, int n)
-{
-	return rtl_loop_wait(tp, c, msleep, d, n, true);
-}
-
-static bool rtl_msleep_loop_wait_low(struct secgmac_private *tp,
-				     const struct rtl_cond *c,
-				     unsigned int d, int n)
-{
-	return rtl_loop_wait(tp, c, msleep, d, n, false);
-}
-#endif
 
 #define DECLARE_RTL_COND(name)				\
 static bool name ## _check(struct secgmac_private *);	\
@@ -1716,7 +1601,7 @@ static netdev_features_t rtl8169_fix_features(struct net_device *dev,
 static void __rtl8169_set_features(struct net_device *dev,
 				   netdev_features_t features)
 {
-	struct secgmac_private *tp = netdev_priv(dev);
+//	struct secgmac_private *tp = netdev_priv(dev);
 	//void __iomem *ioaddr = tp->mmio_addr;
 //	u32 rx_config;
 
@@ -1728,15 +1613,15 @@ static void __rtl8169_set_features(struct net_device *dev,
 
 	//RTL_W32(RxConfig, rx_config);
 
-	if (features & NETIF_F_RXCSUM)
-		tp->cp_cmd |= RxChkSum;
-	else
-		tp->cp_cmd &= ~RxChkSum;
+//	if (features & NETIF_F_RXCSUM)
+//		tp->cp_cmd |= RxChkSum;
+//	else
+//		tp->cp_cmd &= ~RxChkSum;
 
-	if (features & NETIF_F_HW_VLAN_CTAG_RX)
-		tp->cp_cmd |= RxVlan;
-	else
-		tp->cp_cmd &= ~RxVlan;
+//	if (features & NETIF_F_HW_VLAN_CTAG_RX)
+//		tp->cp_cmd |= RxVlan;
+//	else
+//		tp->cp_cmd &= ~RxVlan;
 
 //	tp->cp_cmd |= RTL_R16(CPlusCmd) & ~(RxVlan | RxChkSum);
 
@@ -1786,7 +1671,7 @@ static int secgmac_gset_gmii(struct net_device *dev, struct ethtool_cmd *cmd)
 
 	status = 0; //RTL_R32(TBICSR);
 	cmd->advertising = ADVERTISED_Autoneg | ADVERTISED_TP;
-	cmd->autoneg = !!(status & TBINwEnable);
+	//cmd->autoneg = !!(status & TBINwEnable);
 
 	ethtool_cmd_speed_set(cmd, SPEED_100);
 	cmd->duplex = DUPLEX_FULL; /* Always set */
@@ -5050,35 +4935,35 @@ static void rtl_set_rx_mode(struct net_device *dev)
 	struct secgmac_private *tp = netdev_priv(dev);
 	//void __iomem *ioaddr = tp->mmio_addr;
 	u32 mc_filter[2];	/* Multicast hash filter */
-	int rx_mode;
+	//int rx_mode;
 	//u32 tmp = 0;
 
 	if (dev->flags & IFF_PROMISC) {
 		/* Unconditionally log net taps. */
 		netif_notice(tp, link, dev, "Promiscuous mode enabled\n");
-		rx_mode =
-		    AcceptBroadcast | AcceptMulticast | AcceptMyPhys |
-		    AcceptAllPhys;
+//		rx_mode =
+//		    AcceptBroadcast | AcceptMulticast | AcceptMyPhys |
+//		    AcceptAllPhys;
 		mc_filter[1] = mc_filter[0] = 0xffffffff;
 	} else if ((netdev_mc_count(dev) > multicast_filter_limit) ||
 		   (dev->flags & IFF_ALLMULTI)) {
 		/* Too many to filter perfectly -- accept all multicasts. */
-		rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
+		//rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
 		mc_filter[1] = mc_filter[0] = 0xffffffff;
 	} else {
 		struct netdev_hw_addr *ha;
 
-		rx_mode = AcceptBroadcast | AcceptMyPhys;
+		//rx_mode = AcceptBroadcast | AcceptMyPhys;
 		mc_filter[1] = mc_filter[0] = 0;
 		netdev_for_each_mc_addr(ha, dev) {
 			int bit_nr = ether_crc(ETH_ALEN, ha->addr) >> 26;
 			mc_filter[bit_nr >> 5] |= 1 << (bit_nr & 31);
-			rx_mode |= AcceptMulticast;
+			//rx_mode |= AcceptMulticast;
 		}
 	}
 
-	if (dev->features & NETIF_F_RXALL)
-		rx_mode |= (AcceptErr | AcceptRunt);
+//	if (dev->features & NETIF_F_RXALL)
+//		rx_mode |= (AcceptErr | AcceptRunt);
 #if 0
 	tmp = (RTL_R32(RxConfig) & ~RX_CONFIG_ACCEPT_MASK) | rx_mode;
 
@@ -7865,17 +7750,6 @@ static void secgmac_remove_one(struct pci_dev *pdev)
 	struct net_device *dev = pci_get_drvdata(pdev);
 	struct secgmac_private *tp = netdev_priv(dev);
 
-#if 0
-	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_31 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_49 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_50 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_51) &&
-	    r8168_check_dash(tp)) {
-		rtl8168_driver_stop(tp);
-	}
-#endif
 	netif_napi_del(&tp->napi);
 
 	unregister_netdev(dev);
@@ -8127,8 +8001,8 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	    !pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
 
 		/* CPlusCmd Dual Access Cycle is only needed for non-PCIe */
-		if (!pci_is_pcie(pdev))
-			tp->cp_cmd |= PCIDAC;
+//		if (!pci_is_pcie(pdev))
+//			tp->cp_cmd |= PCIDAC;
 		dev->features |= NETIF_F_HIGHDMA;
 	} else {
 		secgmac_debug("set 32 bit DMA mask");
@@ -8159,26 +8033,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	spin_lock_init(&tp->lock);
 
-	//rtl8169_print_mac_version(tp);
-
-#if 0
-	if (rtl_tbi_enabled(tp)) {
-		tp->set_speed = rtl8169_set_speed_tbi;
-		tp->get_settings = rtl8169_gset_tbi;
-		tp->phy_reset_enable = rtl8169_tbi_reset_enable;
-		tp->phy_reset_pending = rtl8169_tbi_reset_pending;
-		tp->link_ok = rtl8169_tbi_link_ok;
-		tp->do_ioctl = rtl_tbi_ioctl;
-	} else {
-		tp->set_speed = rtl8169_set_speed_xmii;
-		tp->get_settings = rtl8169_gset_xmii;
-		tp->phy_reset_enable = rtl8169_xmii_reset_enable;
-		tp->phy_reset_pending = rtl8169_xmii_reset_pending;
-		tp->link_ok = rtl8169_xmii_link_ok;
-		tp->do_ioctl = rtl_xmii_ioctl;
-	}
-#endif
-
 	tp->set_speed = secgmac_set_speed_gmii;
 	tp->get_settings = secgmac_gset_gmii;
 	tp->phy_reset_enable = secgmac_gmii_reset_enable;
@@ -8190,34 +8044,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	u64_stats_init(&tp->rx_stats.syncp);
 	u64_stats_init(&tp->tx_stats.syncp);
 
-#if 0
-	/* set gmac mac address in csr16 and csr17 */
-	secgmac_debug("ioaddr:0x%p", ioaddr);
-	RTL_W32(csr16, 0x55443322);
-	RTL_W32(csr17, 0x00007766);
-	mmiowb();
-	smp_wmb();
-	secgmac_debug("csr16:0x%x", RTL_R32(csr16));
-	secgmac_debug("csr17:0x%x", RTL_R32(csr17));
-	for (i = 0; i < ETH_ALEN-2; i++) {
-		dev->dev_addr[i] = RTL_R8(csr16 + i);
-		secgmac_debug("addr:0x%x", dev->dev_addr[i]);
-	}
-
-	dev->dev_addr[4] = RTL_R8(csr17);
-	secgmac_debug("addr:0x%x", dev->dev_addr[4]);
-	dev->dev_addr[5] = RTL_R8(csr17 + 1);
-	secgmac_debug("addr:0x%x", dev->dev_addr[5]);
-
-	if ((dev->dev_addr[0] == 0x0) &&
-		(dev->dev_addr[1] == 0x0) &&
-		(dev->dev_addr[2] == 0x0) &&
-		(dev->dev_addr[3] == 0x0) &&
-		(dev->dev_addr[4] == 0x0) &&
-		(dev->dev_addr[5] == 0x0)) {
-		eth_random_addr(dev->dev_addr);
-	}
-#endif
 	eth_random_addr(dev->dev_addr);
 
 	dev->ethtool_ops = &secgmac_ethtool_ops;
@@ -8234,7 +8060,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	dev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO |
 		NETIF_F_HIGHDMA;
 
-	tp->cp_cmd |= RxChkSum | RxVlan;
+	//tp->cp_cmd |= RxChkSum | RxVlan;
 #if 0
 	/*
 	 * Pretend we are using VLANs; This bypasses a nasty bug where
@@ -8280,24 +8106,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	netif_info(tp, probe, dev, "%s at 0x%p, 0x%p, 0x%p, 0x%p, %pM, IRQ %d\n",
 		   "secgmac", ioaddr, bar1_addr, bar2_addr, bar3_addr, dev->dev_addr,
 		   pdev->irq);
-#if 0	
-	if (rtl_chip_infos[chipset].jumbo_max != JUMBO_1K) {
-		netif_info(tp, probe, dev, "jumbo features [frames: %d bytes, "
-			   "tx checksumming: %s]\n",
-			   rtl_chip_infos[chipset].jumbo_max,
-			   rtl_chip_infos[chipset].jumbo_tx_csum ? "ok" : "ko");
-	}
-
-	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_31 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_49 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_50 ||
-	     tp->mac_version == RTL_GIGA_MAC_VER_51) &&
-	    r8168_check_dash(tp)) {
-		rtl8168_driver_start(tp);
-	}
-#endif
 //	device_set_wakeup_enable(&pdev->dev, tp->features & RTL_FEATURE_WOL);
 //	if (pci_dev_run_wake(pdev))
 //		pm_runtime_put_noidle(&pdev->dev);
