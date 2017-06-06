@@ -1187,6 +1187,7 @@ static void secgmac_tx_timeout(struct net_device *dev)
         secgmac_check_link_status(dev, tp, tp->mmio_addr);
 }
 
+#if 0
 static int rtl8169_xmit_frags(struct secgmac_private *tp, struct sk_buff *skb,
 			      u32 *opts)
 {
@@ -1237,9 +1238,11 @@ err_out:
 	rtl8169_tx_clear_range(tp, tp->cur_tx + 1, cur_frag);
 	return -EIO;
 }
+#endif
 
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev);
+#if 0
 /* r8169_csum_workaround()
  * The hw limites the value the transport offset. When the offset is out of the
  * range, calculate the checksum by sw.
@@ -1278,23 +1281,15 @@ drop:
 		dev_kfree_skb_any(skb);
 	}
 }
+#endif
 
 #define  PCIE_RX_BUF			(tp->bar2_addr)
 #define  PCIE_RX_BUF_LEN		0x600
-
 static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	unsigned int entry = tp->cur_tx % 2;
-	struct TxDesc *txd = tp->TxDescArray + entry;
-	//void __iomem *ioaddr = tp->mmio_addr;
-	struct device *d = &tp->pci_dev->dev;
-	dma_addr_t mapping;
-	u32 len;
-	u32 opts[2];
-	int frags;
-	u32 volatile status;
 	u32 pkt_size;
 	struct ethhdr *eth;
 
@@ -1345,95 +1340,6 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
-
-	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
-		netif_err(tp, drv, dev, "BUG! Tx Ring full when queue awake!\n");
-		goto err_stop_0;
-	}
-
-	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
-		goto err_stop_0;
-
-	opts[1] = cpu_to_le32(rtl8169_tx_vlan_tag(skb));
-	opts[0] = DescOwn;
-
-	if (!tp->tso_csum(tp, skb, opts)) {
-		r8169_csum_workaround(tp, skb);
-		return NETDEV_TX_OK;
-	}
-
-	len = skb_headlen(skb);
-	mapping = dma_map_single(d, skb->data, len, DMA_TO_DEVICE);
-	if (unlikely(dma_mapping_error(d, mapping))) {
-		if (net_ratelimit())
-			netif_err(tp, drv, dev, "Failed to map TX DMA!\n");
-		goto err_dma_0;
-	}
-
-	tp->tx_skb[entry].len = len;
-	txd->addr = cpu_to_le64(mapping);
-
-	frags = rtl8169_xmit_frags(tp, skb, opts);
-	if (frags < 0)
-		goto err_dma_1;
-	else if (frags)
-		opts[0] |= FirstFrag;
-	else {
-		opts[0] |= FirstFrag | LastFrag;
-		tp->tx_skb[entry].skb = skb;
-	}
-
-	txd->opts2 = cpu_to_le32(opts[1]);
-
-	skb_tx_timestamp(skb);
-
-	/* Force memory writes to complete before releasing descriptor */
-	dma_wmb();
-
-	/* Anti gcc 2.95.3 bugware (sic) */
-	status = opts[0] | len | (RingEnd * !((entry + 1) % NUM_TX_DESC));
-	txd->opts1 = cpu_to_le32(status);
-
-	/* Force all memory writes to complete before notifying device */
-	wmb();
-
-	tp->cur_tx += frags + 1;
-
-	//RTL_W8(TxPoll, NPQ);
-
-	mmiowb();
-
-	if (!TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS)) {
-		/* Avoid wrongly optimistic queue wake-up: rtl_tx thread must
-		 * not miss a ring update when it notices a stopped queue.
-		 */
-		smp_wmb();
-		netif_stop_queue(dev);
-		/* Sync with rtl_tx:
-		 * - publish queue status and cur_tx ring index (write barrier)
-		 * - refresh dirty_tx ring index (read barrier).
-		 * May the current thread have a pessimistic view of the ring
-		 * status and forget to wake up queue, a racing rtl_tx thread
-		 * can't.
-		 */
-		smp_mb();
-		if (TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS))
-			netif_wake_queue(dev);
-	}
-
-	return NETDEV_TX_OK;
-
-err_dma_1:
-	rtl8169_unmap_tx_skb(d, tp->tx_skb + entry, txd);
-err_dma_0:
-	dev_kfree_skb_any(skb);
-	dev->stats.tx_dropped++;
-	return NETDEV_TX_OK;
-
-err_stop_0:
-	netif_stop_queue(dev);
-	dev->stats.tx_dropped++;
-	return NETDEV_TX_BUSY;
 }
 
 static inline int rtl8169_fragmented_frame(u32 status)
@@ -1527,29 +1433,7 @@ static int secgmac_poll(struct napi_struct *napi, int budget)
 
 	mmiowb();
 	mod_timer(&tp->rx_timer, jiffies + (1+HZ/20));
-#if 0
-	status = rtl_get_events(tp);
-	rtl_ack_events(tp, status & ~tp->event_slow);
 
-	if (status & RTL_EVENT_NAPI_RX)
-		work_done = rtl_rx(dev, tp, (u32) budget);
-
-	if (status & RTL_EVENT_NAPI_TX)
-		rtl_tx(dev, tp);
-
-	if (status & tp->event_slow) {
-		enable_mask &= ~tp->event_slow;
-
-		rtl_schedule_task(tp, RTL_FLAG_TASK_SLOW_PENDING);
-	}
-
-	if (work_done < budget) {
-		napi_complete(napi);
-
-		//rtl_irq_enable(tp, enable_mask);
-		mmiowb();
-	}
-#endif
 	return work_done;
 }
 
