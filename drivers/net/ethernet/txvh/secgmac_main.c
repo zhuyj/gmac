@@ -346,9 +346,11 @@ static void rtl_ack_events(struct secgmac_private *tp, u16 bits)
 #endif
 }
 
+#if 0
 #define RTL_EVENT_NAPI_RX	(RxOK | RxErr)
 #define RTL_EVENT_NAPI_TX	(TxOK | TxErr)
 #define RTL_EVENT_NAPI		(RTL_EVENT_NAPI_RX | RTL_EVENT_NAPI_TX)
+#endif
 
 static unsigned int secgmac_gmii_reset_pending(struct secgmac_private *tp)
 {
@@ -686,6 +688,7 @@ static const struct ethtool_ops secgmac_ethtool_ops = {
 	.get_ts_info		= ethtool_op_get_ts_info,
 };
 
+#if 0
 #define PHY_READ		0x00000000
 #define PHY_DATA_OR		0x10000000
 #define PHY_DATA_AND		0x20000000
@@ -700,7 +703,6 @@ static const struct ethtool_ops secgmac_ethtool_ops = {
 #define PHY_SKIPN		0xd0000000
 #define PHY_DELAY_MS		0xe0000000
 
-#if 0
 struct fw_info {
 	u32	magic;
 	char	version[RTL_VER_SIZE];
@@ -1930,9 +1932,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	}
 
 	//rtl_init_rxcfg(tp);
-
 	//rtl_irq_disable(tp);
-
 //	rtl_hw_initialize(tp);
 
 	secgmac_hw_reset(tp);
