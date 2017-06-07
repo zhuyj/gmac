@@ -61,11 +61,11 @@ static const int multicast_filter_limit = 32;
 #define SECGMAC_NAPI_WEIGHT	64
 #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
 #define NUM_RX_DESC	256U	/* Number of Rx descriptor registers */
-#define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
-#define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
+//#define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
+//#define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
 
 #define SECGMAC_TX_TIMEOUT	(6*HZ)
-#define RTL8169_PHY_TIMEOUT	(10*HZ)
+//#define RTL8169_PHY_TIMEOUT	(10*HZ)
 
 /* write/read MMIO register */
 #define RTL_W8(reg, val8)	writeb ((val8), ioaddr + (reg))
@@ -94,7 +94,7 @@ static const struct pci_device_id secgmac_pci_tbl[] = {
 
 MODULE_DEVICE_TABLE(pci, secgmac_pci_tbl);
 
-static int rx_buf_sz = 16383;
+//static int rx_buf_sz = 16383;
 static struct {
 	u32 msg_enable;
 } debug = { -1 };
@@ -238,8 +238,8 @@ struct secgmac_private {
 	u32 dirty_tx;
 	struct rtl8169_stats rx_stats;
 	struct rtl8169_stats tx_stats;
-	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
-	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
+//	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
+//	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
 	dma_addr_t TxPhyAddr;
 	dma_addr_t RxPhyAddr;
 	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
@@ -1006,6 +1006,7 @@ static inline void rtl8169_make_unusable_by_asic(struct RxDesc *desc)
 	desc->opts1 &= ~cpu_to_le32(DescOwn | RsvdMask);
 }
 
+#if 0
 static void rtl8169_free_rx_databuff(struct secgmac_private *tp,
 				     void **data_buff, struct RxDesc *desc)
 {
@@ -1016,6 +1017,7 @@ static void rtl8169_free_rx_databuff(struct secgmac_private *tp,
 	*data_buff = NULL;
 	rtl8169_make_unusable_by_asic(desc);
 }
+#endif
 
 static inline void rtl8169_mark_to_asic(struct RxDesc *desc, u32 rx_buf_sz)
 {
@@ -1039,6 +1041,7 @@ static inline void *rtl8169_align(void *data)
 	return (void *)ALIGN((long)data, 16);
 }
 
+#if 0
 static struct sk_buff *rtl8169_alloc_rx_data(struct secgmac_private *tp,
 					     struct RxDesc *desc)
 {
@@ -1074,9 +1077,11 @@ err_out:
 	kfree(data);
 	return NULL;
 }
+#endif
 
 static void rtl8169_rx_clear(struct secgmac_private *tp)
 {
+#if 0
 	unsigned int i;
 
 	for (i = 0; i < NUM_RX_DESC; i++) {
@@ -1085,6 +1090,7 @@ static void rtl8169_rx_clear(struct secgmac_private *tp)
 					    tp->RxDescArray + i);
 		}
 	}
+#endif
 }
 
 static inline void rtl8169_mark_as_last_descriptor(struct RxDesc *desc)
@@ -1094,6 +1100,7 @@ static inline void rtl8169_mark_as_last_descriptor(struct RxDesc *desc)
 
 static int rtl8169_rx_fill(struct secgmac_private *tp)
 {
+#if 0
 	unsigned int i;
 
 	for (i = 0; i < NUM_RX_DESC; i++) {
@@ -1102,20 +1109,22 @@ static int rtl8169_rx_fill(struct secgmac_private *tp)
 		if (tp->Rx_databuff[i])
 			continue;
 
-		data = rtl8169_alloc_rx_data(tp, tp->RxDescArray + i);
-		if (!data) {
-			rtl8169_make_unusable_by_asic(tp->RxDescArray + i);
-			goto err_out;
-		}
-		tp->Rx_databuff[i] = data;
+//		data = rtl8169_alloc_rx_data(tp, tp->RxDescArray + i);
+//		if (!data) {
+//			rtl8169_make_unusable_by_asic(tp->RxDescArray + i);
+//			goto err_out;
+//		}
+//		tp->Rx_databuff[i] = data;
 	}
 
-	rtl8169_mark_as_last_descriptor(tp->RxDescArray + NUM_RX_DESC - 1);
+//	rtl8169_mark_as_last_descriptor(tp->RxDescArray + NUM_RX_DESC - 1);
 	return 0;
 
 err_out:
 	rtl8169_rx_clear(tp);
 	return -ENOMEM;
+#endif
+	return 0;
 }
 
 static int rtl8169_init_ring(struct net_device *dev)
@@ -1130,6 +1139,7 @@ static int rtl8169_init_ring(struct net_device *dev)
 	return rtl8169_rx_fill(tp);
 }
 
+#if 0
 static void rtl8169_unmap_tx_skb(struct device *d, struct ring_info *tx_skb,
 				 struct TxDesc *desc)
 {
@@ -1142,6 +1152,7 @@ static void rtl8169_unmap_tx_skb(struct device *d, struct ring_info *tx_skb,
 	desc->addr = 0x00;
 	tx_skb->len = 0;
 }
+#endif
 
 static void rtl8169_tx_clear_range(struct secgmac_private *tp, u32 start,
 				   unsigned int n)
@@ -1156,8 +1167,8 @@ static void rtl8169_tx_clear_range(struct secgmac_private *tp, u32 start,
 		if (len) {
 			struct sk_buff *skb = tx_skb->skb;
 
-			rtl8169_unmap_tx_skb(&tp->pci_dev->dev, tx_skb,
-					     tp->TxDescArray + entry);
+//			rtl8169_unmap_tx_skb(&tp->pci_dev->dev, tx_skb,
+//					     tp->TxDescArray + entry);
 			if (skb) {
 				tp->dev->stats.tx_dropped++;
 				dev_kfree_skb_any(skb);
@@ -1499,12 +1510,12 @@ static int secgmac_close(struct net_device *dev)
 
 	free_irq(pdev->irq, dev);
 
-	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
-			  tp->RxPhyAddr);
-	dma_free_coherent(&pdev->dev, R8169_TX_RING_BYTES, tp->TxDescArray,
-			  tp->TxPhyAddr);
-	tp->TxDescArray = NULL;
-	tp->RxDescArray = NULL;
+//	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
+//			  tp->RxPhyAddr);
+//	dma_free_coherent(&pdev->dev, R8169_TX_RING_BYTES, tp->TxDescArray,
+//			  tp->TxPhyAddr);
+//	tp->TxDescArray = NULL;
+//	tp->RxDescArray = NULL;
 #if 0
 	kfree(tp->secgmac_txdescArray);
 	tp->secgmac_txdescArray = NULL;
@@ -1543,15 +1554,15 @@ static int secgmac_open(struct net_device *dev)
 	 * Rx and Tx descriptors needs 256 bytes alignment.
 	 * dma_alloc_coherent provides more.
 	 */
-	tp->TxDescArray = dma_alloc_coherent(&pdev->dev, R8169_TX_RING_BYTES,
-					     &tp->TxPhyAddr, GFP_KERNEL);
-	if (!tp->TxDescArray)
-		goto err_pm_runtime_put;
+//	tp->TxDescArray = dma_alloc_coherent(&pdev->dev, R8169_TX_RING_BYTES,
+//					     &tp->TxPhyAddr, GFP_KERNEL);
+//	if (!tp->TxDescArray)
+//		goto err_pm_runtime_put;
 
-	tp->RxDescArray = dma_alloc_coherent(&pdev->dev, R8169_RX_RING_BYTES,
-					     &tp->RxPhyAddr, GFP_KERNEL);
-	if (!tp->RxDescArray)
-		goto err_free_tx_0;
+//	tp->RxDescArray = dma_alloc_coherent(&pdev->dev, R8169_RX_RING_BYTES,
+//					     &tp->RxPhyAddr, GFP_KERNEL);
+//	if (!tp->RxDescArray)
+//		goto err_free_tx_0;
 
 	retval = rtl8169_init_ring(dev);
 	tp->cur_tx = 0;
@@ -1622,14 +1633,14 @@ err_release_fw_2:
 //err_release_fw_1:
 //	kfree(tp->secgmac_txdescArray);
 //err_free_rx_1:
-	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
-			  tp->RxPhyAddr);
-	tp->RxDescArray = NULL;
-err_free_tx_0:
-	dma_free_coherent(&pdev->dev, R8169_TX_RING_BYTES, tp->TxDescArray,
-			  tp->TxPhyAddr);
-	tp->TxDescArray = NULL;
-err_pm_runtime_put:
+//	dma_free_coherent(&pdev->dev, R8169_RX_RING_BYTES, tp->RxDescArray,
+//			  tp->RxPhyAddr);
+//	tp->RxDescArray = NULL;
+//err_free_tx_0:
+//	dma_free_coherent(&pdev->dev, R8169_TX_RING_BYTES, tp->TxDescArray,
+//			  tp->TxPhyAddr);
+//	tp->TxDescArray = NULL;
+//err_pm_runtime_put:
 	pm_runtime_put_noidle(&pdev->dev);
 	goto out;
 }
@@ -2055,7 +2066,6 @@ static struct pci_driver secgmac_pci_driver = {
 	.probe		= secgmac_init_one,
 	.remove		= secgmac_remove_one,
 	.shutdown	= rtl_shutdown,
-//	.driver.pm	= RTL8169_PM_OPS,
 };
 
 module_pci_driver(secgmac_pci_driver);
