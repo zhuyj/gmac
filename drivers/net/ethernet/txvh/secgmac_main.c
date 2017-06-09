@@ -61,30 +61,8 @@ static const int multicast_filter_limit = 32;
 #define SECGMAC_NAPI_WEIGHT	64
 #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
 #define NUM_RX_DESC	256U	/* Number of Rx descriptor registers */
-//#define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
-//#define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
 
 #define SECGMAC_TX_TIMEOUT	(6*HZ)
-//#define RTL8169_PHY_TIMEOUT	(10*HZ)
-
-/* write/read MMIO register */
-#define RTL_W8(reg, val8)	writeb ((val8), ioaddr + (reg))
-#define RTL_W16(reg, val16)	writew ((val16), ioaddr + (reg))
-#define RTL_W32(reg, val32)	writel ((val32), ioaddr + (reg))
-#define RTL_R8(reg)		readb (ioaddr + (reg))
-#define RTL_R16(reg)		readw (ioaddr + (reg))
-#define RTL_R32(reg)		readl (ioaddr + (reg))
-
-enum rtl_tx_desc_version {
-	RTL_TD_0	= 0,
-	RTL_TD_1	= 1,
-};
-
-#define JUMBO_1K	ETH_DATA_LEN
-#define JUMBO_4K	(4*1024 - ETH_HLEN - 2)
-#define JUMBO_6K	(6*1024 - ETH_HLEN - 2)
-#define JUMBO_7K	(7*1024 - ETH_HLEN - 2)
-#define JUMBO_9K	(9*1024 - ETH_HLEN - 2)
 
 static const struct pci_device_id secgmac_pci_tbl[] = {
 	{ PCI_DEVICE(0x16c3, 0xabcd), },
