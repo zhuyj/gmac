@@ -77,6 +77,7 @@ static struct {
 	u32 msg_enable;
 } debug = { -1 };
 
+#if 0
 enum rtl_desc_bit {
 	/* First doubleword. */
 	DescOwn		= (1 << 31), /* Descriptor is owned by NIC */
@@ -85,7 +86,6 @@ enum rtl_desc_bit {
 	LastFrag	= (1 << 28), /* Final segment of a packet */
 };
 
-#if 0
 /* Generic case. */
 enum rtl_tx_desc_bit {
 	/* First doubleword. */
@@ -1340,12 +1340,12 @@ static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
 	return NETDEV_TX_OK;
 }
 
+#if 0
 static inline int rtl8169_fragmented_frame(u32 status)
 {
 	return (status & (FirstFrag | LastFrag)) != (FirstFrag | LastFrag);
 }
 
-#if 0
 static inline void rtl8169_rx_csum(struct sk_buff *skb, u32 opts1)
 {
 	u32 status = opts1 & RxProtoMask;
