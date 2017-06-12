@@ -85,6 +85,7 @@ enum rtl_desc_bit {
 	LastFrag	= (1 << 28), /* Final segment of a packet */
 };
 
+#if 0
 /* Generic case. */
 enum rtl_tx_desc_bit {
 	/* First doubleword. */
@@ -151,6 +152,7 @@ struct RxDesc {
 	__le32 opts2;
 	__le64 addr;
 };
+#endif
 
 struct ring_info {
 	struct sk_buff	*skb;
@@ -452,6 +454,7 @@ static int secgmac_set_speed_gmii(struct net_device *dev,
 	return ret;
 }
 
+#if 0
 static netdev_features_t rtl8169_fix_features(struct net_device *dev,
 	netdev_features_t features)
 {
@@ -466,6 +469,7 @@ static netdev_features_t rtl8169_fix_features(struct net_device *dev,
 #endif
 	return features;
 }
+#endif
 
 static void __rtl8169_set_features(struct net_device *dev,
 				   netdev_features_t features)
@@ -513,12 +517,13 @@ static int rtl8169_set_features(struct net_device *dev,
 	return 0;
 }
 
+#if 0
 static inline u32 rtl8169_tx_vlan_tag(struct sk_buff *skb)
 {
 	return (skb_vlan_tag_present(skb)) ?
 		TxVlanTag | swab16(skb_vlan_tag_get(skb)) : 0x00;
 }
-#if 0
+
 static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 {
 	u32 opts2 = le32_to_cpu(desc->opts2);
@@ -978,13 +983,13 @@ static int rtl8169_change_mtu(struct net_device *dev, int new_mtu)
 	return 0;
 }
 
+#if 0
 static inline void rtl8169_make_unusable_by_asic(struct RxDesc *desc)
 {
 	desc->addr = cpu_to_le64(0x0badbadbadbadbadull);
 	desc->opts1 &= ~cpu_to_le32(DescOwn | RsvdMask);
 }
 
-#if 0
 static void rtl8169_free_rx_databuff(struct secgmac_private *tp,
 				     void **data_buff, struct RxDesc *desc)
 {
@@ -995,7 +1000,6 @@ static void rtl8169_free_rx_databuff(struct secgmac_private *tp,
 	*data_buff = NULL;
 	rtl8169_make_unusable_by_asic(desc);
 }
-#endif
 
 static inline void rtl8169_mark_to_asic(struct RxDesc *desc, u32 rx_buf_sz)
 {
@@ -1013,6 +1017,7 @@ static inline void rtl8169_map_to_asic(struct RxDesc *desc, dma_addr_t mapping,
 	desc->addr = cpu_to_le64(mapping);
 	rtl8169_mark_to_asic(desc, rx_buf_sz);
 }
+#endif
 
 static inline void *rtl8169_align(void *data)
 {
@@ -1071,10 +1076,12 @@ static void rtl8169_rx_clear(struct secgmac_private *tp)
 #endif
 }
 
+#if 0
 static inline void rtl8169_mark_as_last_descriptor(struct RxDesc *desc)
 {
 	desc->opts1 |= cpu_to_le32(RingEnd);
 }
+#endif
 
 static int rtl8169_rx_fill(struct secgmac_private *tp)
 {
@@ -1338,6 +1345,7 @@ static inline int rtl8169_fragmented_frame(u32 status)
 	return (status & (FirstFrag | LastFrag)) != (FirstFrag | LastFrag);
 }
 
+#if 0
 static inline void rtl8169_rx_csum(struct sk_buff *skb, u32 opts1)
 {
 	u32 status = opts1 & RxProtoMask;
@@ -1348,6 +1356,7 @@ static inline void rtl8169_rx_csum(struct sk_buff *skb, u32 opts1)
 	else
 		skb_checksum_none_assert(skb);
 }
+#endif
 
 static irqreturn_t secgmac_interrupt(int irq, void *dev_instance)
 {
@@ -1764,7 +1773,7 @@ static const struct net_device_ops secgmac_netdev_ops = {
 	.ndo_tx_timeout		= secgmac_tx_timeout,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_change_mtu		= rtl8169_change_mtu,
-	.ndo_fix_features	= rtl8169_fix_features,
+//	.ndo_fix_features	= rtl8169_fix_features,
 	.ndo_set_features	= rtl8169_set_features,
 	.ndo_set_mac_address	= secgmac_set_mac_address,
 	.ndo_do_ioctl		= secgmac_ioctl,
