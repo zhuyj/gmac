@@ -889,10 +889,12 @@ static void rtl_wol_suspend_quirk(struct secgmac_private *tp)
 #endif
 }
 
+#if 0
 static void rtl8169_init_ring_indexes(struct secgmac_private *tp)
 {
 	tp->dirty_tx = tp->cur_tx = tp->cur_rx = 0;
 }
+#endif
 
 static void secgmac_hw_reset(struct secgmac_private *tp)
 {
@@ -1081,7 +1083,6 @@ static inline void rtl8169_mark_as_last_descriptor(struct RxDesc *desc)
 {
 	desc->opts1 |= cpu_to_le32(RingEnd);
 }
-#endif
 
 static int rtl8169_rx_fill(struct secgmac_private *tp)
 {
@@ -1124,7 +1125,6 @@ static int rtl8169_init_ring(struct net_device *dev)
 	return rtl8169_rx_fill(tp);
 }
 
-#if 0
 static void rtl8169_unmap_tx_skb(struct device *d, struct ring_info *tx_skb,
 				 struct TxDesc *desc)
 {
@@ -1551,10 +1551,10 @@ static int secgmac_open(struct net_device *dev)
 //	if (!tp->RxDescArray)
 //		goto err_free_tx_0;
 
-	retval = rtl8169_init_ring(dev);
+	//retval = rtl8169_init_ring(dev);
 	tp->cur_tx = 0;
-	if (retval < 0)
-		goto err_release_fw_2;
+//	if (retval < 0)
+//		goto err_release_fw_2;
 
 //	INIT_WORK(&tp->wk.work, rtl_task);
 
