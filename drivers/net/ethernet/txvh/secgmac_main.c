@@ -220,10 +220,10 @@ struct secgmac_private {
 	struct rtl8169_stats tx_stats;
 //	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
 //	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
-	dma_addr_t TxPhyAddr;
-	dma_addr_t RxPhyAddr;
-	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
-	struct ring_info tx_skb[NUM_TX_DESC];	/* Tx data buffers */
+//	dma_addr_t TxPhyAddr;
+//	dma_addr_t RxPhyAddr;
+//	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
+//	struct ring_info tx_skb[NUM_TX_DESC];	/* Tx data buffers */
 	struct timer_list rx_timer;
 	u16 cp_cmd;
 
@@ -1019,14 +1019,12 @@ static inline void rtl8169_map_to_asic(struct RxDesc *desc, dma_addr_t mapping,
 	desc->addr = cpu_to_le64(mapping);
 	rtl8169_mark_to_asic(desc, rx_buf_sz);
 }
-#endif
 
 static inline void *rtl8169_align(void *data)
 {
 	return (void *)ALIGN((long)data, 16);
 }
 
-#if 0
 static struct sk_buff *rtl8169_alloc_rx_data(struct secgmac_private *tp,
 					     struct RxDesc *desc)
 {
@@ -1142,6 +1140,7 @@ static void rtl8169_unmap_tx_skb(struct device *d, struct ring_info *tx_skb,
 static void rtl8169_tx_clear_range(struct secgmac_private *tp, u32 start,
 				   unsigned int n)
 {
+#if 0
 	unsigned int i;
 
 	for (i = 0; i < n; i++) {
@@ -1161,6 +1160,7 @@ static void rtl8169_tx_clear_range(struct secgmac_private *tp, u32 start,
 			}
 		}
 	}
+#endif
 }
 
 static void rtl8169_tx_clear(struct secgmac_private *tp)
