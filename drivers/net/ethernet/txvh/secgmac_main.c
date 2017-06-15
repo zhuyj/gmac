@@ -77,83 +77,6 @@ static struct {
 	u32 msg_enable;
 } debug = { -1 };
 
-#if 0
-enum rtl_desc_bit {
-	/* First doubleword. */
-	DescOwn		= (1 << 31), /* Descriptor is owned by NIC */
-	RingEnd		= (1 << 30), /* End of descriptor ring */
-	FirstFrag	= (1 << 29), /* First segment of a packet */
-	LastFrag	= (1 << 28), /* Final segment of a packet */
-};
-
-/* Generic case. */
-enum rtl_tx_desc_bit {
-	/* First doubleword. */
-	TD_LSO		= (1 << 27),		/* Large Send Offload */
-#define TD_MSS_MAX			0x07ffu	/* MSS value */
-
-	/* Second doubleword. */
-	TxVlanTag	= (1 << 17),		/* Add VLAN tag */
-};
-
-/* 8169, 8168b and 810x except 8102e. */
-enum rtl_tx_desc_bit_0 {
-	/* First doubleword. */
-#define TD0_MSS_SHIFT			16	/* MSS position (11 bits) */
-	TD0_TCP_CS	= (1 << 16),		/* Calculate TCP/IP checksum */
-	TD0_UDP_CS	= (1 << 17),		/* Calculate UDP/IP checksum */
-	TD0_IP_CS	= (1 << 18),		/* Calculate IP checksum */
-};
-
-/* 8102e, 8168c and beyond. */
-enum rtl_tx_desc_bit_1 {
-	/* First doubleword. */
-	TD1_GTSENV4	= (1 << 26),		/* Giant Send for IPv4 */
-	TD1_GTSENV6	= (1 << 25),		/* Giant Send for IPv6 */
-#define GTTCPHO_SHIFT			18
-#define GTTCPHO_MAX			0x7fU
-
-	/* Second doubleword. */
-#define TCPHO_SHIFT			18
-#define TCPHO_MAX			0x3ffU
-#define TD1_MSS_SHIFT			18	/* MSS position (11 bits) */
-	TD1_IPv6_CS	= (1 << 28),		/* Calculate IPv6 checksum */
-	TD1_IPv4_CS	= (1 << 29),		/* Calculate IPv4 checksum */
-	TD1_TCP_CS	= (1 << 30),		/* Calculate TCP/IP checksum */
-	TD1_UDP_CS	= (1 << 31),		/* Calculate UDP/IP checksum */
-};
-
-enum rtl_rx_desc_bit {
-	/* Rx private */
-	PID1		= (1 << 18), /* Protocol ID bit 1/2 */
-	PID0		= (1 << 17), /* Protocol ID bit 2/2 */
-
-#define RxProtoUDP	(PID1)
-#define RxProtoTCP	(PID0)
-#define RxProtoIP	(PID1 | PID0)
-#define RxProtoMask	RxProtoIP
-
-	IPFail		= (1 << 16), /* IP checksum failed */
-	UDPFail		= (1 << 15), /* UDP/IP checksum failed */
-	TCPFail		= (1 << 14), /* TCP/IP checksum failed */
-	RxVlanTag	= (1 << 16), /* VLAN tag available */
-};
-
-#define RsvdMask	0x3fffc000
-
-struct TxDesc {
-	__le32 opts1;
-	__le32 opts2;
-	__le64 addr;
-};
-
-struct RxDesc {
-	__le32 opts1;
-	__le32 opts2;
-	__le64 addr;
-};
-#endif
-
 struct ring_info {
 	struct sk_buff	*skb;
 	u32		len;
@@ -166,7 +89,7 @@ enum features {
 	RTL_FEATURE_GMII	= (1 << 2),
 };
 
-struct rtl8169_counters {
+struct secgmac_counters {
 	__le64	tx_packets;
 	__le64	rx_packets;
 	__le64	tx_errors;
@@ -182,7 +105,7 @@ struct rtl8169_counters {
 	__le16	tx_underun;
 };
 
-struct rtl8169_tc_offsets {
+struct secgmac_tc_offsets {
 	bool	inited;
 	__le64	tx_errors;
 	__le32	tx_multi_collision;
@@ -218,12 +141,6 @@ struct secgmac_private {
 	u32 dirty_tx;
 	struct rtl8169_stats rx_stats;
 	struct rtl8169_stats tx_stats;
-//	struct TxDesc *TxDescArray;	/* 256-aligned Tx descriptor ring */
-//	struct RxDesc *RxDescArray;	/* 256-aligned Rx descriptor ring */
-//	dma_addr_t TxPhyAddr;
-//	dma_addr_t RxPhyAddr;
-//	void *Rx_databuff[NUM_RX_DESC];	/* Rx data buffers */
-//	struct ring_info tx_skb[NUM_TX_DESC];	/* Tx data buffers */
 	struct timer_list rx_timer;
 	u16 cp_cmd;
 
@@ -268,8 +185,8 @@ struct secgmac_private {
 
 	struct mii_if_info mii;
 	dma_addr_t counters_phys_addr;
-	struct rtl8169_counters *counters;
-	struct rtl8169_tc_offsets tc_offset;
+	struct secgmac_counters *counters;
+	struct secgmac_tc_offsets tc_offset;
 	u32 opts1_mask;
 
 	struct rtl_fw {
@@ -326,12 +243,6 @@ static void rtl_ack_events(struct secgmac_private *tp, u16 bits)
 #endif
 }
 
-#if 0
-#define RTL_EVENT_NAPI_RX	(RxOK | RxErr)
-#define RTL_EVENT_NAPI_TX	(TxOK | TxErr)
-#define RTL_EVENT_NAPI		(RTL_EVENT_NAPI_RX | RTL_EVENT_NAPI_TX)
-#endif
-
 static unsigned int secgmac_gmii_reset_pending(struct secgmac_private *tp)
 {
 	//void __iomem *ioaddr = tp->mmio_addr;
@@ -340,17 +251,7 @@ static unsigned int secgmac_gmii_reset_pending(struct secgmac_private *tp)
 	writel(0x1, MAC_Function_SIGN);
 	return 1;
 }
-#if 0
-static unsigned int rtl8169_xmii_reset_pending(struct secgmac_private *tp)
-{
-	return rtl_readphy(tp, MII_BMCR) & BMCR_RESET;
-}
 
-static unsigned int rtl8169_tbi_link_ok(void __iomem *ioaddr)
-{
-	return RTL_R32(TBICSR) & TBILinkOk;
-}
-#endif
 static unsigned int secgmac_gmii_link_ok(void __iomem *ioaddr)
 {
 	return 1;//RTL_R8(PHYstatus) & LinkStatus;
@@ -363,16 +264,6 @@ static void secgmac_gmii_reset_enable(struct secgmac_private *tp)
 	//RTL_W32(csr0, RTL_R32(csr0) | 0x1);
 	writel(0x1, MAC_Function_SIGN);
 }
-
-#if 0
-static void rtl8169_xmii_reset_enable(struct secgmac_private *tp)
-{
-	unsigned int val;
-
-	val = rtl_readphy(tp, MII_BMCR) | BMCR_RESET;
-	rtl_writephy(tp, MII_BMCR, val & 0xffff);
-}
-#endif
 
 static void __secgmac_check_link_status(struct net_device *dev,
 					struct secgmac_private *tp,
@@ -454,23 +345,6 @@ static int secgmac_set_speed_gmii(struct net_device *dev,
 	return ret;
 }
 
-#if 0
-static netdev_features_t rtl8169_fix_features(struct net_device *dev,
-	netdev_features_t features)
-{
-//	struct secgmac_private *tp = netdev_priv(dev);
-
-	if (dev->mtu > TD_MSS_MAX)
-		features &= ~NETIF_F_ALL_TSO;
-#if 0
-	if (dev->mtu > JUMBO_1K &&
-	    !rtl_chip_infos[tp->mac_version].jumbo_tx_csum)
-		features &= ~NETIF_F_IP_CSUM;
-#endif
-	return features;
-}
-#endif
-
 static void __rtl8169_set_features(struct net_device *dev,
 				   netdev_features_t features)
 {
@@ -517,21 +391,6 @@ static int rtl8169_set_features(struct net_device *dev,
 	return 0;
 }
 
-#if 0
-static inline u32 rtl8169_tx_vlan_tag(struct sk_buff *skb)
-{
-	return (skb_vlan_tag_present(skb)) ?
-		TxVlanTag | swab16(skb_vlan_tag_get(skb)) : 0x00;
-}
-
-static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
-{
-	u32 opts2 = le32_to_cpu(desc->opts2);
-
-	if (opts2 & RxVlanTag)
-		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), swab16(opts2 & 0xffff));
-}
-#endif
 static int secgmac_gset_gmii(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 //	struct secgmac_private *tp = netdev_priv(dev);
@@ -552,15 +411,6 @@ static int secgmac_gset_gmii(struct net_device *dev, struct ethtool_cmd *cmd)
 
 	return 0;
 }
-
-#if 0
-static int rtl8169_gset_xmii(struct net_device *dev, struct ethtool_cmd *cmd)
-{
-	struct secgmac_private *tp = netdev_priv(dev);
-
-	return mii_ethtool_gset(&tp->mii, cmd);
-}
-#endif
 
 static int secgmac_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
@@ -619,7 +469,7 @@ static void rtl8169_get_ethtool_stats(struct net_device *dev,
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	//struct device *d = &tp->pci_dev->dev;
-	struct rtl8169_counters *counters = tp->counters;
+	struct secgmac_counters *counters = tp->counters;
 
 	ASSERT_RTNL();
 
@@ -670,30 +520,6 @@ static const struct ethtool_ops secgmac_ethtool_ops = {
 	.get_ethtool_stats	= rtl8169_get_ethtool_stats,
 	.get_ts_info		= ethtool_op_get_ts_info,
 };
-
-#if 0
-#define PHY_READ		0x00000000
-#define PHY_DATA_OR		0x10000000
-#define PHY_DATA_AND		0x20000000
-#define PHY_BJMPN		0x30000000
-#define PHY_MDIO_CHG		0x40000000
-#define PHY_CLEAR_READCOUNT	0x70000000
-#define PHY_WRITE		0x80000000
-#define PHY_READCOUNT_EQ_SKIP	0x90000000
-#define PHY_COMP_EQ_SKIPN	0xa0000000
-#define PHY_COMP_NEQ_SKIPN	0xb0000000
-#define PHY_WRITE_PREVIOUS	0xc0000000
-#define PHY_SKIPN		0xd0000000
-#define PHY_DELAY_MS		0xe0000000
-
-struct fw_info {
-	u32	magic;
-	char	version[RTL_VER_SIZE];
-	__le32	fw_start;
-	__le32	fw_len;
-	u8	chksum;
-} __packed;
-#endif
 
 static void rtl_release_firmware(struct secgmac_private *tp)
 {
@@ -789,68 +615,6 @@ static void rtl_disable_msi(struct pci_dev *pdev, struct secgmac_private *tp)
 		tp->features &= ~RTL_FEATURE_MSI;
 	}
 }
-
-#if 0
-static void rtl_init_mdio_ops(struct secgmac_private *tp)
-{
-	struct mdio_ops *ops = &tp->mdio_ops;
-
-	switch (tp->mac_version) {
-	case RTL_GIGA_MAC_VER_27:
-		ops->write	= r8168dp_1_mdio_write;
-		ops->read	= r8168dp_1_mdio_read;
-		break;
-	case RTL_GIGA_MAC_VER_28:
-	case RTL_GIGA_MAC_VER_31:
-		ops->write	= r8168dp_2_mdio_write;
-		ops->read	= r8168dp_2_mdio_read;
-		break;
-	case RTL_GIGA_MAC_VER_40:
-	case RTL_GIGA_MAC_VER_41:
-	case RTL_GIGA_MAC_VER_42:
-	case RTL_GIGA_MAC_VER_43:
-	case RTL_GIGA_MAC_VER_44:
-	case RTL_GIGA_MAC_VER_45:
-	case RTL_GIGA_MAC_VER_46:
-	case RTL_GIGA_MAC_VER_47:
-	case RTL_GIGA_MAC_VER_48:
-	case RTL_GIGA_MAC_VER_49:
-	case RTL_GIGA_MAC_VER_50:
-	case RTL_GIGA_MAC_VER_51:
-		ops->write	= r8168g_mdio_write;
-		ops->read	= r8168g_mdio_read;
-		break;
-	default:
-		ops->write	= r8169_mdio_write;
-		ops->read	= r8169_mdio_read;
-		break;
-	}
-}
-
-static void rtl_speed_down(struct secgmac_private *tp)
-{
-	u32 adv;
-	int lpa;
-
-	rtl_writephy(tp, 0x1f, 0x0000);
-	lpa = rtl_readphy(tp, MII_LPA);
-
-	if (lpa & (LPA_10HALF | LPA_10FULL))
-		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
-	else if (lpa & (LPA_100HALF | LPA_100FULL))
-		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full;
-	else
-		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full |
-		      (tp->mii.supports_gmii ?
-		       ADVERTISED_1000baseT_Half |
-		       ADVERTISED_1000baseT_Full : 0);
-
-	rtl8169_set_speed(tp->dev, AUTONEG_ENABLE, SPEED_1000, DUPLEX_FULL,
-			  adv);
-}
-#endif
 
 static void rtl_wol_suspend_quirk(struct secgmac_private *tp)
 {
@@ -985,83 +749,6 @@ static int rtl8169_change_mtu(struct net_device *dev, int new_mtu)
 	return 0;
 }
 
-#if 0
-static inline void rtl8169_make_unusable_by_asic(struct RxDesc *desc)
-{
-	desc->addr = cpu_to_le64(0x0badbadbadbadbadull);
-	desc->opts1 &= ~cpu_to_le32(DescOwn | RsvdMask);
-}
-
-static void rtl8169_free_rx_databuff(struct secgmac_private *tp,
-				     void **data_buff, struct RxDesc *desc)
-{
-	dma_unmap_single(&tp->pci_dev->dev, le64_to_cpu(desc->addr), rx_buf_sz,
-			 DMA_FROM_DEVICE);
-
-	kfree(*data_buff);
-	*data_buff = NULL;
-	rtl8169_make_unusable_by_asic(desc);
-}
-
-static inline void rtl8169_mark_to_asic(struct RxDesc *desc, u32 rx_buf_sz)
-{
-	u32 eor = le32_to_cpu(desc->opts1) & RingEnd;
-
-	/* Force memory writes to complete before releasing descriptor */
-	dma_wmb();
-
-	desc->opts1 = cpu_to_le32(DescOwn | eor | rx_buf_sz);
-}
-
-static inline void rtl8169_map_to_asic(struct RxDesc *desc, dma_addr_t mapping,
-				       u32 rx_buf_sz)
-{
-	desc->addr = cpu_to_le64(mapping);
-	rtl8169_mark_to_asic(desc, rx_buf_sz);
-}
-
-static inline void *rtl8169_align(void *data)
-{
-	return (void *)ALIGN((long)data, 16);
-}
-
-static struct sk_buff *rtl8169_alloc_rx_data(struct secgmac_private *tp,
-					     struct RxDesc *desc)
-{
-	void *data;
-	dma_addr_t mapping;
-	struct device *d = &tp->pci_dev->dev;
-	struct net_device *dev = tp->dev;
-	int node = dev->dev.parent ? dev_to_node(dev->dev.parent) : -1;
-
-	data = kmalloc_node(rx_buf_sz, GFP_KERNEL, node);
-	if (!data)
-		return NULL;
-
-	if (rtl8169_align(data) != data) {
-		kfree(data);
-		data = kmalloc_node(rx_buf_sz + 15, GFP_KERNEL, node);
-		if (!data)
-			return NULL;
-	}
-
-	mapping = dma_map_single(d, rtl8169_align(data), rx_buf_sz,
-				 DMA_FROM_DEVICE);
-	if (unlikely(dma_mapping_error(d, mapping))) {
-		if (net_ratelimit())
-			netif_err(tp, drv, tp->dev, "Failed to map RX DMA!\n");
-		goto err_out;
-	}
-
-	rtl8169_map_to_asic(desc, mapping, rx_buf_sz);
-	return data;
-
-err_out:
-	kfree(data);
-	return NULL;
-}
-#endif
-
 static void rtl8169_rx_clear(struct secgmac_private *tp)
 {
 #if 0
@@ -1075,67 +762,6 @@ static void rtl8169_rx_clear(struct secgmac_private *tp)
 	}
 #endif
 }
-
-#if 0
-static inline void rtl8169_mark_as_last_descriptor(struct RxDesc *desc)
-{
-	desc->opts1 |= cpu_to_le32(RingEnd);
-}
-
-static int rtl8169_rx_fill(struct secgmac_private *tp)
-{
-#if 0
-	unsigned int i;
-
-	for (i = 0; i < NUM_RX_DESC; i++) {
-		void *data;
-
-		if (tp->Rx_databuff[i])
-			continue;
-
-//		data = rtl8169_alloc_rx_data(tp, tp->RxDescArray + i);
-//		if (!data) {
-//			rtl8169_make_unusable_by_asic(tp->RxDescArray + i);
-//			goto err_out;
-//		}
-//		tp->Rx_databuff[i] = data;
-	}
-
-//	rtl8169_mark_as_last_descriptor(tp->RxDescArray + NUM_RX_DESC - 1);
-	return 0;
-
-err_out:
-	rtl8169_rx_clear(tp);
-	return -ENOMEM;
-#endif
-	return 0;
-}
-
-static int rtl8169_init_ring(struct net_device *dev)
-{
-	struct secgmac_private *tp = netdev_priv(dev);
-
-	rtl8169_init_ring_indexes(tp);
-
-	memset(tp->tx_skb, 0x0, NUM_TX_DESC * sizeof(struct ring_info));
-	memset(tp->Rx_databuff, 0x0, NUM_RX_DESC * sizeof(void *));
-
-	return rtl8169_rx_fill(tp);
-}
-
-static void rtl8169_unmap_tx_skb(struct device *d, struct ring_info *tx_skb,
-				 struct TxDesc *desc)
-{
-	unsigned int len = tx_skb->len;
-
-	dma_unmap_single(d, le64_to_cpu(desc->addr), len, DMA_TO_DEVICE);
-
-	desc->opts1 = 0x00;
-	desc->opts2 = 0x00;
-	desc->addr = 0x00;
-	tx_skb->len = 0;
-}
-#endif
 
 static void rtl8169_tx_clear_range(struct secgmac_private *tp, u32 start,
 				   unsigned int n)
@@ -1633,12 +1259,12 @@ err_release_fw_2:
 }
 
 static struct rtnl_link_stats64 *
-rtl8169_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
+secgmac_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 {
 	struct secgmac_private *tp = netdev_priv(dev);
 	void __iomem *ioaddr = tp->mmio_addr;
 	struct pci_dev *pdev = tp->pci_dev;
-	struct rtl8169_counters *counters = tp->counters;
+	struct secgmac_counters *counters = tp->counters;
 	unsigned int start;
 
 	pm_runtime_get_noresume(&pdev->dev);
@@ -1768,7 +1394,7 @@ static void secgmac_remove_one(struct pci_dev *pdev)
 static const struct net_device_ops secgmac_netdev_ops = {
 	.ndo_open		= secgmac_open,
 	.ndo_stop		= secgmac_close,
-	.ndo_get_stats64	= rtl8169_get_stats64,
+	.ndo_get_stats64	= secgmac_get_stats64,
 	.ndo_start_xmit		= secgmac_start_xmit,
 	.ndo_tx_timeout		= secgmac_tx_timeout,
 	.ndo_validate_addr	= eth_validate_addr,
