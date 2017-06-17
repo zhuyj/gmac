@@ -144,27 +144,10 @@ struct secgmac_private {
 	struct timer_list rx_timer;
 	u16 cp_cmd;
 
-	u16 event_slow;
-
 	struct mdio_ops {
 		void (*write)(struct secgmac_private *, int, int);
 		int (*read)(struct secgmac_private *, int);
 	} mdio_ops;
-
-	struct pll_power_ops {
-		void (*down)(struct secgmac_private *);
-		void (*up)(struct secgmac_private *);
-	} pll_power_ops;
-
-	struct jumbo_ops {
-		void (*enable)(struct secgmac_private *);
-		void (*disable)(struct secgmac_private *);
-	} jumbo_ops;
-
-	struct csi_ops {
-		void (*write)(struct secgmac_private *, int, int);
-		u32 (*read)(struct secgmac_private *, int);
-	} csi_ops;
 
 	int (*set_speed)(struct net_device *, u8 aneg, u16 sp, u8 dpx, u32 adv);
 	int (*get_settings)(struct net_device *, struct ethtool_cmd *);
@@ -245,9 +228,6 @@ static void rtl_ack_events(struct secgmac_private *tp, u16 bits)
 
 static unsigned int secgmac_gmii_reset_pending(struct secgmac_private *tp)
 {
-	//void __iomem *ioaddr = tp->mmio_addr;
-
-	//return (RTL_R32(csr0) & 0x1) == 0x1;
 	writel(0x1, MAC_Function_SIGN);
 	return 1;
 }
@@ -986,24 +966,10 @@ static inline void rtl8169_rx_csum(struct sk_buff *skb, u32 opts1)
 
 static irqreturn_t secgmac_interrupt(int irq, void *dev_instance)
 {
-//	struct net_device *dev = dev_instance;
-//	struct secgmac_private *tp = netdev_priv(dev);
 	int handled = 0;
-	//u16 status;
 
 	secgmac_debug(" ");
-#if 0
-	status = rtl_get_events(tp);
-	if (status && status != 0xffff) {
-		status &= RTL_EVENT_NAPI | tp->event_slow;
-		if (status) {
-			handled = 1;
 
-			//rtl_irq_disable(tp);
-			napi_schedule(&tp->napi);
-		}
-	}
-#endif
 	return IRQ_RETVAL(handled);
 }
 
@@ -1600,33 +1566,9 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 		NETIF_F_HIGHDMA;
 
 	//tp->cp_cmd |= RxChkSum | RxVlan;
-#if 0
-	/*
-	 * Pretend we are using VLANs; This bypasses a nasty bug where
-	 * Interrupts stop flowing on high load on 8110SCd controllers.
-	 */
-	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
-		/* Disallow toggling */
-		dev->hw_features &= ~NETIF_F_HW_VLAN_CTAG_RX;
-
-	if (tp->txd_version == RTL_TD_0)
-		tp->tso_csum = rtl8169_tso_csum_v1;
-	else if (tp->txd_version == RTL_TD_1) {
-		tp->tso_csum = rtl8169_tso_csum_v2;
-		dev->hw_features |= NETIF_F_IPV6_CSUM | NETIF_F_TSO6;
-	} else
-		WARN_ON_ONCE(1);
-#endif
 	dev->hw_features |= NETIF_F_RXALL;
 	dev->hw_features |= NETIF_F_RXFCS;
 
-#if 0
-	tp->hw_start = cfg->hw_start;
-	tp->event_slow = cfg->event_slow;
-
-	tp->opts1_mask = (tp->mac_version != RTL_GIGA_MAC_VER_01) ?
-		~(RxBOVF | RxFOVF) : ~0;
-#endif
 	setup_timer(&tp->rx_timer, secgmac_rx_poll_timer, (unsigned long)dev);
 	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
 
@@ -1645,9 +1587,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	netif_info(tp, probe, dev, "%s at 0x%p, 0x%p, 0x%p, 0x%p, %pM, IRQ %d\n",
 		   "secgmac", ioaddr, bar1_addr, bar2_addr, bar3_addr, dev->dev_addr,
 		   pdev->irq);
-//	device_set_wakeup_enable(&pdev->dev, tp->features & RTL_FEATURE_WOL);
-//	if (pci_dev_run_wake(pdev))
-//		pm_runtime_put_noidle(&pdev->dev);
 
 	netif_carrier_off(dev);
 
