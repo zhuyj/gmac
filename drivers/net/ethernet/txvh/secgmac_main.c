@@ -77,12 +77,6 @@ static struct {
 	u32 msg_enable;
 } debug = { -1 };
 
-struct ring_info {
-	struct sk_buff	*skb;
-	u32		len;
-	u8		__pad[sizeof(void *) - sizeof(u32)];
-};
-
 enum features {
 	RTL_FEATURE_WOL		= (1 << 0),
 	RTL_FEATURE_MSI		= (1 << 1),
@@ -137,12 +131,10 @@ struct secgmac_private {
 	u32 msg_enable;
 	u32 cur_rx; /* Index into the Rx descriptor buffer of next Rx pkt. */
 	u32 cur_tx; /* Index into the Tx descriptor buffer of next Rx pkt. */
-	u32 secgmac_curtx;
 	u32 dirty_tx;
 	struct rtl8169_stats rx_stats;
 	struct rtl8169_stats tx_stats;
 	struct timer_list rx_timer;
-	u16 cp_cmd;
 
 	struct mdio_ops {
 		void (*write)(struct secgmac_private *, int, int);
@@ -1500,8 +1492,6 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 
 	/* Identify chip attached to board */
 //	rtl8169_get_mac_version(tp, dev, cfg->default_ver);
-
-	tp->cp_cmd = 0;
 
 	if ((sizeof(dma_addr_t) > 4) &&
 	    (pci_is_pcie(pdev)) &&
