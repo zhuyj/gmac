@@ -42,20 +42,9 @@
 #define SECGMAC_MSG_DEFAULT \
 	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
 
-#define TX_SLOTS_AVAIL(tp) \
-	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx)
-
-/* A skbuff with nr_frags needs nr_frags+1 entries in the tx queue */
-#define TX_FRAGS_READY_FOR(tp,nr_frags) \
-	(TX_SLOTS_AVAIL(tp) >= (nr_frags + 1))
-
 /* Maximum number of multicast addresses to filter (vs. Rx-all-multicast).
    The RTL chips use a 64 element hash table based on the Ethernet CRC. */
 static const int multicast_filter_limit = 32;
-
-#define MAX_READ_REQUEST_SHIFT	12
-#define TX_DMA_BURST	7	/* Maximum PCI burst, '7' is unlimited */
-#define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
 
 #define SECGMAC_BAR_SIZE		0x4000
 #define SECGMAC_NAPI_WEIGHT	64
@@ -162,7 +151,6 @@ struct secgmac_private {
 	dma_addr_t counters_phys_addr;
 	struct secgmac_counters *counters;
 	struct secgmac_tc_offsets tc_offset;
-	u32 opts1_mask;
 
 	struct rtl_fw {
 		const struct firmware *fw;
@@ -176,9 +164,6 @@ struct secgmac_private {
 			size_t size;
 		} phy_action;
 	} *rtl_fw;
-#define RTL_FIRMWARE_UNKNOWN	ERR_PTR(-EAGAIN)
-
-	u32 ocp_base;
 };
 
 MODULE_AUTHOR("TXVH gmac crew <netdev@vger.kernel.org>");
@@ -499,7 +484,7 @@ static void rtl_release_firmware(struct secgmac_private *tp)
 		release_firmware(tp->rtl_fw->fw);
 		kfree(tp->rtl_fw);
 	}
-	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
+//	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
 }
 
 static void secgmac_rx_poll_timer(unsigned long __opaque)
@@ -1560,7 +1545,7 @@ static int secgmac_init_one(struct pci_dev *pdev, const struct pci_device_id *en
 	dev->hw_features |= NETIF_F_RXFCS;
 
 	setup_timer(&tp->rx_timer, secgmac_rx_poll_timer, (unsigned long)dev);
-	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
+//	tp->rtl_fw = RTL_FIRMWARE_UNKNOWN;
 
 	tp->counters = dma_alloc_coherent (&pdev->dev, sizeof(*tp->counters),
 					   &tp->counters_phys_addr, GFP_KERNEL);
