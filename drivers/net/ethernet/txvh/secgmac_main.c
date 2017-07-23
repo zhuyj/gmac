@@ -821,48 +821,8 @@ err_out:
 }
 #endif
 
-static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
-				      struct net_device *dev);
-#if 0
-/* r8169_csum_workaround()
- * The hw limites the value the transport offset. When the offset is out of the
- * range, calculate the checksum by sw.
- */
-static void r8169_csum_workaround(struct secgmac_private *tp,
-				  struct sk_buff *skb)
-{
-	if (skb_shinfo(skb)->gso_size) {
-		netdev_features_t features = tp->dev->features;
-		struct sk_buff *segs, *nskb;
-
-		features &= ~(NETIF_F_SG | NETIF_F_IPV6_CSUM | NETIF_F_TSO6);
-		segs = skb_gso_segment(skb, features);
-		if (IS_ERR(segs) || !segs)
-			goto drop;
-
-		do {
-			nskb = segs;
-			segs = segs->next;
-			nskb->next = NULL;
-			secgmac_start_xmit(nskb, tp->dev);
-		} while (segs);
-
-		dev_consume_skb_any(skb);
-	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
-		if (skb_checksum_help(skb) < 0)
-			goto drop;
-
-		secgmac_start_xmit(skb, tp->dev);
-	} else {
-		struct net_device_stats *stats;
-
-drop:
-		stats = &tp->dev->stats;
-		stats->tx_dropped++;
-		dev_kfree_skb_any(skb);
-	}
-}
-#endif
+//static netdev_tx_t secgmac_start_xmit(struct sk_buff *skb,
+//				      struct net_device *dev);
 
 #define  PCIE_RX_BUF			(tp->bar2_addr)
 #define  PCIE_RX_BUF_LEN		0x600
